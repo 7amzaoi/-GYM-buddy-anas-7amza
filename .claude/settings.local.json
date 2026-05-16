@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sI -L --max-time 10 \"https://videos.pexels.com/video-files/4761426/4761426-hd_1920_1080_25fps.mp4\")",
+      "Bash(curl -s \"http://127.0.0.1:5180/\")",
+      "Bash(curl -sI \"http://127.0.0.1:5180/src/pages/LandingPage.jsx\")",
+      "Bash(curl -sI \"http://127.0.0.1:5180/node_modules/.vite/deps/gsap.js\")",
+      "Bash(curl -sL --max-time 60 -o \"public/hero-loop.mp4\" \"https://assets.mixkit.co/videos/4828/4828-720.mp4\")",
+      "Bash(npx vite *)",
+      "Read(//c/Users/hamza/.agents/skills/ui-ux-pro-max/**)"
+    ]
+  }
+}
