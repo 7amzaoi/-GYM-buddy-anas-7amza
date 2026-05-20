@@ -1,19 +1,29 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { getAllExercises } from '../data.js';
 import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { Toast } from '../lib/interactions.js';
+import { revealOnScroll } from '../lib/motion.js';
 
-const catLabels = {
-  strength: '🏋️ Strength',
-  cardio: '🏃 Cardio',
-  fatLoss: '🔥 Fat Loss',
-  muscleGain: '💪 Muscle Gain'
+const CATEGORIES = {
+  strength: { label: 'Strength', iconKey: 'dumbbell' },
+  cardio: { label: 'Cardio', iconKey: 'activity' },
+  fatLoss: { label: 'Fat Loss', iconKey: 'fire' },
+  muscleGain: { label: 'Muscle Gain', iconKey: 'zap' },
 };
+
+const FILTERS = [
+  { id: null, label: 'All', iconKey: 'target' },
+  { id: 'strength', label: 'Strength', iconKey: 'dumbbell' },
+  { id: 'cardio', label: 'Cardio', iconKey: 'activity' },
+  { id: 'fatLoss', label: 'Fat Loss', iconKey: 'fire' },
+  { id: 'muscleGain', label: 'Muscle Gain', iconKey: 'zap' },
+];
 
 export default function PlannerPage() {
   const navigateToPage = useContext(NavigateContext);
+  const rootRef = useRef(null);
   const user = Store.get('user');
   const [planFilter, setPlanFilter] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -36,6 +46,12 @@ export default function PlannerPage() {
 
   const displayedPlans = planFilter ? userPlans.filter(p => p.category === planFilter) : userPlans;
   const hasAnyPlans = userPlans.length > 0;
+  const completedCount = userPlans.filter(isPlanCompleted).length;
+
+  useEffect(() => {
+    const cleanup = revealOnScroll(rootRef.current, '[data-reveal]');
+    return cleanup;
+  }, [planFilter, createOpen, userPlans.length]);
 
   function handleStartWorkout(planId) {
     Store.startSession(planId);
@@ -60,139 +76,193 @@ export default function PlannerPage() {
     const checkboxes = ev.target.querySelectorAll('.cp-exercise:checked');
     const exercises = [...checkboxes].map(cb => cb.value);
     if (exercises.length === 0) {
-      Toast.show('⚠️ Select at least one exercise!', 'warning');
+      Toast.show('Select at least one exercise!', 'warning');
       return;
     }
     Store.addCustomPlan({ name, category, duration, level: 'Custom', description: 'Your custom workout plan.', exercises, calories: exercises.length * 50 });
     setCreateOpen(false);
-    Toast.show('✅ Custom plan "' + name + '" created!', 'success');
+    Toast.show('Custom plan "' + name + '" created!', 'success');
     setPlanFilter(null);
   }
 
   return (
-    <>
-      <div className="page-header animate-fade">
-        <h1>{icon('dumbbell', 24)} Workout Planner</h1>
-        <p>Your personal workout plans, all in one place</p>
-      </div>
-
-      {hasAnyPlans ? (
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }} className="animate-slide-up delay-1">
-          <button type="button" className={`btn btn-sm ${planFilter === null ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPlanFilter(null)}>
-            All
-          </button>
-          <button type="button" className={`btn btn-sm ${planFilter === 'strength' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPlanFilter('strength')}>🏋️ Strength</button>
-          <button type="button" className={`btn btn-sm ${planFilter === 'cardio' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPlanFilter('cardio')}>🏃 Cardio</button>
-          <button type="button" className={`btn btn-sm ${planFilter === 'fatLoss' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPlanFilter('fatLoss')}>🔥 Fat Loss</button>
-          <button type="button" className={`btn btn-sm ${planFilter === 'muscleGain' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPlanFilter('muscleGain')}>💪 Muscle Gain</button>
-          <button type="button" className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setCreateOpen(true)}>
-            {icon('plus', 16)} Create Plan
-          </button>
+    <div className="plan" ref={rootRef}>
+      {/* ===== Header ===== */}
+      <header className="plan-header" data-reveal>
+        <div>
+          <span className="gx-eyebrow">{icon('dumbbell', 13)} Training</span>
+          <h1 className="plan-h1">Workout Planner</h1>
+          <p className="gx-subtitle">Your personal training plans, built around your goals.</p>
         </div>
-      ) : null}
+        {hasAnyPlans ? (
+          <button type="button" className="gx-btn gx-btn-primary" onClick={() => setCreateOpen(true)}>
+            {icon('plus', 15)} Create Plan
+          </button>
+        ) : null}
+      </header>
 
       {hasAnyPlans ? (
-        displayedPlans.length > 0 ? (
-          <div className="grid grid-3 animate-slide-up delay-2" id="plans-grid">
-            {displayedPlans.map(p => {
-              const completed = isPlanCompleted(p);
-              const lastDone = lastCompletionFor(p);
-              const lastDoneLabel = lastDone?.date
-                ? new Date(lastDone.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                : null;
-              return (
-                <div key={p.id} className={`card card-hover plan-card ${completed ? 'plan-card-completed' : ''}`} style={{ cursor: 'pointer' }}>
-                  {completed ? (
-                    <div className="plan-card-completed-stamp" aria-hidden="true">
-                      {icon('check', 14)} COMPLETED
+        <>
+          {/* ===== Summary strip ===== */}
+          <div className="plan-summary" data-reveal>
+            <div className="plan-summary-item">
+              <span className="plan-summary-val">{userPlans.length}</span>
+              <span className="plan-summary-label">Total plans</span>
+            </div>
+            <div className="plan-summary-div" aria-hidden="true" />
+            <div className="plan-summary-item">
+              <span className="plan-summary-val plan-accent">{completedCount}</span>
+              <span className="plan-summary-label">Completed</span>
+            </div>
+            <div className="plan-summary-div" aria-hidden="true" />
+            <div className="plan-summary-item">
+              <span className="plan-summary-val">{history.length}</span>
+              <span className="plan-summary-label">Sessions logged</span>
+            </div>
+          </div>
+
+          {/* ===== Filter chips ===== */}
+          <div className="plan-filters" data-reveal>
+            {FILTERS.map(f => (
+              <button
+                key={f.id ?? 'all'}
+                type="button"
+                className={`plan-chip ${planFilter === f.id ? 'is-active' : ''}`}
+                onClick={() => setPlanFilter(f.id)}
+              >
+                {icon(f.iconKey, 14)} {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ===== Plans grid ===== */}
+          {displayedPlans.length > 0 ? (
+            <div className="plan-grid">
+              {displayedPlans.map(p => {
+                const completed = isPlanCompleted(p);
+                const lastDone = lastCompletionFor(p);
+                const lastDoneLabel = lastDone?.date
+                  ? new Date(lastDone.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                  : null;
+                const cat = CATEGORIES[p.category] || { label: p.category, iconKey: 'dumbbell' };
+                const exCount = Array.isArray(p.exercises) ? p.exercises.length : 0;
+                return (
+                  <article key={p.id} className={`gx-card plan-card ${completed ? 'is-completed' : ''}`} data-reveal>
+                    <div className="plan-card-top">
+                      <span className="plan-card-cat">{icon(cat.iconKey, 13)} {cat.label}</span>
+                      <button
+                        type="button"
+                        className="plan-card-del"
+                        onClick={(e) => { e.stopPropagation(); deleteCustomPlan(p.id); }}
+                        aria-label={`Delete ${p.name}`}
+                      >
+                        {icon('trash', 15)}
+                      </button>
                     </div>
-                  ) : null}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
-                    <span className="badge badge-accent">{catLabels[p.category] || p.category}</span>
+
+                    {completed ? (
+                      <span className="plan-card-stamp">{icon('check', 12)} Completed</span>
+                    ) : null}
+
+                    <h3 className="plan-card-name">{p.name}</h3>
+                    <p className="plan-card-desc">{p.description || 'Your custom workout plan.'}</p>
+
+                    <div className="plan-card-stats">
+                      <span>{icon('clock', 14)} {p.duration}</span>
+                      <span>{icon('dumbbell', 14)} {exCount} {exCount === 1 ? 'exercise' : 'exercises'}</span>
+                      <span>{icon('fire', 14)} ~{p.calories} cal</span>
+                    </div>
+
+                    {completed && lastDoneLabel ? (
+                      <div className="plan-card-last">{icon('calendar', 12)} Last done {lastDoneLabel}</div>
+                    ) : null}
+
                     <button
                       type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteCustomPlan(p.id);
-                      }}
-                      style={{ padding: '4px', color: 'var(--danger)' }}
-                      aria-label="Delete plan"
+                      className={`gx-btn ${completed ? 'gx-btn-ghost' : 'gx-btn-primary'} plan-card-cta`}
+                      onClick={() => handleStartWorkout(p.id)}
                     >
-                      {icon('trash', 16)}
+                      {icon('play', 14)} {completed ? 'Start Again' : 'Start Workout'}
                     </button>
-                  </div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '4px' }}>{p.name}</h3>
-                  <p style={{ fontSize: '.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>{p.description || ''}</p>
-                  <div style={{ display: 'flex', gap: '16px', fontSize: '.8rem', color: 'var(--text-secondary)', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    <span>{icon('clock', 14)} {p.duration}</span>
-                    <span>{icon('zap', 14)} {p.level || 'Custom'}</span>
-                    <span>{icon('fire', 14)} ~{p.calories} cal</span>
-                  </div>
-                  {completed && lastDoneLabel ? (
-                    <div className="plan-card-meta">
-                      {icon('check', 12)} Last completed {lastDoneLabel}
-                    </div>
-                  ) : null}
-                  <button type="button" className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => handleStartWorkout(p.id)}>
-                    {icon('play', 14)} {completed ? 'Start Again' : 'Start Workout'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="planner-empty animate-fade" style={{ textAlign: 'center', padding: '60px 24px' }}>
-            <p style={{ color: 'var(--text-secondary)' }}>No plans match this filter.</p>
-            <button type="button" className="btn btn-secondary btn-sm" style={{ marginTop: '16px' }} onClick={() => setPlanFilter(null)}>
-              Clear Filter
-            </button>
-          </div>
-        )
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="plan-empty" data-reveal>
+              <div className="plan-empty-icon">{icon('target', 40)}</div>
+              <p className="plan-empty-title">No plans match this filter</p>
+              <button type="button" className="gx-btn gx-btn-ghost" onClick={() => setPlanFilter(null)}>
+                Clear filter
+              </button>
+            </div>
+          )}
+        </>
       ) : (
-        <div className="planner-empty-state animate-fade">
-          <div className="planner-empty-icon">{icon('dumbbell', 56)}</div>
-          <h2 className="planner-empty-title">No workout plans yet</h2>
-          <p className="planner-empty-desc">
+        <div className="plan-empty plan-empty-hero" data-reveal>
+          <div className="plan-empty-icon plan-empty-icon-lg">{icon('dumbbell', 52)}</div>
+          <h2 className="plan-empty-title">No workout plans yet</h2>
+          <p className="plan-empty-desc">
             Build your training around your goals. Create your first plan to start tracking sets, reps, and progress.
           </p>
-          <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-            {icon('plus', 16)} Create Your First Plan
+          <button type="button" className="gx-btn gx-btn-primary" onClick={() => setCreateOpen(true)}>
+            {icon('plus', 15)} Create Your First Plan
           </button>
         </div>
       )}
 
-      <div id="create-plan-modal" className={createOpen ? '' : 'hidden'}>
-        {createOpen ? (
-          <div className="modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setCreateOpen(false); }}>
-            <div className="modal">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0 }}>{icon('plus', 20)} Create Custom Plan</h2>
-                <button type="button" className="btn btn-ghost btn-icon" onClick={() => setCreateOpen(false)}>{icon('x', 20)}</button>
-              </div>
-              <form onSubmit={handleCreatePlan} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div className="input-group"><label htmlFor="cp-name">Plan Name</label><input className="input" id="cp-name" name="cp-name" required placeholder="My Workout" /></div>
-                <div className="input-group"><label htmlFor="cp-cat">Category</label>
-                  <select className="input" id="cp-cat" name="cp-cat" defaultValue="strength">
-                    <option value="strength">Strength</option><option value="cardio">Cardio</option><option value="fatLoss">Fat Loss</option><option value="muscleGain">Muscle Gain</option>
-                  </select>
-                </div>
-                <div className="input-group"><label htmlFor="cp-dur">Duration</label><input className="input" id="cp-dur" name="cp-dur" placeholder="45 min" required /></div>
-                <div className="input-group"><label>Select Exercises</label>
-                  <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px', background: 'var(--bg-main)', borderRadius: 'var(--radius-sm)' }}>
-                    {getAllExercises().map(ex => (
-                      <label key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '.85rem', cursor: 'pointer', padding: '4px' }}>
-                        <input type="checkbox" value={ex.id} className="cp-exercise" /> {ex.icon} {ex.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <button className="btn btn-primary" type="submit" style={{ width: '100%' }}>{icon('check', 16)} Create Plan</button>
-              </form>
+      {/* ===== Create plan modal ===== */}
+      {createOpen && (
+        <div
+          className="gx-modal-overlay"
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) setCreateOpen(false); }}
+        >
+          <div className="gx-modal gx-modal-wide" role="dialog" aria-modal="true" aria-label="Create custom plan">
+            <div className="gx-modal-head">
+              <h2>Create Custom Plan</h2>
+              <button type="button" className="gx-modal-close" onClick={() => setCreateOpen(false)} aria-label="Close">
+                {icon('x', 18)}
+              </button>
             </div>
+            <form className="gx-modal-form" onSubmit={handleCreatePlan}>
+              <label className="prof-field">
+                <span>Plan name</span>
+                <input id="cp-name" name="cp-name" required placeholder="My Workout" />
+              </label>
+              <div className="plan-form-row">
+                <label className="prof-field">
+                  <span>Category</span>
+                  <select id="cp-cat" name="cp-cat" defaultValue="strength">
+                    <option value="strength">Strength</option>
+                    <option value="cardio">Cardio</option>
+                    <option value="fatLoss">Fat Loss</option>
+                    <option value="muscleGain">Muscle Gain</option>
+                  </select>
+                </label>
+                <label className="prof-field">
+                  <span>Duration</span>
+                  <input id="cp-dur" name="cp-dur" placeholder="45 min" required />
+                </label>
+              </div>
+              <div className="prof-field">
+                <span>Select exercises</span>
+                <div className="plan-ex-picker">
+                  {getAllExercises().map(ex => (
+                    <label key={ex.id} className="plan-ex-item">
+                      <input type="checkbox" value={ex.id} className="cp-exercise" />
+                      <span className="plan-ex-name">{ex.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <button type="submit" className="gx-btn gx-btn-primary" style={{ width: '100%' }}>
+                {icon('check', 15)} Create Plan
+              </button>
+            </form>
           </div>
-        ) : null}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
 }

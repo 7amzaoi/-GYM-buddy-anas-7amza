@@ -6,7 +6,9 @@ import './gsap.config.js';
 import './styles.css';
 import App from './App.jsx';
 import { hydrateAuthSession, ensureAuthSubscription } from './lib/authBootstrap.js';
+import { initAccent } from './lib/personalization.js';
 
+initAccent();
 Store.init();
 void hydrateAuthSession();
 ensureAuthSubscription();

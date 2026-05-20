@@ -65,7 +65,7 @@ export default function SessionPage() {
           if (next <= 0) {
             restModeRef.current = false;
             setRestMode(false);
-            Toast.show('Rest over! Go! 🔥', 'info', 2000);
+            Toast.show('Rest over! Go!', 'info', 2000);
             return 0;
           }
           return next;
@@ -97,7 +97,7 @@ export default function SessionPage() {
         Toast.show('Enter weight and reps first!', 'warning');
         return s;
       }
-      if (set.done) Toast.show(`Set ${setIdx + 1} done! 💪`, 'success', 1500);
+      if (set.done) Toast.show(`Set ${setIdx + 1} done!`, 'success', 1500);
       return s;
     });
   }
@@ -117,7 +117,7 @@ export default function SessionPage() {
 
   function completeWorkout() {
     launchConfetti();
-    Toast.show('Workout Complete! You crushed it! 🏆', 'success', 4000);
+    Toast.show('Workout Complete! You crushed it!', 'success', 4000);
     const s = Store.get('activeSession');
     if (s) {
       const totalWeight = s.exercises.reduce((a, ex) => {
@@ -158,11 +158,14 @@ export default function SessionPage() {
 
   if (!session) {
     return (
-      <div className="session-container page">
-        <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
-          <h2>No Active Session</h2>
-          <p style={{ color: 'var(--text-secondary)', margin: '16px 0' }}>Start a workout from the planner first.</p>
-          <button type="button" className="btn btn-primary" onClick={() => navigateToPage?.('planner')}>Go to Planner</button>
+      <div className="sess">
+        <div className="sess-empty" data-reveal>
+          <div className="sess-empty-icon">{icon('dumbbell', 44)}</div>
+          <h2 className="sess-empty-title">No active session</h2>
+          <p className="sess-empty-desc">Start a workout from the planner to begin tracking your sets.</p>
+          <button type="button" className="gx-btn gx-btn-primary" onClick={() => navigateToPage?.('planner')}>
+            {icon('arrow', 15)} Go to Planner
+          </button>
         </div>
       </div>
     );
@@ -174,124 +177,154 @@ export default function SessionPage() {
   const totalSets = refreshed.exercises.reduce((a, ex) => a + (ex.sets ? ex.sets.length : 0), 0);
   const doneSets = refreshed.exercises.reduce((a, ex) => a + (ex.sets ? ex.sets.filter(ls => ls.done).length : 0), 0);
   const pct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
+  const doneExercises = refreshed.exercises.filter(ex => ex.sets && ex.sets.length > 0 && ex.sets.every(ls => ls.done)).length;
 
   const displayTime = formatTime(restMode ? restSeconds : elapsedSec);
+  // First exercise that still has unfinished sets — the current focus.
+  const focusIdx = refreshed.exercises.findIndex(ex => !(ex.sets && ex.sets.length > 0 && ex.sets.every(ls => ls.done)));
 
   return (
-    <div className="session-container">
-      <div className="page-header animate-fade">
-        <div className="session-header-row">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setEndModal(true)}>{icon('back', 20)}</button>
-            <div style={{ minWidth: 0 }}>
-              <h1 style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{refreshed.planName}</h1>
-              <p>{doneSets}/{totalSets} sets completed</p>
-            </div>
-          </div>
-          <div className="session-header-actions">
-            <div className={`timer-mini ${restMode ? 'rest' : ''}`} id="timer-display">{displayTime}</div>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={toggleTimer}>
-              {paused ? icon('play', 14) : icon('pause', 14)}
+    <div className="sess">
+      {/* ===== Sticky session bar ===== */}
+      <div className={`sess-bar ${restMode ? 'is-rest' : ''}`}>
+        <button type="button" className="sess-bar-back" onClick={() => setEndModal(true)} aria-label="End session">
+          {icon('back', 18)}
+        </button>
+        <div className="sess-bar-title">
+          <h1>{refreshed.planName}</h1>
+          <span>{doneSets}/{totalSets} sets · {doneExercises}/{refreshed.exercises.length} exercises</span>
+        </div>
+        <div className="sess-bar-timer">
+          <span className="sess-timer-label">{restMode ? 'Rest' : 'Elapsed'}</span>
+          <span className={`sess-timer-val ${restMode ? 'is-rest' : ''} ${paused ? 'is-paused' : ''}`}>{displayTime}</span>
+        </div>
+        <div className="sess-bar-actions">
+          <button type="button" className="sess-icon-btn" onClick={toggleTimer} aria-label={paused ? 'Resume timer' : 'Pause timer'}>
+            {paused ? icon('play', 15) : icon('pause', 15)}
+          </button>
+          {!restMode ? (
+            <button type="button" className="gx-btn gx-btn-ghost sess-rest-btn" onClick={startRest}>
+              {icon('clock', 14)} Rest
             </button>
-            {!restMode ? (
-              <button type="button" className="btn btn-primary btn-sm" data-tooltip="Rest 60s" onClick={startRest}>
-                {icon('clock', 14)} Rest
-              </button>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       </div>
 
-      <div className="animate-slide-up delay-1" style={{ marginBottom: '28px' }}>
-        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: '3px', transition: 'width .5s ease' }} />
+      {/* ===== Progress ===== */}
+      <div className="sess-progress" data-reveal>
+        <div className="sess-progress-track">
+          <div className="sess-progress-fill" style={{ width: `${pct}%` }} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.8rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
-          <span>{pct}% complete</span>
-          <span>{restMode ? '😤 Resting...' : '💪 Working'}</span>
-          <span>~{refreshed.calories} cal</span>
+        <div className="sess-progress-meta">
+          <span className="sess-progress-pct">{pct}% complete</span>
+          <span className={`sess-progress-state ${restMode ? 'is-rest' : ''}`}>
+            {restMode ? icon('clock', 13) : icon('zap', 13)} {restMode ? 'Resting' : 'Working'}
+          </span>
+          <span className="sess-progress-cal">{icon('fire', 13)} ~{refreshed.calories} cal</span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-slide-up delay-2">
+      {/* ===== Exercises ===== */}
+      <div className="sess-exercises">
         {refreshed.exercises.map((ex, ei) => {
           const data = getExerciseById(ex.id);
           if (!data) return null;
           const sets = ex.sets || [];
           const exDone = sets.length > 0 && sets.every(ls => ls.done);
+          const exDoneSets = sets.filter(ls => ls.done).length;
+          const isFocus = ei === focusIdx && !exDone;
           return (
-            <div key={ex.id} className={`card ${exDone ? 'exercise-card-done' : ''}`} style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.2rem' }}>{data.icon}</span> {data.name}
-                </h3>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => Toast.show(`${data.name} — History coming soon!`, 'info', 2000)} style={{ fontSize: '.75rem', color: 'var(--text-secondary)' }}>
-                  HISTORY
-                </button>
+            <article key={ex.id} className={`gx-card sess-ex ${exDone ? 'is-done' : ''} ${isFocus ? 'is-focus' : ''}`}>
+              <div className="sess-ex-head">
+                <div className="sess-ex-title">
+                  <span className={`sess-ex-badge ${exDone ? 'is-done' : ''}`}>
+                    {exDone ? icon('check', 15) : ei + 1}
+                  </span>
+                  <div>
+                    <h3>{data.name}</h3>
+                    <span className="sess-ex-sub">{exDoneSets}/{sets.length} sets done</span>
+                  </div>
+                </div>
+                {isFocus ? <span className="sess-ex-now">Current</span> : null}
               </div>
-              <div className="set-row set-row-header">
-                <span>Set</span><span>Weight (kg)</span><span>Reps</span><span style={{ textAlign: 'center' }}>Done</span>
+
+              <div className="sess-set-grid sess-set-head">
+                <span>Set</span><span>Weight (kg)</span><span>Reps</span><span>Done</span>
               </div>
               {sets.map((ls, si) => (
-                <div key={si} className={`set-row ${ls.done ? 'set-row-done' : ''}`}>
-                  <span className="set-row-index">{si + 1}</span>
+                <div key={si} className={`sess-set-grid sess-set-row ${ls.done ? 'is-done' : ''}`}>
+                  <span className="sess-set-idx">{si + 1}</span>
                   <input
                     type="number"
                     inputMode="decimal"
-                    className="set-input"
+                    className="sess-set-input"
                     value={ls.weight}
                     onChange={ev => updateSet(ei, si, 'weight', ev.target.value)}
                     placeholder="kg"
                     aria-label={`Weight for set ${si + 1}`}
-                    style={ls.done ? { opacity: '.6' } : undefined}
                   />
                   <input
                     type="number"
                     inputMode="numeric"
-                    className="set-input"
+                    className="sess-set-input"
                     value={ls.reps}
                     onChange={ev => updateSet(ei, si, 'reps', ev.target.value)}
                     placeholder="reps"
                     aria-label={`Reps for set ${si + 1}`}
-                    style={ls.done ? { opacity: '.6' } : undefined}
                   />
-                  <div className="set-row-done-cell">
-                    <button type="button" className={`set-done-btn ${ls.done ? 'checked' : ''}`} onClick={() => toggleSetDone(ei, si)} aria-label={`Mark set ${si + 1} as done`}>
-                      {ls.done ? icon('check', 16) : null}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className={`sess-set-check ${ls.done ? 'is-checked' : ''}`}
+                    onClick={() => toggleSetDone(ei, si)}
+                    aria-label={`Mark set ${si + 1} as done`}
+                  >
+                    {ls.done ? icon('check', 15) : null}
+                  </button>
                 </div>
               ))}
-              <button type="button" className="add-set-btn" onClick={() => addSet(ei)}>
-                {icon('plus', 14)} ADD SET
+              <button type="button" className="sess-add-set" onClick={() => addSet(ei)}>
+                {icon('plus', 14)} Add set
               </button>
-            </div>
+            </article>
           );
         })}
       </div>
 
-      <div id="end-session-modal" className={endModal ? '' : 'hidden'}>
-        {endModal ? (
-          <div className="modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setEndModal(false); }}>
-            <div className="modal" style={{ maxWidth: '400px', textAlign: 'center' }}>
-              <h2 style={{ marginBottom: '8px' }}>{icon('back', 22)} End Session?</h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Your progress will be saved.</p>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setEndModal(false)} style={{ flex: 1 }}>Cancel</button>
-                <button type="button" className="btn btn-primary" onClick={doEndSession} style={{ flex: 1 }}>{icon('check', 16)} Yes, End</button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      <div style={{ marginTop: '28px', display: 'flex', gap: '12px' }} className="animate-slide-up delay-3">
+      {/* ===== Footer action ===== */}
+      <div className="sess-footer">
         {allDone && totalSets > 0 ? (
-          <button type="button" className="btn btn-primary pulse-glow" onClick={completeWorkout} style={{ flex: 1 }}>{icon('trophy', 18)} Complete Workout!</button>
+          <button type="button" className="gx-btn gx-btn-primary sess-complete-btn" onClick={completeWorkout}>
+            {icon('trophy', 17)} Complete Workout
+          </button>
         ) : (
-          <button type="button" className="btn btn-secondary" onClick={() => setEndModal(true)} style={{ flex: 1 }}>End Session</button>
+          <button type="button" className="gx-btn gx-btn-ghost sess-complete-btn" onClick={() => setEndModal(true)}>
+            End Session
+          </button>
         )}
       </div>
+
+      {/* ===== End session modal ===== */}
+      {endModal && (
+        <div
+          className="gx-modal-overlay"
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) setEndModal(false); }}
+        >
+          <div className="gx-modal gx-modal-sm" role="dialog" aria-modal="true" aria-label="End session">
+            <div className="sess-end-icon">{icon('clock', 26)}</div>
+            <h2 className="sess-end-title">End this session?</h2>
+            <p className="sess-end-desc">Your completed sets will be saved to your history.</p>
+            <div className="sess-end-actions">
+              <button type="button" className="gx-btn gx-btn-ghost" onClick={() => setEndModal(false)}>
+                Keep Going
+              </button>
+              <button type="button" className="gx-btn gx-btn-primary" onClick={doEndSession}>
+                {icon('check', 15)} Yes, End
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

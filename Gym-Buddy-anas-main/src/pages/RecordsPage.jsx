@@ -1,15 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
 import { getAllExercises } from '../data.js';
 import { Toast } from '../lib/interactions.js';
 import { upsertPersonalRecords } from '../services/personalRecordsApi.js';
+import { revealOnScroll } from '../lib/motion.js';
 
 const categoryLabels = {
   all: 'All',
   strength: 'Strength',
   fitness: 'Fitness',
   cardio: 'Cardio',
+};
+
+const categoryIcon = {
+  strength: 'dumbbell',
+  fitness: 'zap',
+  cardio: 'activity',
 };
 
 function categoryForExerciseId(id) {
@@ -19,6 +26,7 @@ function categoryForExerciseId(id) {
 }
 
 export default function RecordsPage() {
+  const rootRef = useRef(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [showAdd, setShowAdd] = useState(false);
   const [formCategory, setFormCategory] = useState('');
@@ -43,6 +51,22 @@ export default function RecordsPage() {
     if (!cat) return [];
     return exercises.filter((e) => categoryForExerciseId(e.id) === cat);
   }, [exercises, editingRecord]);
+
+  const counts = useMemo(() => {
+    const c = { all: records.length, strength: 0, fitness: 0, cardio: 0 };
+    records.forEach((r) => { if (c[r.category] !== undefined) c[r.category] += 1; });
+    return c;
+  }, [records]);
+
+  const latest = useMemo(() => {
+    if (records.length === 0) return null;
+    return [...records].sort((a, b) => Date.parse(b.recorded_at) - Date.parse(a.recorded_at))[0];
+  }, [records]);
+
+  useEffect(() => {
+    const cleanup = revealOnScroll(rootRef.current, '[data-reveal]');
+    return cleanup;
+  }, [activeCategory, grouped.length]);
 
   function formatRecordBadge(r) {
     const cat = r.category;
@@ -174,7 +198,7 @@ export default function RecordsPage() {
     }
     setFormCategory('');
     setShowAdd(false);
-    Toast.show('Record saved.', 'success');
+    Toast.show(isBetter ? 'New personal record saved!' : 'Record saved.', 'success');
   }
 
   function handleStartEdit(record) {
@@ -238,255 +262,252 @@ export default function RecordsPage() {
   }
 
   return (
-    <>
-      <div className="page-header animate-fade" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <div className="rec" ref={rootRef}>
+      {/* ===== Header ===== */}
+      <header className="rec-header" data-reveal>
         <div>
-          <h1>{icon('trophy', 24)} Personal Records</h1>
-          <p>Your best lifts, reps, cardio, and fitness milestones.</p>
+          <span className="gx-eyebrow">{icon('trophy', 13)} Achievements</span>
+          <h1 className="rec-h1">Personal Records</h1>
+          <p className="gx-subtitle">Your best lifts, reps, cardio, and fitness milestones.</p>
         </div>
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowAdd(true)}>
-          {icon('plus', 14)} Add Record
+        <button type="button" className="gx-btn gx-btn-primary" onClick={() => setShowAdd(true)}>
+          {icon('plus', 15)} Add Record
         </button>
-      </div>
+      </header>
 
-      <div className="card animate-slide-up delay-1" style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {Object.keys(categoryLabels).map((key) => (
-            <button
-              key={key}
-              type="button"
-              className={`btn btn-sm ${activeCategory === key ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setActiveCategory(key)}
-            >
-              {categoryLabels[key]}
-            </button>
-          ))}
+      {/* ===== Summary ===== */}
+      <div className="rec-summary" data-reveal>
+        <div className="rec-summary-item">
+          <span className="rec-summary-val rec-accent">{records.length}</span>
+          <span className="rec-summary-label">Total PRs</span>
         </div>
+        <div className="rec-summary-div" aria-hidden="true" />
+        <div className="rec-summary-item">
+          <span className="rec-summary-val">{counts.strength}</span>
+          <span className="rec-summary-label">Strength</span>
+        </div>
+        <div className="rec-summary-div" aria-hidden="true" />
+        <div className="rec-summary-item">
+          <span className="rec-summary-val">{counts.cardio}</span>
+          <span className="rec-summary-label">Cardio</span>
+        </div>
+        {latest ? (
+          <>
+            <div className="rec-summary-div rec-summary-div-wide" aria-hidden="true" />
+            <div className="rec-summary-latest">
+              <span className="rec-summary-label">Latest</span>
+              <span className="rec-summary-latest-name">{latest.exercise_name}</span>
+            </div>
+          </>
+        ) : null}
       </div>
 
-      <div className="card animate-slide-up delay-2">
-        {grouped.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)' }}>No records yet. Add one or complete a session to auto-create records.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {grouped.map((r) => (
-              <div key={r.id} className="exercise-item">
-                <div className="stat-icon">{icon('trophy', 16)}</div>
-                <div className="exercise-info">
-                  <h4>{r.exercise_name}</h4>
-                  <p>{categoryLabels[r.category] || 'Training'} · {new Date(r.recorded_at).toLocaleDateString()}</p>
-                </div>
+      {/* ===== Filter chips ===== */}
+      <div className="rec-filters" data-reveal>
+        {Object.keys(categoryLabels).map((key) => (
+          <button
+            key={key}
+            type="button"
+            className={`rec-chip ${activeCategory === key ? 'is-active' : ''}`}
+            onClick={() => setActiveCategory(key)}
+          >
+            {categoryLabels[key]}
+            <span className="rec-chip-count">{counts[key] ?? 0}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ===== Records grid ===== */}
+      {grouped.length === 0 ? (
+        <div className="rec-empty" data-reveal>
+          <div className="rec-empty-icon">{icon('trophy', 44)}</div>
+          <p className="rec-empty-title">No records yet</p>
+          <p className="rec-empty-desc">
+            Add one manually or complete a workout session to auto-create records.
+          </p>
+          <button type="button" className="gx-btn gx-btn-primary" onClick={() => setShowAdd(true)}>
+            {icon('plus', 15)} Add Your First Record
+          </button>
+        </div>
+      ) : (
+        <div className="rec-grid">
+          {grouped.map((r) => (
+            <article key={r.id} className="gx-card rec-card" data-reveal>
+              <div className="rec-card-top">
+                <span className={`rec-card-cat cat-${r.category}`}>
+                  {icon(categoryIcon[r.category] || 'trophy', 13)} {categoryLabels[r.category] || 'Training'}
+                </span>
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm"
+                  className="rec-card-edit"
                   onClick={() => handleStartEdit(r)}
-                  style={{ marginRight: '8px' }}
+                  aria-label={`Edit ${r.exercise_name}`}
                 >
                   {icon('edit', 14)}
                 </button>
-                <span className="badge badge-accent">
-                  {formatRecordBadge(r)}
-                </span>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <h3 className="rec-card-name">{r.exercise_name}</h3>
+              <div className="rec-card-badge">{icon('trophy', 14)} {formatRecordBadge(r)}</div>
+              <div className="rec-card-date">
+                {icon('calendar', 12)} {new Date(r.recorded_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
 
-      <div id="records-add-modal" className={showAdd ? '' : 'hidden'}>
-        {showAdd ? (
-          <div className="modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setShowAdd(false); }}>
-            <div className="modal">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0 }}>Add Personal Record</h2>
-                <button type="button" className="btn btn-ghost btn-icon" onClick={() => setShowAdd(false)}>{icon('x', 20)}</button>
-              </div>
-              <form onSubmit={handleAddRecord} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div className="input-group">
-                  <label>Workout Type</label>
-                  <select
-                    className="input"
-                    name="record-category"
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value)}
-                    required
-                  >
-                    <option value="">Select type</option>
-                    <option value="strength">Strength</option>
-                    <option value="fitness">Fitness</option>
-                    <option value="cardio">Cardio</option>
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label>Exercise</label>
-                  <select className="input" name="record-exercise" required disabled={!formCategory}>
-                    <option value="">Select exercise</option>
-                    {formExercises.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-                  </select>
-                </div>
-                <div className="grid grid-2">
-                  {formCategory === 'cardio' ? (
-                    <>
-                      <div className="input-group">
-                        <label>Sets</label>
-                        <input className="input" type="number" step="1" name="record-value" required />
-                      </div>
-                      <div className="input-group">
-                        <label>Time (min)</label>
-                        <input className="input" type="number" step="1" name="record-secondary" />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="input-group">
-                        <label>Weight (kg)</label>
-                        <input className="input" type="number" step="0.1" name="record-value" required />
-                      </div>
-                      <div className="input-group">
-                        <label>Reps</label>
-                        <input className="input" type="number" step="1" name="record-secondary" required />
-                      </div>
-                    </>
-                  )}
-                </div>
-                {formCategory !== 'cardio' ? (
-                  <div className="input-group">
-                    <label>Sets</label>
-                    <input className="input" type="number" step="1" name="record-sets" required />
-                  </div>
-                ) : null}
+      {/* ===== Add record modal ===== */}
+      {showAdd && (
+        <div className="gx-modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setShowAdd(false); }}>
+          <div className="gx-modal" role="dialog" aria-modal="true" aria-label="Add personal record">
+            <div className="gx-modal-head">
+              <h2>Add Personal Record</h2>
+              <button type="button" className="gx-modal-close" onClick={() => setShowAdd(false)} aria-label="Close">
+                {icon('x', 18)}
+              </button>
+            </div>
+            <form className="gx-modal-form" onSubmit={handleAddRecord}>
+              <label className="prof-field">
+                <span>Workout type</span>
+                <select
+                  name="record-category"
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                  required
+                >
+                  <option value="">Select type</option>
+                  <option value="strength">Strength</option>
+                  <option value="fitness">Fitness</option>
+                  <option value="cardio">Cardio</option>
+                </select>
+              </label>
+              <label className="prof-field">
+                <span>Exercise</span>
+                <select name="record-exercise" required disabled={!formCategory}>
+                  <option value="">Select exercise</option>
+                  {formExercises.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </select>
+              </label>
+              <div className="rec-form-row">
                 {formCategory === 'cardio' ? (
-                  <div className="input-group">
-                    <label>Distance (km) optional</label>
-                    <input className="input" type="number" step="0.1" name="record-distance" />
-                  </div>
-                ) : null}
-                <button type="submit" className="btn btn-primary">{icon('check', 16)} Save Record</button>
-              </form>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      <div id="records-edit-modal" className={editingRecord ? '' : 'hidden'}>
-        {editingRecord ? (
-          <div className="modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setEditingRecord(null); }}>
-            <div className="modal">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0 }}>Edit Record</h2>
-                <button type="button" className="btn btn-ghost btn-icon" onClick={() => setEditingRecord(null)}>{icon('x', 20)}</button>
-              </div>
-              <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div className="input-group">
-                  <label>Workout Type</label>
-                  <select
-                    className="input"
-                    value={editingRecord.category}
-                    onChange={(e) => handleEditChange('category', e.target.value)}
-                    disabled
-                  >
-                    <option value="strength">Strength</option>
-                    <option value="fitness">Fitness</option>
-                    <option value="cardio">Cardio</option>
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label>Exercise</label>
-                  <select
-                    className="input"
-                    value={editingRecord.exercise_id}
-                    onChange={(e) => {
-                      const exerciseId = e.target.value;
-                      const ex = editFormExercises.find((x) => x.id === exerciseId);
-                      handleEditChange('exercise_id', exerciseId);
-                      handleEditChange('exercise_name', ex?.name || editingRecord.exercise_name);
-                    }}
-                  >
-                    {editFormExercises.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-                  </select>
-                </div>
-                <div className="grid grid-2">
-                  {editingRecord.category === 'cardio' ? (
-                    <>
-                      <div className="input-group">
-                        <label>Sets</label>
-                        <input
-                          className="input"
-                          type="number"
-                          step="1"
-                          value={editingRecord.value ?? ''}
-                          onChange={(e) => handleEditChange('value', e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="input-group">
-                        <label>Time (min)</label>
-                        <input
-                          className="input"
-                          type="number"
-                          step="1"
-                          value={editingRecord.secondary_value ?? ''}
-                          onChange={(e) => handleEditChange('secondary_value', e.target.value)}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="input-group">
-                        <label>Weight (kg)</label>
-                        <input
-                          className="input"
-                          type="number"
-                          step="0.1"
-                          value={editingRecord.value ?? ''}
-                          onChange={(e) => handleEditChange('value', e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="input-group">
-                        <label>Reps</label>
-                        <input
-                          className="input"
-                          type="number"
-                          step="1"
-                          value={editingRecord.secondary_value ?? ''}
-                          onChange={(e) => handleEditChange('secondary_value', e.target.value)}
-                          required
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-                {editingRecord.category !== 'cardio' ? (
-                  <div className="input-group">
-                    <label>Sets</label>
-                    <input
-                      className="input"
-                      type="number"
-                      step="1"
-                      value={editingRecord.tertiary_value ?? ''}
-                      onChange={(e) => handleEditChange('tertiary_value', e.target.value)}
-                      required
-                    />
-                  </div>
+                  <>
+                    <label className="prof-field">
+                      <span>Sets</span>
+                      <input type="number" step="1" name="record-value" required />
+                    </label>
+                    <label className="prof-field">
+                      <span>Time (min)</span>
+                      <input type="number" step="1" name="record-secondary" />
+                    </label>
+                  </>
                 ) : (
-                  <div className="input-group">
-                    <label>Distance (km) optional</label>
-                    <input
-                      className="input"
-                      type="number"
-                      step="0.1"
-                      value={editingRecord.tertiary_value ?? ''}
-                      onChange={(e) => handleEditChange('tertiary_value', e.target.value)}
-                    />
-                  </div>
+                  <>
+                    <label className="prof-field">
+                      <span>Weight (kg)</span>
+                      <input type="number" step="0.1" name="record-value" required />
+                    </label>
+                    <label className="prof-field">
+                      <span>Reps</span>
+                      <input type="number" step="1" name="record-secondary" required />
+                    </label>
+                  </>
                 )}
-                <button type="submit" className="btn btn-primary">{icon('check', 16)} Save Changes</button>
-              </form>
-            </div>
+              </div>
+              {formCategory !== 'cardio' ? (
+                <label className="prof-field">
+                  <span>Sets</span>
+                  <input type="number" step="1" name="record-sets" required />
+                </label>
+              ) : (
+                <label className="prof-field">
+                  <span>Distance (km) — optional</span>
+                  <input type="number" step="0.1" name="record-distance" />
+                </label>
+              )}
+              <button type="submit" className="gx-btn gx-btn-primary" style={{ width: '100%' }}>
+                {icon('check', 15)} Save Record
+              </button>
+            </form>
           </div>
-        ) : null}
-      </div>
-    </>
+        </div>
+      )}
+
+      {/* ===== Edit record modal ===== */}
+      {editingRecord && (
+        <div className="gx-modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setEditingRecord(null); }}>
+          <div className="gx-modal" role="dialog" aria-modal="true" aria-label="Edit record">
+            <div className="gx-modal-head">
+              <h2>Edit Record</h2>
+              <button type="button" className="gx-modal-close" onClick={() => setEditingRecord(null)} aria-label="Close">
+                {icon('x', 18)}
+              </button>
+            </div>
+            <form className="gx-modal-form" onSubmit={handleSaveEdit}>
+              <label className="prof-field">
+                <span>Workout type</span>
+                <select value={editingRecord.category} onChange={(e) => handleEditChange('category', e.target.value)} disabled>
+                  <option value="strength">Strength</option>
+                  <option value="fitness">Fitness</option>
+                  <option value="cardio">Cardio</option>
+                </select>
+              </label>
+              <label className="prof-field">
+                <span>Exercise</span>
+                <select
+                  value={editingRecord.exercise_id}
+                  onChange={(e) => {
+                    const exerciseId = e.target.value;
+                    const ex = editFormExercises.find((x) => x.id === exerciseId);
+                    handleEditChange('exercise_id', exerciseId);
+                    handleEditChange('exercise_name', ex?.name || editingRecord.exercise_name);
+                  }}
+                >
+                  {editFormExercises.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </select>
+              </label>
+              <div className="rec-form-row">
+                {editingRecord.category === 'cardio' ? (
+                  <>
+                    <label className="prof-field">
+                      <span>Sets</span>
+                      <input type="number" step="1" value={editingRecord.value ?? ''} onChange={(e) => handleEditChange('value', e.target.value)} required />
+                    </label>
+                    <label className="prof-field">
+                      <span>Time (min)</span>
+                      <input type="number" step="1" value={editingRecord.secondary_value ?? ''} onChange={(e) => handleEditChange('secondary_value', e.target.value)} />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <label className="prof-field">
+                      <span>Weight (kg)</span>
+                      <input type="number" step="0.1" value={editingRecord.value ?? ''} onChange={(e) => handleEditChange('value', e.target.value)} required />
+                    </label>
+                    <label className="prof-field">
+                      <span>Reps</span>
+                      <input type="number" step="1" value={editingRecord.secondary_value ?? ''} onChange={(e) => handleEditChange('secondary_value', e.target.value)} required />
+                    </label>
+                  </>
+                )}
+              </div>
+              {editingRecord.category !== 'cardio' ? (
+                <label className="prof-field">
+                  <span>Sets</span>
+                  <input type="number" step="1" value={editingRecord.tertiary_value ?? ''} onChange={(e) => handleEditChange('tertiary_value', e.target.value)} required />
+                </label>
+              ) : (
+                <label className="prof-field">
+                  <span>Distance (km) — optional</span>
+                  <input type="number" step="0.1" value={editingRecord.tertiary_value ?? ''} onChange={(e) => handleEditChange('tertiary_value', e.target.value)} />
+                </label>
+              )}
+              <button type="submit" className="gx-btn gx-btn-primary" style={{ width: '100%' }}>
+                {icon('check', 15)} Save Changes
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

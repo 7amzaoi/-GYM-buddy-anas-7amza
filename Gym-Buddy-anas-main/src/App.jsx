@@ -1,11 +1,13 @@
-import { useEffect, useLayoutEffect, useReducer, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useReducer, useCallback, useState } from 'react';
 import { Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Store } from './store.js';
 import { pathForPage, pageIdFromPath } from './routes.js';
 import { NavigateContext } from './context/NavigateContext.jsx';
 import { registerNavigator, initGlobalInteractions, initCounters, initScrollReveal } from './lib/interactions.js';
+import { isOnboarded } from './lib/personalization.js';
 import Sidebar from './components/Sidebar.jsx';
 import MobileNav from './components/MobileNav.jsx';
+import Onboarding from './components/Onboarding.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
@@ -20,6 +22,8 @@ import ProfilePage from './pages/ProfilePage.jsx';
 
 function AuthenticatedChrome() {
   const user = Store.get('user');
+  // Show the first-login onboarding overlay until the user finishes it.
+  const [showOnboarding, setShowOnboarding] = useState(() => !isOnboarded());
   if (!user) return <Navigate to="/login" replace />;
   return (
     <>
@@ -28,6 +32,7 @@ function AuthenticatedChrome() {
         <Outlet />
       </main>
       <MobileNav />
+      {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
     </>
   );
 }
