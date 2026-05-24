@@ -107,9 +107,6 @@ export default function LoginPage() {
 
   return (
     <div className="page login-v2">
-      {/* Top neon gradient bar */}
-      <div className="login-v2-top-bar" aria-hidden="true" />
-
       {/* Back button — returns to landing */}
       <button
         type="button"
@@ -232,9 +229,6 @@ export default function LoginPage() {
           </button>
         </div>
       </main>
-
-      {/* Bottom neon gradient bar */}
-      <div className="login-v2-bottom-bar" aria-hidden="true" />
     </div>
   );
 }

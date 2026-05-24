@@ -88,7 +88,6 @@ export default function RegisterPage() {
 
   return (
     <div className="page login-v2 register-v2">
-      <div className="login-v2-top-bar" aria-hidden="true" />
 
       <button
         type="button"
@@ -222,7 +221,6 @@ export default function RegisterPage() {
         </div>
       </main>
 
-      <div className="login-v2-bottom-bar" aria-hidden="true" />
     </div>
   );
 }

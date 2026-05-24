@@ -1,0 +1,46 @@
+/* ============================================================
+   SHARED MODAL — gx-modal (used by Progress, Planner, etc.)
+   ============================================================ */
+.gx-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(6, 6, 7, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: onbFade 0.3s var(--ease-out) both;
+}
+.gx-modal {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-6);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-highlight), var(--elev-4);
+  animation: onbCardIn 0.4s var(--ease-spring) both;
+}
+.gx-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+.gx-modal-head h2 {
+  margin: 0; font-size: var(--text-xl); font-weight: 800; letter-spacing: -0.02em;
+}
+.gx-modal-close {
+  display: grid; place-items: center;
+  width: 34px; height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--dur-base) var(--ease-std);
+}
+.gx-modal-close:hover { color: var(--text-primary); border-color: var(--glass-border-hover); }
+.gx-modal-form { display: flex; flex-direction: column; gap: var(--space-4); }

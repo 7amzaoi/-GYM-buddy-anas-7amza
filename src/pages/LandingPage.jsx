@@ -6,6 +6,50 @@ import { NavigateContext } from '../context/NavigateContext.jsx';
 // Heavy R3F + Rapier deps — only loads when the user reaches the landing page.
 const MembershipCard = lazy(() => import('../components/MembershipCard.jsx'));
 
+/**
+ * Holds the 2 MB three.js bundle off the initial render. The card only mounts
+ * once its container is in (or near) the viewport — so users who never scroll
+ * to that section never download it.
+ */
+function DeferredMembershipCard() {
+  const ref = useRef(null);
+  const [shouldMount, setShouldMount] = useState(false);
+  useEffect(() => {
+    if (shouldMount) return undefined;
+    const el = ref.current;
+    if (!el) return undefined;
+    if (!('IntersectionObserver' in window)) {
+      // Old browser fallback — mount after 2s so it still appears.
+      const t = setTimeout(() => setShouldMount(true), 2000);
+      return () => clearTimeout(t);
+    }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        setShouldMount(true);
+        io.disconnect();
+      }
+    }, { rootMargin: '400px 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [shouldMount]);
+  const skeleton = (
+    <div className="lanyard-wrapper landing-lanyard">
+      <div className="lanyard-skeleton">
+        <div className="lanyard-skeleton-strap" />
+        <div className="lanyard-skeleton-card"><div className="lanyard-skeleton-shimmer" /></div>
+        <p>Loading membership card…</p>
+      </div>
+    </div>
+  );
+  return (
+    <div ref={ref} className="lanyard-deferred">
+      {shouldMount ? (
+        <Suspense fallback={skeleton}><MembershipCard /></Suspense>
+      ) : skeleton}
+    </div>
+  );
+}
+
 // Public CDN sources tried in order. Pexels CDN now blocks hot-linking
 // (returns 403), so we use Mixkit which is explicitly hot-link friendly.
 // If all sources fail, the CSS mesh-gradient fallback shows through.
@@ -800,17 +844,7 @@ export default function LandingPage() {
           </div>
 
           <div className="card-section-stage" data-reveal>
-            <Suspense fallback={
-              <div className="lanyard-wrapper landing-lanyard">
-                <div className="lanyard-skeleton">
-                  <div className="lanyard-skeleton-strap" />
-                  <div className="lanyard-skeleton-card"><div className="lanyard-skeleton-shimmer" /></div>
-                  <p>Loading membership card…</p>
-                </div>
-              </div>
-            }>
-              <MembershipCard />
-            </Suspense>
+            <DeferredMembershipCard />
           </div>
         </div>
       </section>

@@ -1,0 +1,93 @@
+/* ============================================================
+   SMART BANNER — personalized notifications
+   ============================================================ */
+.smart-banner {
+  display: flex; align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.02));
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  animation: smartBannerIn 0.45s var(--ease-spring) both;
+}
+@keyframes smartBannerIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.smart-banner-icon {
+  display: grid; place-items: center;
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+}
+.smart-banner-text { flex: 1; min-width: 0; }
+.smart-banner-text strong {
+  display: block;
+  font-size: var(--text-sm); font-weight: 800; letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.smart-banner-text p {
+  margin: 1px 0 0;
+  font-size: var(--text-xs); color: var(--text-secondary);
+  line-height: 1.45;
+}
+.smart-banner-actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
+.smart-banner-cta {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 8px 13px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-family: inherit; font-size: var(--text-xs); font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  transition: transform var(--dur-base) var(--ease-spring), filter var(--dur-base) var(--ease-std);
+}
+.smart-banner-cta:hover { transform: translateY(-2px); }
+.smart-banner-cta:active { transform: translateY(0); }
+.smart-banner-close {
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--dur-base) var(--ease-std);
+}
+.smart-banner-close:hover { color: var(--text-primary); background: var(--glass-bg); }
+
+/* Tones */
+.smart-banner.tone-accent {
+  border-color: rgba(var(--accent-rgb), 0.32);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.smart-banner.tone-accent .smart-banner-icon { color: var(--accent); }
+.smart-banner.tone-accent .smart-banner-cta {
+  background: var(--accent); color: #0a0a0a;
+}
+.smart-banner.tone-warn {
+  border-color: rgba(255, 159, 67, 0.34);
+  box-shadow: inset 3px 0 0 #ff9f43;
+}
+.smart-banner.tone-warn .smart-banner-icon { color: #ff9f43; }
+.smart-banner.tone-warn .smart-banner-cta {
+  background: #ff9f43; color: #1a1205;
+}
+.smart-banner.tone-info {
+  border-color: rgba(88, 166, 255, 0.3);
+  box-shadow: inset 3px 0 0 #58a6ff;
+}
+.smart-banner.tone-info .smart-banner-icon { color: #58a6ff; }
+.smart-banner.tone-info .smart-banner-cta {
+  background: #58a6ff; color: #04122b;
+}
+
+@media (max-width: 640px) {
+  .smart-banner { flex-wrap: wrap; }
+  .smart-banner-text { flex-basis: calc(100% - 52px); }
+  .smart-banner-actions { width: 100%; justify-content: space-between; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .smart-banner { animation: none; }
+}

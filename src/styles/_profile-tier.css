@@ -1,0 +1,40 @@
+/* ===== Level chip on Profile hero ===== */
+.prof-level-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.25), rgba(var(--accent-rgb), 0.10));
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
+  color: var(--accent);
+  font-size: 11.5px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.35);
+}
+
+/* ===== Tier-colored badges (Profile) ===== */
+.prof-badge {
+  position: relative;
+  transition: transform var(--dur-base) var(--ease-spring), border-color var(--dur-base) var(--ease-std);
+}
+.prof-badge.is-unlocked:hover { transform: translateY(-2px); }
+
+.prof-badge.tier-bronze.is-unlocked .prof-badge-icon { color: #cd7f32; }
+.prof-badge.tier-silver.is-unlocked .prof-badge-icon { color: #c0c0c0; }
+.prof-badge.tier-gold.is-unlocked   .prof-badge-icon { color: #ffd700; filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.45)); }
+
+.prof-badge.tier-bronze.is-unlocked { border-color: rgba(205, 127, 50, 0.45); box-shadow: 0 0 0 1px rgba(205, 127, 50, 0.12); }
+.prof-badge.tier-silver.is-unlocked { border-color: rgba(192, 192, 192, 0.45); box-shadow: 0 0 0 1px rgba(192, 192, 192, 0.14); }
+.prof-badge.tier-gold.is-unlocked   { border-color: rgba(255, 215, 0, 0.55);   box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.18), 0 0 18px rgba(255, 215, 0, 0.18); }
+
+@media (max-width: 640px) {
+  .dash-xp-head { flex-direction: column; align-items: flex-start; }
+  .dash-xp-right { align-self: flex-end; }
+  .dash-freeze { flex-wrap: wrap; gap: 6px; }
+  .dash-freeze-note { flex-basis: 100%; order: 3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-xp-fill::after { animation: none; }
+}
+

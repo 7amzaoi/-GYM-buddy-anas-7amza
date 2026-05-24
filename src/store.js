@@ -21,6 +21,11 @@ function emptyProgressData() {
   };
 }
 
+function numOrNull(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 function startOfDay(d) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
@@ -137,6 +142,7 @@ export const Store = {
       records: [],
       chatMessages: [],
       activeSession: null,
+      bodyMeasurements: [],
       _stateVersion: STATE_VERSION
     };
 
@@ -309,6 +315,68 @@ export const Store = {
     }
   },
 
+  /** Starts an empty freestyle workout — exercises added on the fly. */
+  startFreestyleSession() {
+    this.set('activeSession', {
+      planId: null,
+      planName: 'Freestyle Workout',
+      isFreestyle: true,
+      exercises: [],
+      startTime: Date.now(),
+      calories: 0,
+    });
+  },
+
+  /** Append an exercise (with default sets pre-filled) to the active session. */
+  addExerciseToSession(exerciseId) {
+    this.update('activeSession', s => {
+      if (!s) return s;
+      const exData = getExerciseById(exerciseId);
+      const numSets = exData ? exData.sets : 3;
+      const sets = Array.from({ length: numSets }, () => ({ weight: '', reps: '', done: false }));
+      s.exercises = [...(s.exercises || []), { id: exerciseId, sets }];
+      // Re-estimate calories at ~50 kcal per exercise so the summary is sensible.
+      s.calories = (s.exercises.length) * 50;
+      return s;
+    });
+  },
+
+  removeExerciseFromSession(idx) {
+    this.update('activeSession', s => {
+      if (!s) return s;
+      s.exercises = (s.exercises || []).filter((_, i) => i !== idx);
+      s.calories = (s.exercises.length) * 50;
+      return s;
+    });
+  },
+
+  /** Discard the active session without saving to history. */
+  discardSession() {
+    this.set('activeSession', null);
+  },
+
+  /** Append a body-measurements entry. Empty values are stored as null. */
+  logBodyMeasurements(values) {
+    const entry = {
+      id: `bm_${Date.now()}`,
+      date: new Date().toISOString(),
+      chest: numOrNull(values.chest),
+      shoulders: numOrNull(values.shoulders),
+      biceps: numOrNull(values.biceps),
+      waist: numOrNull(values.waist),
+      hips: numOrNull(values.hips),
+      thighs: numOrNull(values.thighs),
+      calves: numOrNull(values.calves),
+      neck: numOrNull(values.neck),
+      notes: (values.notes || '').toString().trim() || null,
+    };
+    this.update('bodyMeasurements', list => [entry, ...(list || [])]);
+  },
+
+  removeBodyMeasurement(id) {
+    this.update('bodyMeasurements', list => (list || []).filter(b => b.id !== id));
+  },
+
   completeSession() {
     const session = this.get('activeSession');
     if (!session) return;
@@ -324,6 +392,21 @@ export const Store = {
       }
     }
 
+    // Per-exercise breakdown for analytics (Phase B): volume by muscle, overload hints, etc.
+    const exerciseLog = (session.exercises || []).map(ex => {
+      let volume = 0;
+      let bestWeight = 0, bestReps = 0;
+      for (const ls of (ex.sets || [])) {
+        if (!ls?.done) continue;
+        const w = parseFloat(ls.weight) || 0;
+        const r = parseInt(ls.reps, 10) || 0;
+        volume += w * r;
+        if (w > bestWeight) { bestWeight = w; bestReps = r; }
+      }
+      const doneSets = (ex.sets || []).filter(s => s.done).length;
+      return { id: ex.id, volume, doneSets, bestWeight, bestReps };
+    }).filter(e => e.doneSets > 0);
+
     const entry = {
       id: Date.now().toString(),
       planId: session.planId,
@@ -331,6 +414,7 @@ export const Store = {
       date: new Date().toISOString(),
       duration: Math.round((Date.now() - session.startTime) / 60000),
       exercises: session.exercises.length,
+      exerciseLog,
       completed: session.exercises.filter(e => (e.sets || []).some(s => s.done)).length,
       calories: Number(session.calories) || 0,
       volume: sessionVolume

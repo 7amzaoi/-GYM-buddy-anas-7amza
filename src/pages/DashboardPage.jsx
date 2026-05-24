@@ -1,23 +1,23 @@
-import { useMemo, useState, useContext } from 'react';
+import { useMemo, useState, useContext, useEffect, useRef } from 'react';
 import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
 import { getRandomQuote } from '../data.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { setWater } from '../lib/interactions.js';
 import { renderPerfAreaChart } from './dashboardCharts.js';
+import { revealOnScroll } from '../lib/motion.js';
+import SmartBanner from '../components/SmartBanner.jsx';
+import { computeXp, levelFromXp, titleForLevel, computeFreezes, consumeFreeze } from '../lib/gamification.js';
+import { Toast } from '../lib/interactions.js';
 
 const perfLabels = {
   strengthVolume: 'Strength Volume',
   caloriesBurned: 'Calories Burned',
-  duration: 'Duration (min)'
+  duration: 'Duration (min)',
 };
-const perfUnits = {
-  strengthVolume: 'kg',
-  caloriesBurned: 'cal',
-  duration: 'min'
-};
+const perfUnits = { strengthVolume: 'kg', caloriesBurned: 'cal', duration: 'min' };
 
-/** Local-only calculator — not persisted (no Store / DB). */
+/** Local-only BMI estimate — not persisted. */
 function BMIBlock() {
   const [heightCm, setHeightCm] = useState(175);
   const [weightKg, setWeightKg] = useState(80);
@@ -37,154 +37,98 @@ function BMIBlock() {
   const pct = Number.isFinite(bmiNum) ? Math.min(Math.max(((bmiNum - 15) / 25) * 100, 0), 100) : 0;
 
   return (
-    <div className="card animate-slide-up delay-4" style={{ marginBottom: '24px' }}>
-      <h3 style={{ marginBottom: '16px' }}>📏 BMI Calculator</h3>
-      <p style={{ fontSize: '.8rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-        Quick estimate only. Age isn&apos;t part of the BMI formula — it&apos;s just for your notes. Nothing here is saved.
-      </p>
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div className="input-group" style={{ flex: 1, minWidth: '120px' }}>
-          <label>Height (cm)</label>
-          <input
-            className="input"
-            type="number"
-            min={80}
-            max={250}
-            value={heightCm}
-            onChange={ev => setHeightCm(Math.max(0, parseFloat(ev.target.value) || 0))}
-          />
-        </div>
-        <div className="input-group" style={{ flex: 1, minWidth: '120px' }}>
-          <label>Weight (kg)</label>
-          <input
-            className="input"
-            type="number"
-            min={20}
-            max={400}
-            value={weightKg}
-            onChange={ev => setWeightKg(Math.max(0, parseFloat(ev.target.value) || 0))}
-          />
-        </div>
-        <div className="input-group" style={{ flex: 1, minWidth: '120px' }}>
-          <label>Age</label>
-          <input
-            className="input"
-            type="number"
-            min={10}
-            max={120}
-            value={age}
-            onChange={ev => setAge(Math.max(0, parseInt(ev.target.value, 10) || 0))}
-          />
-        </div>
+    <div className="gx-card dash-bmi" data-reveal>
+      <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
+        <span className="gx-eyebrow">{icon('activity', 13)} Body Index</span>
+        <h3 className="gx-title" style={{ fontSize: 'var(--text-xl)' }}>BMI Calculator</h3>
+        <p className="gx-subtitle">Quick estimate only — nothing here is saved.</p>
       </div>
-      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-        <div style={{ fontSize: '2.5rem', fontWeight: 800, color }}>{bmi}</div>
-        <div style={{ fontSize: '.9rem', color, fontWeight: 600 }}>{category}</div>
+      <div className="dash-bmi-fields">
+        {[
+          { label: 'Height (cm)', value: heightCm, set: setHeightCm, min: 80, max: 250 },
+          { label: 'Weight (kg)', value: weightKg, set: setWeightKg, min: 20, max: 400 },
+          { label: 'Age', value: age, set: (v) => setAge(v), min: 10, max: 120 },
+        ].map((f) => (
+          <label key={f.label} className="dash-field">
+            <span>{f.label}</span>
+            <input
+              type="number"
+              min={f.min}
+              max={f.max}
+              value={f.value}
+              onChange={(e) => f.set(Math.max(0, parseFloat(e.target.value) || 0))}
+            />
+          </label>
+        ))}
       </div>
-      <div
-        style={{
-          position: 'relative',
-          height: '8px',
-          background: 'linear-gradient(90deg,#0EA5E9,#2ED573,#FFA502,#FF4757)',
-          borderRadius: '4px'
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: '-4px',
-            left: `${pct}%`,
-            width: '16px',
-            height: '16px',
-            background: '#fff',
-            borderRadius: '50%',
-            transform: 'translateX(-50%)',
-            boxShadow: '0 2px 8px rgba(0,0,0,.3)',
-            transition: 'left .5s ease'
-          }}
-        />
+      <div className="dash-bmi-readout">
+        <div className="dash-bmi-num" style={{ color }}>{bmi}</div>
+        <div className="dash-bmi-cat" style={{ color }}>{category}</div>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: '.7rem',
-          color: 'var(--text-secondary)',
-          marginTop: '6px'
-        }}
-      >
-        <span>Underweight</span>
-        <span>Normal</span>
-        <span>Overweight</span>
-        <span>Obese</span>
+      <div className="dash-bmi-track">
+        <div className="dash-bmi-marker" style={{ left: `${pct}%` }} />
+      </div>
+      <div className="dash-bmi-scale">
+        <span>Under</span><span>Normal</span><span>Over</span><span>Obese</span>
       </div>
     </div>
   );
 }
 
-function WaterCompact() {
+function WaterCard() {
   const water = Store.get('waterIntake') || 0;
   const goal = 8;
   const pct = Math.min((water / goal) * 100, 100);
   return (
-    <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3>💧 Water Intake</h3>
-        <span className={`badge ${water >= goal ? 'badge-success' : 'badge-accent'}`}>
-          {water}/{goal}
-        </span>
+    <div className="gx-card" data-reveal>
+      <div className="dash-card-head">
+        <span className="gx-eyebrow">{icon('activity', 13)} Hydration</span>
+        <span className={`gx-badge ${water >= goal ? 'is-accent' : ''}`}>{water}/{goal} glasses</span>
       </div>
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+      <div className="dash-water-row">
         {Array.from({ length: goal }, (_, i) => (
-          <div
+          <button
             key={i}
-            role="presentation"
+            type="button"
+            className={`dash-water-cell ${i < water ? 'is-filled' : ''}`}
             onClick={() => setWater(i + 1)}
-            style={{
-              flex: 1,
-              height: '36px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all .3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '.75rem',
-              background: i < water ? 'linear-gradient(to top, #0EA5E9, #38BDF8)' : 'var(--bg-card)',
-              border: `1px solid ${i < water ? '#0EA5E9' : 'var(--border)'}`,
-              color: i < water ? '#fff' : 'var(--text-secondary)'
-            }}
+            aria-label={`Set water to ${i + 1}`}
           >
-            {i < water ? '💧' : String(i + 1)}
-          </div>
+            {i < water ? icon('check', 13) : i + 1}
+          </button>
         ))}
       </div>
-      <div style={{ height: '5px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
-        <div
-          style={{
-            height: '100%',
-            width: `${pct}%`,
-            background: 'linear-gradient(90deg,#0EA5E9,#38BDF8)',
-            borderRadius: '3px',
-            transition: 'width .6s ease'
-          }}
-        />
+      <div className="dash-progress-track">
+        <div className="dash-progress-fill dash-progress-water" style={{ width: `${pct}%` }} />
       </div>
-    </>
+    </div>
   );
 }
 
 export default function DashboardPage() {
   const navigateToPage = useContext(NavigateContext);
+  const rootRef = useRef(null);
   const [perfMetric, setPerfMetric] = useState('strengthVolume');
   const [quote] = useState(() => getRandomQuote());
 
   const user = Store.get('user');
   const progress = Store.get('progressData');
   const history = Store.get('workoutHistory');
+  const records = Store.get('records') || [];
   const metricsLog = Store.get('metricsLog') || [];
+
+  // Gamification — derived from existing data, no new persistent state.
+  const xp = computeXp({ history, records, streak: progress.streak || 0 });
+  const lvl = levelFromXp(xp);
+  const tier = titleForLevel(lvl.level);
+  const freezes = computeFreezes();
+
+  function handleUseFreeze() {
+    const res = consumeFreeze();
+    if (res.ok) Toast.show('Streak freeze used — your streak is safe!', 'success', 2500);
+    else Toast.show('No freezes available yet.', 'warning');
+  }
   Store.get('waterIntake');
-  Store.get('bmiData');
 
   const currentWeight = Number.isFinite(Number(user?.weight_kg))
     ? Number(user.weight_kg)
@@ -194,152 +138,236 @@ export default function DashboardPage() {
   const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = new Date().getDay();
+  const firstName = (user?.name || 'Athlete').trim().split(/\s+/)[0];
 
   const perf = progress?.weeklyPerformance || {
     strengthVolume: [0, 0, 0, 0, 0, 0, 0],
     caloriesBurned: [0, 0, 0, 0, 0, 0, 0],
-    duration: [0, 0, 0, 0, 0, 0, 0]
+    duration: [0, 0, 0, 0, 0, 0, 0],
   };
-
   const chartMarkup = useMemo(
     () => renderPerfAreaChart(perf[perfMetric], perfUnits[perfMetric]),
     [perfMetric, perf]
   );
 
+  // Personalized weekly summary line
+  const weekVol = (perf.strengthVolume || []).reduce((a, b) => a + b, 0);
+  const summary =
+    progress.workoutsThisWeek >= 4
+      ? 'Strong week — you are ahead of most athletes. Keep the streak alive.'
+      : progress.workoutsThisWeek >= 1
+        ? 'Solid start this week. One more session pushes you into the top tier.'
+        : 'Fresh week, clean slate. Log a session to get the momentum going.';
+
+  const stats = [
+    { icon: 'fire', value: progress.calories.at(-1)?.value || 0, suffix: ' cal', label: 'Calories Today' },
+    { icon: 'activity', value: progress.workoutsThisWeek, suffix: '', label: 'Workouts This Week' },
+    { icon: 'target', value: progress.totalWorkouts, suffix: '', label: 'Total Workouts' },
+  ];
+
+  useEffect(() => {
+    const cleanup = revealOnScroll(rootRef.current, '[data-reveal]', { y: 28, stagger: 0.06 });
+    return cleanup;
+  }, []);
+
   return (
-    <>
-      <div className="page-header animate-fade">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="dash" ref={rootRef}>
+      {/* ===== Hero header ===== */}
+      <header className="dash-hero" data-reveal>
+        <div className="dash-hero-glow" aria-hidden="true" />
+        <div className="dash-hero-main">
+          <span className="gx-eyebrow">{greeting}</span>
+          <h1 className="dash-hero-title">
+            Hey <span className="dash-accent">{firstName}</span>
+          </h1>
+          <p className="dash-hero-quote">{quote}</p>
+        </div>
+        <div className="dash-streak-chip" title="Current streak">
+          <span className="dash-streak-icon">{icon('fire', 22)}</span>
+          <span className="dash-streak-num">{progress.streak}</span>
+          <span className="dash-streak-label">day streak</span>
+        </div>
+      </header>
+
+      {/* ===== Smart notification ===== */}
+      <SmartBanner />
+
+      {/* ===== Weekly summary banner ===== */}
+      <div className="dash-summary" data-reveal>
+        <span className="dash-summary-icon">{icon('zap', 18)}</span>
+        <p>{summary}</p>
+        <button type="button" className="gx-btn gx-btn-primary dash-summary-cta" onClick={() => navigateToPage?.('planner')}>
+          {icon('dumbbell', 16)} Start a Workout
+        </button>
+      </div>
+
+      {/* ===== XP / Level card ===== */}
+      <div className="gx-card dash-xp" data-reveal>
+        <div className="dash-xp-head">
+          <div className="dash-xp-left">
+            <span className="dash-xp-tier">{tier}</span>
+            <h3 className="dash-xp-level">
+              Level <span className="dash-xp-level-num">{lvl.level}</span>
+            </h3>
+          </div>
+          <div className="dash-xp-right">
+            <span className="dash-xp-current" data-counter={xp}>{xp.toLocaleString()}</span>
+            <span className="dash-xp-suffix">XP</span>
+          </div>
+        </div>
+        <div className="dash-xp-track">
+          <div className="dash-xp-fill" style={{ width: `${lvl.pct}%` }} />
+        </div>
+        <div className="dash-xp-foot">
+          <span>{lvl.currentInLevel.toLocaleString()} / {lvl.neededForLevel.toLocaleString()} XP this level</span>
+          <span className="dash-xp-next">{(lvl.neededForLevel - lvl.currentInLevel).toLocaleString()} to Level {lvl.level + 1}</span>
+        </div>
+      </div>
+
+      {/* ===== Stat bento ===== */}
+      <div className="dash-stats">
+        {stats.map((s) => (
+          <div key={s.label} className="gx-card dash-stat-card" data-reveal>
+            <span className="dash-stat-icon">{icon(s.icon, 20)}</span>
+            <div className="gx-stat-value" data-counter={s.value} data-suffix={s.suffix}>0</div>
+            <div className="gx-stat-label">{s.label}</div>
+          </div>
+        ))}
+        <div className="gx-card dash-stat-card" data-reveal>
+          <span className="dash-stat-icon">{icon('chart', 20)}</span>
+          <div className="gx-stat-value">
+            {currentWeight ?? '--'}<span className="dash-stat-unit"> kg</span>
+          </div>
+          <div className="gx-stat-label">Current Weight</div>
+        </div>
+      </div>
+
+      {/* ===== Weekly performance chart ===== */}
+      <div className="gx-card dash-chart-card" data-reveal id="perf-chart-card">
+        <div className="dash-card-head">
           <div>
-            <h1>
-              {greeting},{' '}
-              <span style={{ color: 'var(--accent)' }}>{user?.name || 'Athlete'}</span> 👋
-            </h1>
-            <p>{quote}</p>
+            <span className="gx-eyebrow">{icon('chart', 13)} This Week</span>
+            <h3 className="gx-title dash-chart-title">{perfLabels[perfMetric]}</h3>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {icon('fire', 20)}
-            <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent)' }}>{progress.streak}</span>
-            <span style={{ fontSize: '.85rem', color: 'var(--text-secondary)' }}>day streak</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-4 animate-slide-up delay-1" style={{ marginBottom: '24px' }}>
-        <div className="card stat-card card-tilt" data-tooltip="Total calories burned today">
-          <div className="stat-icon">{icon('fire', 22)}</div>
-          <div className="stat-value" style={{ color: 'var(--accent)' }} data-counter={progress.calories.at(-1)?.value || 0} data-suffix=" cal">
-            0
-          </div>
-          <div className="stat-label">Calories Today</div>
-        </div>
-        <div className="card stat-card card-tilt" data-tooltip="Workouts completed this week">
-          <div className="stat-icon">{icon('activity', 22)}</div>
-          <div className="stat-value" data-counter={progress.workoutsThisWeek}>0</div>
-          <div className="stat-label">Workouts This Week</div>
-        </div>
-        <div className="card stat-card card-tilt" data-tooltip="Lifetime workout count">
-          <div className="stat-icon">{icon('target', 22)}</div>
-          <div className="stat-value" data-counter={progress.totalWorkouts}>0</div>
-          <div className="stat-label">Total Workouts</div>
-        </div>
-        <div className="card stat-card card-tilt" data-tooltip="Your current body weight">
-          <div className="stat-icon">{icon('zap', 22)}</div>
-          <div className="stat-value">
-            {currentWeight ?? '--'}
-            <span style={{ fontSize: '.9rem', fontWeight: 400 }}> kg</span>
-          </div>
-          <div className="stat-label">Current Weight</div>
-        </div>
-      </div>
-
-      <div className="card animate-slide-up delay-2" style={{ marginBottom: '24px', padding: '28px 28px 20px' }} id="perf-chart-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <h3 style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.5px', fontSize: '1rem' }}>Weekly Performance</h3>
-            <span className="badge badge-accent" style={{ textTransform: 'uppercase', fontSize: '.7rem', letterSpacing: '.5px' }}>
-              {perfLabels[perfMetric]}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button type="button" className={`perf-tab ${perfMetric === 'strengthVolume' ? 'active' : ''}`} onClick={() => setPerfMetric('strengthVolume')}>
-              Volume
-            </button>
-            <button type="button" className={`perf-tab ${perfMetric === 'caloriesBurned' ? 'active' : ''}`} onClick={() => setPerfMetric('caloriesBurned')}>
-              Calories
-            </button>
-            <button type="button" className={`perf-tab ${perfMetric === 'duration' ? 'active' : ''}`} onClick={() => setPerfMetric('duration')}>
-              Duration
-            </button>
+          <div className="dash-tabs">
+            {[
+              ['strengthVolume', 'Volume'],
+              ['caloriesBurned', 'Calories'],
+              ['duration', 'Duration'],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={`dash-tab ${perfMetric === key ? 'is-active' : ''}`}
+                onClick={() => setPerfMetric(key)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
         <div
           id="perf-chart-container"
-          style={{ position: 'relative', height: '260px', cursor: 'crosshair' }}
+          className="dash-chart-area"
           dangerouslySetInnerHTML={{ __html: chartMarkup }}
         />
+        <div className="dash-chart-foot">
+          Total volume this week: <strong>{weekVol.toLocaleString()} kg</strong>
+        </div>
       </div>
 
-      <div className="grid grid-2 animate-slide-up delay-3" style={{ marginBottom: '24px' }}>
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3>{icon('fire', 18)} Activity Streak</h3>
-            <span className="badge badge-accent">
-              {icon('trophy', 12)} Keep it up!
-            </span>
+      {/* ===== Streak + Water ===== */}
+      <div className="dash-grid-2">
+        <div className="gx-card" data-reveal>
+          <div className="dash-card-head">
+            <span className="gx-eyebrow">{icon('fire', 13)} Activity Streak</span>
+            <span className="gx-badge is-accent">{icon('trophy', 11)} Keep going</span>
           </div>
-          <div className="streak-bar">
+          <div className="dash-freeze">
+            <span className="dash-freeze-pill">
+              {icon('star', 11)} {freezes.available} freeze{freezes.available === 1 ? '' : 's'}
+            </span>
+            <span className="dash-freeze-note">
+              {freezes.untilNext === 0
+                ? 'New freeze ready!'
+                : `+1 in ${freezes.untilNext} workout${freezes.untilNext === 1 ? '' : 's'}`}
+            </span>
+            {freezes.available > 0 && (
+              <button type="button" className="dash-freeze-use" onClick={handleUseFreeze}>
+                Use
+              </button>
+            )}
+          </div>
+          <div className="dash-streak-week">
             {days.map((d, i) => {
-              const isDone = i <= today && i >= today - progress.streak + 1 && i <= today;
+              const isDone = i <= today && i >= today - progress.streak + 1;
               const isToday = i === today;
               return (
-                <div key={d} className={`streak-day ${isDone ? 'done' : ''} ${isToday && !isDone ? 'today' : ''}`}>{d}</div>
+                <div
+                  key={d}
+                  className={`dash-day ${isDone ? 'is-done' : ''} ${isToday && !isDone ? 'is-today' : ''}`}
+                >
+                  {d}
+                </div>
               );
             })}
           </div>
         </div>
-        <div className="card">
-          <WaterCompact />
-        </div>
+        <WaterCard />
       </div>
 
-      <div className="grid grid-2 animate-slide-up delay-4" style={{ marginBottom: '24px' }}>
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3>{icon('clock', 18)} Recent Workouts</h3>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigateToPage?.('progress')} style={{ fontSize: '.75rem' }}>
-              View All →
+      {/* ===== Recent workouts + PRs ===== */}
+      <div className="dash-grid-2">
+        <div className="gx-card" data-reveal>
+          <div className="dash-card-head">
+            <span className="gx-eyebrow">{icon('clock', 13)} Recent Workouts</span>
+            <button type="button" className="dash-link" onClick={() => navigateToPage?.('progress')}>
+              View all {icon('arrow', 12)}
             </button>
           </div>
           {history.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)' }}>No workouts yet. Start your first session!</p>
+            <div className="dash-empty">
+              <span className="dash-empty-icon">{icon('dumbbell', 26)}</span>
+              <p>No workouts yet — your first session starts the streak.</p>
+            </div>
           ) : (
-            history.slice(0, 3).map(w => (
-              <div key={w.id || w.planName + w.date} className="exercise-item" style={{ marginBottom: '8px' }}>
-                <div className="stat-icon">{icon('dumbbell', 18)}</div>
-                <div className="exercise-info">
-                  <h4>{w.planName}</h4>
-                  <p>{w.duration || '?'} min · {w.calories} cal</p>
+            <div className="dash-list">
+              {history.slice(0, 3).map((w) => (
+                <div key={w.id || w.planName + w.date} className="dash-workout-row">
+                  <span className="dash-workout-icon">{icon('dumbbell', 16)}</span>
+                  <div className="dash-workout-info">
+                    <h4>{w.planName}</h4>
+                    <p>{w.duration || '?'} min · {w.calories} cal</p>
+                  </div>
+                  <span className="gx-badge is-accent">{icon('check', 11)} Done</span>
                 </div>
-                <span className="badge badge-success">{icon('check', 12)} Done</span>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
-        <div className="card">
-          <h3 style={{ marginBottom: '16px' }}>{icon('trophy', 18)} Personal Records</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {Object.entries(progress.personalRecords || {}).map(([name, val]) => (
-              <div key={name} className="summary-row">
-                <span>{name}</span>
-                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{val}</span>
-              </div>
-            ))}
+        <div className="gx-card" data-reveal>
+          <div className="dash-card-head">
+            <span className="gx-eyebrow">{icon('trophy', 13)} Personal Records</span>
           </div>
+          {Object.keys(progress.personalRecords || {}).length === 0 ? (
+            <div className="dash-empty">
+              <span className="dash-empty-icon">{icon('trophy', 26)}</span>
+              <p>No PRs logged yet. They appear here automatically.</p>
+            </div>
+          ) : (
+            <div className="dash-list">
+              {Object.entries(progress.personalRecords || {}).map(([name, val]) => (
+                <div key={name} className="dash-pr-row">
+                  <span>{name}</span>
+                  <span className="dash-pr-val">{val}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       <BMIBlock />
-    </>
+    </div>
   );
 }

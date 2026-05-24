@@ -1,0 +1,1466 @@
+/* ============================================================
+   DOWNLOAD PAGE — forced dark theme, glassmorphism, sticky mobile CTA
+   ============================================================ */
+
+.download-page {
+  --dl-bg: #0a0a0a;
+  --dl-fg: #ffffff;
+  --dl-muted: rgba(255, 255, 255, 0.65);
+  --dl-dim: rgba(255, 255, 255, 0.45);
+  --dl-accent: #d4ff00;
+  --dl-accent-2: #b8e600;
+  --dl-glass: rgba(255, 255, 255, 0.05);
+  --dl-glass-border: rgba(255, 255, 255, 0.12);
+
+  position: relative;
+  min-height: 100vh;
+  background: var(--dl-bg);
+  color: var(--dl-fg);
+  font-family: inherit;
+  overflow-x: hidden;
+  padding-bottom: 110px; /* room for sticky mobile CTA */
+}
+
+/* ---- Backdrop: LiquidEther fluid sim + dark overlay + ambient glows ---- */
+.download-page .dl-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  /* Slight green tint under the canvas — makes the fluid feel like it
+     sits in its own ambient haze instead of pure black. */
+  background: #060805;
+}
+/* The fluid canvas — LiquidEther's mouse handler listens at the window
+   level, so we set pointer-events:none on the wrapper itself. That way
+   the fluid still reacts to mouse movement everywhere, but buttons and
+   links sitting above stay clickable. */
+.download-page .dl-liquid,
+.download-page .liquid-ether-container {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none;
+}
+/* Loading state — solid dark while three chunk fetches */
+.download-page .dl-backdrop-fallback {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #0c1408 0%, #050505 70%);
+}
+/* Overlay tuned so the fluid colors come through brightly at the top,
+   then gradually fade to darker tones down the page to keep text readable
+   over the lower sections. Top stays light (0.18) for vivid fluid color,
+   bottom stays dark (0.70) so feature/stat text reads cleanly. */
+.download-page .dl-backdrop-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212, 255, 0, 0.10), transparent 60%),
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0.18) 0%,
+      rgba(0, 0, 0, 0.32) 35%,
+      rgba(0, 0, 0, 0.55) 65%,
+      rgba(0, 0, 0, 0.78) 100%);
+}
+.download-page .dl-backdrop-glow {
+  position: absolute;
+  width: 540px;
+  height: 540px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+.download-page .dl-backdrop-glow-1 {
+  top: -120px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(212, 255, 0, 0.32), transparent 70%);
+}
+.download-page .dl-backdrop-glow-2 {
+  bottom: -200px;
+  right: -180px;
+  background: radial-gradient(circle, rgba(132, 255, 142, 0.22), transparent 70%);
+}
+
+/* ---- Top nav ---- */
+.download-page .dl-nav {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 36px;
+  max-width: 1280px;
+  margin: 0 auto;
+  gap: 16px;
+}
+.download-page .dl-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--dl-glass);
+  border: 1px solid var(--dl-glass-border);
+  border-radius: 999px;
+  color: var(--dl-fg);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.18s ease;
+}
+.download-page .dl-back:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(212, 255, 0, 0.4);
+  transform: translateX(-2px);
+}
+.download-page .dl-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Section 1: HERO ---- */
+.download-page .dl-hero {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: center;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 56px 36px 110px;
+}
+.download-page .dl-hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 22px;
+}
+
+/* Pill badge with green dot */
+.download-page .dl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  background: var(--dl-glass);
+  border: 1px solid var(--dl-glass-border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.download-page .dl-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dl-accent);
+  box-shadow: 0 0 10px var(--dl-accent), 0 0 22px rgba(212, 255, 0, 0.4);
+  animation: dlPulse 1.6s ease-in-out infinite;
+}
+@keyframes dlPulse {
+  50% { box-shadow: 0 0 14px var(--dl-accent), 0 0 32px rgba(212, 255, 0, 0.7); }
+}
+
+/* H1 */
+.download-page .dl-h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 6.4vw, 4.6rem);
+  line-height: 1.04;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: var(--dl-fg);
+}
+/* .dl-accent visual treatment (shimmer gradient) is defined later in the
+   GSAP-extras block; kept there so the animation lives next to its keyframe. */
+
+/* Subtitle */
+.download-page .dl-sub {
+  margin: 0;
+  font-size: clamp(0.98rem, 1.25vw, 1.12rem);
+  color: var(--dl-muted);
+  line-height: 1.55;
+  max-width: 520px;
+}
+
+/* ---- Store buttons (custom two-line glass) ---- */
+.download-page .dl-store-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+.download-page .dl-store-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px 12px 18px;
+  min-width: 188px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  color: var(--dl-fg);
+  font-family: inherit;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  /* transform is omitted here: the magnetic-drift JS owns it via raf
+     lerp, and a CSS transition on transform would fight that loop. */
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    filter 0.12s ease;
+}
+.download-page .dl-store-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(212, 255, 0, 0.55);
+  box-shadow: 0 14px 32px rgba(212, 255, 0, 0.22);
+}
+.download-page .dl-store-btn:hover .dl-store-btn-icon { color: var(--dl-accent); }
+/* Press feedback via filter (not transform — JS owns transform) */
+.download-page .dl-store-btn:active { filter: brightness(0.9); }
+/* Compact buttons (mobile sticky bar) keep a simple CSS lift since the
+   magnetic JS skips them. */
+.download-page .dl-store-btn.is-compact {
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.16s ease;
+}
+.download-page .dl-store-btn.is-compact:active { transform: scale(0.96); }
+.download-page .dl-store-btn-icon {
+  display: inline-flex;
+  color: rgba(255, 255, 255, 0.9);
+  transition: color 0.25s ease;
+}
+.download-page .dl-store-btn-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  text-align: left;
+}
+.download-page .dl-store-btn-sub {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+}
+.download-page .dl-store-btn-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+}
+.download-page .dl-store-btn.is-compact {
+  padding: 10px 14px;
+  min-width: 0;
+  flex: 1;
+}
+.download-page .dl-store-btn.is-compact .dl-store-btn-name { font-size: 0.95rem; }
+
+/* ---- Social proof pill ---- */
+.download-page .dl-social {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 16px 8px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--dl-glass-border);
+  border-radius: 999px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  margin-top: 6px;
+}
+.download-page .dl-avatars {
+  display: inline-flex;
+  align-items: center;
+}
+.download-page .dl-avatars img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #0a0a0a;
+  margin-left: -10px;
+  transition: transform 0.3s ease;
+}
+.download-page .dl-avatars img:first-child { margin-left: 0; }
+.download-page .dl-avatars img:hover {
+  transform: translateY(-3px) scale(1.08);
+  z-index: 99 !important;
+}
+.download-page .dl-social-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.download-page .dl-social-stars {
+  color: var(--dl-accent);
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  filter: drop-shadow(0 0 4px rgba(212, 255, 0, 0.45));
+}
+.download-page .dl-social-text {
+  font-size: 0.82rem;
+  color: var(--dl-muted);
+  margin-top: 2px;
+}
+.download-page .dl-social-text strong {
+  color: var(--dl-fg);
+  font-weight: 700;
+}
+
+/* ---- Modern dual-iPhone mockup with physics tilt + organic float ---- */
+.download-page .dl-hero-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 580px;
+  perspective: 1600px;
+  perspective-origin: 50% 50%;
+}
+.download-page .dl-phone-stack {
+  /* Outer layer — owns mouse parallax tilt. raf lerp from the cursor
+     position sets --mouse-rx / --mouse-ry; transform reads those vars.
+     Float is on a separate child element so the two never fight. */
+  --mouse-rx: 0deg;
+  --mouse-ry: 0deg;
+  position: relative;
+  width: 280px;
+  height: 580px;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--mouse-rx)) rotateY(var(--mouse-ry));
+  will-change: transform;
+}
+
+/* Inner layer — owns the organic float. CSS keyframe is bulletproof
+   (no GSAP / StrictMode interaction can kill it). */
+.download-page .dl-phone-bob {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  animation: phoneBob 4.6s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes phoneBob {
+  0%, 100% { transform: translate3d(0, 0px,   0) rotateZ(0deg); }
+  25%      { transform: translate3d(0, -8px,  0) rotateZ(0.6deg); }
+  50%      { transform: translate3d(0, -14px, 0) rotateZ(0deg); }
+  75%      { transform: translate3d(0, -8px,  0) rotateZ(-0.6deg); }
+}
+
+.download-page .dl-phone {
+  position: absolute;
+  width: 280px;
+  height: 580px;
+  border-radius: 44px;
+  padding: 9px;
+  /* Premium titanium-style frame: layered gradients give the impression
+     of milled metal catching light at the edges */
+  background:
+    linear-gradient(135deg, #2a2a2e 0%, #131316 35%, #0a0a0c 70%, #1e1e22 100%);
+  box-shadow:
+    /* outer ambient + brand glow */
+    0 50px 120px rgba(0, 0, 0, 0.75),
+    0 0 90px rgba(212, 255, 0, 0.18),
+    /* the thin titanium edge highlight */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+    /* inner shadow that defines the bezel */
+    inset 0 2px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5);
+  transform-style: preserve-3d;
+}
+
+/* Outer milled frame ring — adds depth between the body and screen */
+.download-page .dl-phone-frame {
+  position: absolute;
+  inset: 4px;
+  border-radius: 40px;
+  background: linear-gradient(160deg, #1c1c1f 0%, #0c0c0e 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+/* Diagonal glass shine — moves slightly as the phone tilts */
+.download-page .dl-phone-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 44px;
+  background: linear-gradient(
+    115deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.16) 50%,
+    rgba(255, 255, 255, 0.06) 60%,
+    transparent 75%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.7;
+}
+
+/* Side buttons — power, volume up, volume down */
+.download-page .dl-phone-side {
+  position: absolute;
+  background: linear-gradient(90deg, #1a1a1d 0%, #0a0a0c 100%);
+  border-radius: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+}
+.download-page .dl-phone-side-power {
+  right: -2px;
+  top: 150px;
+  width: 3px;
+  height: 80px;
+}
+.download-page .dl-phone-side-volup {
+  left: -2px;
+  top: 110px;
+  width: 3px;
+  height: 40px;
+}
+.download-page .dl-phone-side-voldown {
+  left: -2px;
+  top: 160px;
+  width: 3px;
+  height: 40px;
+}
+
+/* Dynamic Island — replaces old notch */
+.download-page .dl-phone-island {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 96px;
+  height: 28px;
+  background: #000;
+  border-radius: 999px;
+  z-index: 4;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.06),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+/* Faux sensor + camera dots inside the island */
+.download-page .dl-phone-island::before,
+.download-page .dl-phone-island::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: radial-gradient(circle at 35% 30%, #2a2a2e 0%, #050507 70%);
+  border-radius: 50%;
+}
+.download-page .dl-phone-island::before {
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  box-shadow: inset 0 0 2px rgba(212, 255, 0, 0.4);
+}
+.download-page .dl-phone-island::after {
+  left: 14px;
+  width: 4px;
+  height: 4px;
+}
+
+/* Layout: back phone tilts left & sits lower; front phone tilts right & sits higher */
+.download-page .dl-phone-back {
+  left: -52px;
+  top: 32px;
+  transform: rotate(-9deg) translateZ(-30px);
+  filter: brightness(0.92) saturate(0.95);
+  opacity: 0.95;
+}
+.download-page .dl-phone-front {
+  left: 52px;
+  top: -16px;
+  transform: rotate(6deg) translateZ(20px);
+  z-index: 3;
+  box-shadow:
+    0 60px 140px rgba(0, 0, 0, 0.85),
+    0 0 100px rgba(212, 255, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 2px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.55);
+}
+
+.download-page .dl-phone-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(212, 255, 0, 0.05), transparent 60%),
+    linear-gradient(180deg, #0d0d10 0%, #050507 100%);
+  border-radius: 36px;
+  padding: 56px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.85);
+  z-index: 2;
+  /* Inner edge highlight — that thin OLED-rim glow */
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 1px 2px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+/* Subtle vignette inside the screen for depth */
+.download-page .dl-phone-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.45) 100%);
+  pointer-events: none;
+}
+.download-page .dl-phone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.download-page .dl-phone-row-between { justify-content: space-between; }
+.download-page .dl-phone-label,
+.download-page .dl-phone-muted {
+  color: var(--dl-dim);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.download-page .dl-phone-trend { color: var(--dl-accent); font-weight: 700; }
+.download-page .dl-phone-accent { color: var(--dl-accent); font-weight: 700; }
+.download-page .dl-phone-title { font-size: 1.05rem; font-weight: 800; margin-top: 2px; }
+.download-page .dl-phone-pill {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.download-page .dl-phone-pill-accent {
+  background: rgba(212, 255, 0, 0.16);
+  border-color: rgba(212, 255, 0, 0.55);
+  color: var(--dl-accent);
+}
+.download-page .dl-phone-progress {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.download-page .dl-phone-progress-fill {
+  width: 66%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--dl-accent), var(--dl-accent-2));
+  box-shadow: 0 0 16px rgba(212, 255, 0, 0.6);
+  animation: dlProgress 4.2s ease-in-out infinite alternate;
+}
+@keyframes dlProgress {
+  from { width: 56%; }
+  to   { width: 78%; }
+}
+.download-page .dl-phone-meta { font-size: 0.74rem; color: rgba(255, 255, 255, 0.7); }
+.download-page .dl-phone-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 4px 0;
+}
+.download-page .dl-phone-set { font-weight: 700; font-size: 0.85rem; }
+.download-page .dl-phone-chart {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  align-items: end;
+  height: 96px;
+}
+.download-page .dl-phone-bar {
+  height: var(--h, 50%);
+  background: linear-gradient(180deg, var(--dl-accent), rgba(212, 255, 0, 0.25));
+  border-radius: 4px;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: dlBarRise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-delay: calc(0.9s + var(--i) * 0.07s);
+}
+@keyframes dlBarRise {
+  to { opacity: 1; transform: translateY(0); }
+}
+.download-page .dl-phone-set-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.download-page .dl-phone-set-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 24px;
+  align-items: center;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+.download-page .dl-phone-set-row.done {
+  background: rgba(212, 255, 0, 0.06);
+  border-color: rgba(212, 255, 0, 0.2);
+  color: rgba(212, 255, 0, 0.85);
+}
+.download-page .dl-phone-set-row.active {
+  background: rgba(212, 255, 0, 0.16);
+  border-color: rgba(212, 255, 0, 0.55);
+  color: var(--dl-accent);
+  font-weight: 800;
+}
+
+/* ---- Section 2: Features (glassmorphism) ---- */
+.download-page .dl-features-section {
+  position: relative;
+  z-index: 2;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 80px 36px;
+}
+.download-page .dl-section-header {
+  text-align: center;
+  margin-bottom: 44px;
+}
+.download-page .dl-eyebrow {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dl-accent);
+  margin-bottom: 12px;
+}
+.download-page .dl-h2 {
+  margin: 0;
+  font-size: clamp(1.85rem, 4vw, 2.8rem);
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: var(--dl-fg);
+}
+.download-page .dl-h2-center { text-align: center; }
+
+.download-page .dl-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+/* Outer card = reveal wrapper only (data-reveal owns translateY/opacity).
+   3D perspective for the inner tilt lives here. */
+.download-page .dl-feature-card {
+  position: relative;
+  perspective: 900px;
+}
+/* Inner card = all visuals + cursor-driven 3D tilt + spotlight */
+.download-page .dl-feature-card-inner {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --mx: 50%;
+  --my: 50%;
+  position: relative;
+  height: 100%;
+  padding: 28px 26px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+/* Top neon edge line */
+.download-page .dl-feature-card-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14%;
+  right: 14%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 255, 0, 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+/* Cursor spotlight — radial glow that tracks the mouse over the card */
+.download-page .dl-feature-card-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: radial-gradient(
+    260px circle at var(--mx) var(--my),
+    rgba(212, 255, 0, 0.14),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.download-page .dl-feature-card-inner:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(212, 255, 0, 0.35);
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.45), 0 0 50px rgba(212, 255, 0, 0.14);
+}
+.download-page .dl-feature-card-inner:hover::before,
+.download-page .dl-feature-card-inner:hover::after { opacity: 1; }
+/* Lift icon/title slightly on the Z axis for parallax depth on tilt */
+.download-page .dl-feature-card-inner:hover .dl-feature-icon {
+  transform: translateZ(34px) scale(1.06);
+}
+.download-page .dl-feature-card-inner:hover .dl-feature-title {
+  transform: translateZ(20px);
+}
+.download-page .dl-feature-icon {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(212, 255, 0, 0.12);
+  border: 1px solid rgba(212, 255, 0, 0.3);
+  color: var(--dl-accent);
+  margin-bottom: 18px;
+  box-shadow: 0 0 24px rgba(212, 255, 0, 0.2);
+}
+.download-page .dl-feature-title {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--dl-fg);
+  letter-spacing: -0.01em;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.download-page .dl-feature-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--dl-muted);
+  line-height: 1.55;
+}
+
+/* ---- Section 3: Stats banner (interactive) ---- */
+.download-page .dl-stats-banner {
+  --dl-mx: 50%;
+  --dl-my: 50%;
+  position: relative;
+  z-index: 2;
+  margin: 20px 0 80px;
+  padding: 64px 36px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(212, 255, 0, 0.04), transparent 60%),
+    rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+  isolation: isolate;
+  transition: padding 0.25s ease;
+}
+/* Cursor-tracking radial glow */
+.download-page .dl-stats-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle 360px at var(--dl-mx) var(--dl-my),
+      rgba(212, 255, 0, 0.18),
+      rgba(212, 255, 0, 0.06) 40%,
+      transparent 70%
+    );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.download-page .dl-stats-banner:hover::before { opacity: 1; }
+
+/* Animated gradient lines on top + bottom edges */
+.download-page .dl-stats-banner::after {
+  content: '';
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  top: -1px;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(212, 255, 0, 0.7) 50%,
+    transparent 100%);
+  animation: dlBorderSweep 5s ease-in-out infinite;
+  pointer-events: none;
+}
+.download-page .dl-stats-banner > .dl-stats-edge-bottom {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(212, 255, 0, 0.5) 50%,
+    transparent 100%);
+  animation: dlBorderSweep 5s ease-in-out infinite reverse;
+  animation-delay: 1.5s;
+  pointer-events: none;
+}
+@keyframes dlBorderSweep {
+  0%   { transform: translateX(-30%); opacity: 0.2; }
+  50%  { transform: translateX(30%);  opacity: 1;   }
+  100% { transform: translateX(-30%); opacity: 0.2; }
+}
+
+.download-page .dl-stats-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1100px;
+  margin: 0 auto;
+  gap: 24px;
+  text-align: center;
+}
+.download-page .dl-stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 12px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition:
+    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 0.32s ease,
+    box-shadow 0.32s ease;
+}
+/* Aurora glow behind each stat — visible on hover */
+.download-page .dl-stat::before {
+  content: '';
+  position: absolute;
+  inset: -20% -10%;
+  background: radial-gradient(circle, rgba(212, 255, 0, 0.18), transparent 60%);
+  opacity: 0;
+  filter: blur(20px);
+  transition: opacity 0.4s ease;
+  z-index: -1;
+  pointer-events: none;
+}
+.download-page .dl-stat:hover {
+  transform: translateY(-6px);
+}
+.download-page .dl-stat:hover::before { opacity: 1; }
+
+.download-page .dl-stat-num {
+  position: relative;
+  font-size: clamp(2.4rem, 5.5vw, 4rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--dl-accent);
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 40px rgba(212, 255, 0, 0.35);
+  font-variant-numeric: tabular-nums;
+  transition: text-shadow 0.32s ease, transform 0.32s ease;
+}
+.download-page .dl-stat:hover .dl-stat-num {
+  text-shadow:
+    0 0 30px rgba(212, 255, 0, 0.8),
+    0 0 60px rgba(212, 255, 0, 0.4);
+  transform: scale(1.04);
+}
+/* Pulsing ring around the number on hover */
+.download-page .dl-stat-num::after {
+  content: '';
+  position: absolute;
+  inset: -14px -22px;
+  border: 1px solid rgba(212, 255, 0, 0.35);
+  border-radius: 999px;
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.3s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+.download-page .dl-stat:hover .dl-stat-num::after {
+  opacity: 1;
+  transform: scale(1);
+  animation: dlRingPulse 2.2s ease-in-out infinite;
+}
+@keyframes dlRingPulse {
+  50% {
+    transform: scale(1.06);
+    border-color: rgba(212, 255, 0, 0.6);
+    box-shadow: 0 0 24px rgba(212, 255, 0, 0.25);
+  }
+}
+
+.download-page .dl-stat-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dl-fg);
+  transition: color 0.32s ease, letter-spacing 0.32s ease;
+}
+.download-page .dl-stat:hover .dl-stat-label {
+  color: var(--dl-accent);
+  letter-spacing: 0.18em;
+}
+
+/* Tiny separator dots between stats (decorative) */
+.download-page .dl-stat + .dl-stat::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(212, 255, 0, 0.4);
+  box-shadow: 0 0 10px rgba(212, 255, 0, 0.6);
+}
+@media (max-width: 720px) {
+  .download-page .dl-stat + .dl-stat::after { display: none; }
+}
+
+/* ---- Section 4: Final CTA ---- */
+.download-page .dl-final-cta {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 36px 100px;
+}
+.download-page .dl-final-card {
+  padding: 56px 44px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 24px;
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  text-align: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 30px 80px rgba(0, 0, 0, 0.4);
+}
+.download-page .dl-sub-center {
+  margin: 14px auto 32px;
+  max-width: 560px;
+}
+.download-page .dl-final-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 36px;
+  align-items: center;
+  justify-content: center;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.download-page .dl-final-stores {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.download-page .dl-final-stores .dl-store-btn { min-width: 220px; }
+
+/* QR card */
+.download-page .dl-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: linear-gradient(180deg, #111114 0%, #0a0a0c 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(212, 255, 0, 0.12);
+}
+.download-page .dl-qr-frame {
+  width: 168px;
+  height: 168px;
+  padding: 8px;
+  background: #0b0b0b;
+  border: 1px solid rgba(212, 255, 0, 0.22);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.download-page .dl-qr-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.download-page .dl-qr-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--dl-muted);
+}
+.download-page .dl-qr-caption-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dl-accent);
+  box-shadow: 0 0 8px var(--dl-accent);
+}
+
+/* ---- Section: How It Works (3 steps) ---- */
+.download-page .dl-steps-section {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 70px 36px 30px;
+}
+.download-page .dl-steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin-top: 44px;
+}
+/* Connecting line behind the step markers */
+.download-page .dl-steps-line {
+  position: absolute;
+  top: 32px;
+  left: 16%;
+  right: 16%;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(212, 255, 0, 0.45) 20%,
+    rgba(212, 255, 0, 0.45) 80%,
+    transparent);
+  z-index: 0;
+}
+.download-page .dl-step {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.download-page .dl-step-marker {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, #15170d 0%, #0a0a0c 100%);
+  border: 1px solid rgba(212, 255, 0, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 30px rgba(212, 255, 0, 0.18);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+.download-page .dl-step:hover .dl-step-marker {
+  transform: translateY(-4px) scale(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 44px rgba(212, 255, 0, 0.4);
+}
+/* The number sits as a faint badge top-right of the marker */
+.download-page .dl-step-num {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #0a0a0c;
+  background: var(--dl-accent);
+  border-radius: 999px;
+  padding: 3px 7px;
+  box-shadow: 0 0 14px rgba(212, 255, 0, 0.55);
+}
+.download-page .dl-step-icon {
+  display: inline-flex;
+  color: var(--dl-accent);
+}
+.download-page .dl-step-title {
+  margin: 0 0 8px;
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: var(--dl-fg);
+  letter-spacing: -0.01em;
+}
+.download-page .dl-step-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--dl-muted);
+  line-height: 1.55;
+  max-width: 280px;
+}
+
+/* ---- Section: Testimonials ---- */
+.download-page .dl-testimonials {
+  position: relative;
+  z-index: 2;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 80px 36px;
+}
+.download-page .dl-testi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.download-page .dl-testi-card {
+  position: relative;
+  margin: 0;
+  padding: 28px 26px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+.download-page .dl-testi-card::before {
+  content: '"';
+  position: absolute;
+  top: 6px;
+  right: 20px;
+  font-size: 5rem;
+  line-height: 1;
+  font-family: Georgia, serif;
+  color: rgba(212, 255, 0, 0.12);
+  pointer-events: none;
+}
+.download-page .dl-testi-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(212, 255, 0, 0.35);
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.45), 0 0 50px rgba(212, 255, 0, 0.12);
+}
+.download-page .dl-testi-stars {
+  color: var(--dl-accent);
+  font-size: 0.95rem;
+  letter-spacing: 3px;
+  filter: drop-shadow(0 0 6px rgba(212, 255, 0, 0.45));
+}
+.download-page .dl-testi-quote {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+}
+.download-page .dl-testi-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.download-page .dl-testi-author img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(212, 255, 0, 0.4);
+}
+.download-page .dl-testi-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--dl-fg);
+}
+.download-page .dl-testi-role {
+  font-size: 0.78rem;
+  color: var(--dl-dim);
+  margin-top: 2px;
+}
+
+/* ---- Section: FAQ accordion ---- */
+.download-page .dl-faq-section {
+  position: relative;
+  z-index: 2;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 30px 36px 80px;
+}
+.download-page .dl-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 36px;
+}
+.download-page .dl-faq-item {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+.download-page .dl-faq-item.is-open {
+  border-color: rgba(212, 255, 0, 0.35);
+  background: rgba(212, 255, 0, 0.04);
+}
+.download-page .dl-faq-q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dl-fg);
+  text-align: left;
+  transition: color 0.25s ease;
+}
+.download-page .dl-faq-q:hover { color: var(--dl-accent); }
+.download-page .dl-faq-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--dl-accent);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.download-page .dl-faq-item.is-open .dl-faq-toggle {
+  transform: rotate(135deg);
+}
+/* Smooth height animation via grid-template-rows 0fr → 1fr */
+.download-page .dl-faq-a-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.download-page .dl-faq-item.is-open .dl-faq-a-wrap {
+  grid-template-rows: 1fr;
+}
+.download-page .dl-faq-a-inner {
+  overflow: hidden;
+}
+.download-page .dl-faq-a {
+  margin: 0;
+  padding: 0 20px 20px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--dl-muted);
+}
+
+/* ---- Sticky mobile CTA ---- */
+.download-page .dl-mobile-sticky {
+  display: none;
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 50;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(10, 10, 10, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.55);
+}
+
+/* ---- Scroll reveal base + revealed state ---- */
+.download-page [data-reveal] {
+  opacity: 0;
+  transform: translateY(34px) scale(0.97);
+  filter: blur(6px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.6s ease;
+  transition-delay: var(--reveal-delay, 0s);
+}
+.download-page [data-reveal].is-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+/* ---- Scroll progress bar ---- */
+.download-page .dl-scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 60;
+  background: rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+.download-page .dl-scroll-progress-fill {
+  display: block;
+  height: 100%;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, #70dc35, #d4ff00 60%, #ffffff);
+  box-shadow: 0 0 14px rgba(212, 255, 0, 0.7), 0 0 4px rgba(212, 255, 0, 0.9);
+  will-change: transform;
+}
+
+/* ---- Animated shimmer sweep across accent words ---- */
+.download-page .dl-accent {
+  background: linear-gradient(
+    100deg,
+    var(--dl-accent) 0%,
+    #ffffff 45%,
+    var(--dl-accent) 60%,
+    var(--dl-accent) 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 0 22px rgba(212, 255, 0, 0.35));
+  animation: dlAccentShimmer 5.5s ease-in-out infinite;
+}
+@keyframes dlAccentShimmer {
+  0%, 100% { background-position: 130% 0; }
+  50%      { background-position: -30% 0; }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1024px) {
+  .download-page .dl-hero {
+    grid-template-columns: 1fr;
+    gap: 60px;
+    padding: 40px 24px 80px;
+    text-align: center;
+  }
+  .download-page .dl-hero-content { align-items: center; }
+  .download-page .dl-sub { margin-inline: auto; }
+  .download-page .dl-store-row { justify-content: center; }
+  .download-page .dl-hero-stage { min-height: 520px; }
+}
+
+@media (max-width: 900px) {
+  .download-page .dl-features-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .download-page .dl-final-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .download-page .dl-final-stores { width: 100%; max-width: 360px; margin: 0 auto; }
+
+  /* Steps stack vertically; connecting line becomes vertical */
+  .download-page .dl-steps {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    max-width: 420px;
+    margin-inline: auto;
+  }
+  .download-page .dl-steps-line {
+    top: 32px;
+    bottom: 32px;
+    left: 50%;
+    right: auto;
+    width: 2px;
+    height: auto;
+    background: linear-gradient(180deg,
+      transparent,
+      rgba(212, 255, 0, 0.45) 12%,
+      rgba(212, 255, 0, 0.45) 88%,
+      transparent);
+  }
+  .download-page .dl-testi-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    max-width: 460px;
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .download-page { padding-bottom: 140px; }
+  .download-page .dl-nav { padding: 16px 18px; }
+  .download-page .dl-hero { padding: 24px 18px 60px; }
+  .download-page .dl-features-section { padding: 56px 18px; }
+  .download-page .dl-steps-section { padding: 56px 18px 20px; }
+  .download-page .dl-testimonials { padding: 60px 18px; }
+  .download-page .dl-faq-section { padding: 20px 18px 60px; }
+  .download-page .dl-final-cta { padding: 0 18px 60px; }
+  .download-page .dl-final-card { padding: 40px 22px; }
+  .download-page .dl-stats-banner { padding: 40px 18px; }
+  .download-page .dl-stats-inner { gap: 12px; }
+  .download-page .dl-phone-stack { transform: scale(0.85); }
+  .download-page .dl-mobile-sticky { display: flex; }
+}
+
+@media (max-width: 420px) {
+  .download-page .dl-store-row { flex-direction: column; width: 100%; }
+  .download-page .dl-store-row .dl-store-btn { width: 100%; }
+  .download-page .dl-stats-inner { grid-template-columns: 1fr; gap: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .download-page [data-reveal] {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+  .download-page .dl-badge-dot,
+  .download-page .dl-phone-progress-fill,
+  .download-page .dl-phone-bar,
+  .download-page .dl-accent,
+  .download-page .dl-phone-bob { animation: none !important; opacity: 1; }
+  .download-page .dl-accent {
+    /* Static fill when motion is reduced */
+    background-position: 50% 0;
+  }
+  .download-page .dl-feature-card-inner { transform: none !important; }
+}
+
