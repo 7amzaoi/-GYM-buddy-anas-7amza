@@ -126,6 +126,30 @@
 .plan-card-cta { width: 100%; margin-top: auto; }
 
 /* View-exercises toggle (replaces the old Start Workout CTA) */
+/* Primary action: run this plan as today's workout. Filled rather than
+   outlined so it clearly outranks the "View exercises" toggle below it —
+   one dominant action per card. */
+.plan-card-start {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: auto;
+  margin-bottom: var(--space-2);
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: inherit; font-size: var(--text-sm); font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter var(--dur-base) var(--ease-std), transform var(--dur-base) var(--ease-spring);
+}
+.plan-card-start:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.plan-card-start:active { transform: translateY(0); }
+.plan-card-start:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 .plan-card-toggle {
   display: flex; align-items: center; justify-content: center;
   gap: 8px;
@@ -144,6 +168,9 @@
   background: rgba(var(--accent-rgb), 0.18);
   transform: translateY(-1px);
 }
+/* Both buttons carry `margin-top: auto` to sit at the card's foot; with two of
+   them the free space would be split between the pair and drive them apart. */
+.plan-card-start + .plan-card-toggle { margin-top: 0; }
 .plan-card-toggle-chev {
   display: grid; place-items: center;
   width: 18px; height: 18px;

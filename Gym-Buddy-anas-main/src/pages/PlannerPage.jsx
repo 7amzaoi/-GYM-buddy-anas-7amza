@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { getAllExercises, getExerciseById } from '../data.js';
 import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
 import { Toast } from '../lib/interactions.js';
 import { revealOnScroll } from '../lib/motion.js';
+import { NavigateContext } from '../context/NavigateContext.jsx';
 import AppHeader from '../components/AppHeader.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import * as haptics from '../lib/haptics.js';
 
 const CATEGORIES = {
   strength: { label: 'Strength', iconKey: 'dumbbell' },
@@ -23,13 +26,17 @@ const FILTERS = [
 
 export default function PlannerPage() {
   const rootRef = useRef(null);
+  const navigateToPage = useContext(NavigateContext);
   const user = Store.get('user');
   const [planFilter, setPlanFilter] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  /** Plan waiting on confirmation because another session is already running. */
+  const [pendingStart, setPendingStart] = useState(null);
 
   const userPlans = user ? (Store.get('customPlans') || []) : [];
   const history = Store.get('workoutHistory') || [];
+  const activeSession = Store.get('activeSession');
   const completedPlanIds = new Set(
     history
       .map(h => h.planId)
@@ -56,6 +63,41 @@ export default function PlannerPage() {
   function deleteCustomPlan(id) {
     Store.deleteCustomPlan(id);
     if (expandedId === id) setExpandedId(null);
+  }
+
+  /**
+   * Start a plan as today's workout.
+   *
+   * Store.startSession replaces `activeSession` outright, so a running session
+   * would lose every logged set without warning. Three cases: this same plan is
+   * already running (just go back to it), a different one is running (ask
+   * first), or nothing is running (start straight away).
+   */
+  function startPlan(p, exerciseCount) {
+    haptics.tap();
+    if (exerciseCount === 0) {
+      Toast.show('This plan has no exercises yet — add some first.', 'warning');
+      return;
+    }
+    const active = Store.get('activeSession');
+    if (active) {
+      if (active.planId === p.id) {
+        navigateToPage?.('workouts');
+        return;
+      }
+      setPendingStart(p);
+      return;
+    }
+    Store.startSession(p.id);
+    navigateToPage?.('workouts');
+  }
+
+  function confirmStart() {
+    const p = pendingStart;
+    setPendingStart(null);
+    if (!p) return;
+    Store.startSession(p.id);
+    navigateToPage?.('workouts');
   }
 
   function handleCreatePlan(ev) {
@@ -174,6 +216,15 @@ export default function PlannerPage() {
 
                     <button
                       type="button"
+                      className="plan-card-start"
+                      onClick={() => startPlan(p, exDetails.length)}
+                    >
+                      {icon('play', 15)}
+                      {activeSession?.planId === p.id ? 'Resume workout' : 'Start workout'}
+                    </button>
+
+                    <button
+                      type="button"
                       className="plan-card-toggle"
                       onClick={() => setExpandedId(isOpen ? null : p.id)}
                       aria-expanded={isOpen}
@@ -279,6 +330,18 @@ export default function PlannerPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingStart}
+        onCancel={() => setPendingStart(null)}
+        onConfirm={confirmStart}
+        title="A workout is already running"
+        subject={activeSession ? `${activeSession.planName || 'Freestyle Workout'} is in progress` : ''}
+        note={`Starting ${pendingStart?.name || 'this plan'} discards it, including any sets you have logged. It won't be saved to your history.`}
+        confirmLabel="Start anyway"
+        tone="danger"
+        iconKey="play"
+      />
     </div>
   );
 }
