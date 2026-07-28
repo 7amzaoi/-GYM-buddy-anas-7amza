@@ -419,6 +419,80 @@
   color: var(--text-secondary);
 }
 
+/* -- Plans: compact rows.
+   Deliberately a different rhythm from the photo rail above — two stacked
+   horizontal photo rails read as one repeated block, and rows fill the vertical
+   space the screen actually has. Surface treatment comes from _glass.css. -- */
+.m1-plans {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.m1-planrow {
+  width: 100%;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--m1-radius-sm);
+  color: var(--text-primary);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--dur-fast) var(--ease-std);
+}
+.m1-planrow:hover { border-color: var(--glass-border-hover); }
+.m1-planrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.m1-planrow-mark {
+  flex: 0 0 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+}
+/* min-width:0 so a long plan name ellipsises instead of pushing the chevron out. */
+.m1-planrow-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.m1-planrow-name,
+.m1-planrow-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.m1-planrow-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 0.9rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.m1-planrow-meta {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.m1-planrow-chev {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
 /* -- Empty state (no sessions logged yet) -- */
 .m1-empty {
   padding: var(--space-6) var(--m1-gutter);

@@ -81,6 +81,35 @@ export default function DashboardPage() {
 
   const recent = history.slice(0, 3);
 
+  /* Plans ordered by when they were last trained. `workoutHistory` is
+   * newest-first and every completed session carries the `planId` it ran, so
+   * the first time an id appears is that plan's last use. Freestyle sessions
+   * have no planId and are skipped; ids whose plan has since been deleted drop
+   * out. Plans never trained yet fill the remaining slots, newest first, so the
+   * section is still useful before any history exists. */
+  const lastUsedAt = new Map();
+  for (const w of history) {
+    if (w.planId && !lastUsedAt.has(w.planId)) lastUsedAt.set(w.planId, w.date);
+  }
+  const trained = [...lastUsedAt.keys()]
+    .map((id) => plans.find((p) => p.id === id))
+    .filter(Boolean)
+    .map((p) => ({ ...p, lastUsed: lastUsedAt.get(p.id) }));
+  const untrained = plans
+    .filter((p) => !lastUsedAt.has(p.id))
+    .slice()
+    .reverse()
+    .map((p) => ({ ...p, lastUsed: null }));
+  const recentPlans = [...trained, ...untrained].slice(0, 3);
+
+  function planMeta(p) {
+    const count = (p.exercises || []).filter((id) => getExerciseById(id)).length;
+    const exercises = `${count} exercise${count === 1 ? '' : 's'}`;
+    if (!p.lastUsed) return `${exercises} · Not trained yet`;
+    const when = new Date(p.lastUsed).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    return `${exercises} · Last ${when}`;
+  }
+
   useEffect(() => revealOnScroll(rootRef.current, '[data-reveal]', { y: 24, stagger: 0.05 }), []);
 
   function onHeroAction() {
@@ -183,6 +212,46 @@ export default function DashboardPage() {
             </div>
           )}
         </section>
+
+        {/* ===== Plans rail =====
+            Hidden entirely when there are no plans: the hero is already the
+            "pick your first plan" empty state, and a second empty box under it
+            would just repeat the same prompt. */}
+        {recentPlans.length > 0 && (
+          <section data-reveal>
+            <div className="m1-sechead">
+              <span className="m1-eyebrow is-muted">Your plans</span>
+              <button
+                type="button"
+                className="m1-seclink"
+                onClick={() => { haptics.tap(); navigateToPage?.('planner'); }}
+              >
+                All plans {icon('arrow', 12)}
+              </button>
+            </div>
+
+            <ul className="m1-plans" role="list">
+              {recentPlans.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="m1-planrow"
+                    onClick={() => { haptics.tap(); navigateToPage?.('planner'); }}
+                  >
+                    <span className="m1-planrow-mark" aria-hidden="true">
+                      {icon(String(p.category).toLowerCase() === 'cardio' ? 'activity' : 'dumbbell', 18)}
+                    </span>
+                    <span className="m1-planrow-body">
+                      <span className="m1-planrow-name">{p.name}</span>
+                      <span className="m1-planrow-meta">{planMeta(p)}</span>
+                    </span>
+                    <span className="m1-planrow-chev" aria-hidden="true">{icon('chevron', 16)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </div>
   );
