@@ -89,17 +89,32 @@
 }
 .rec-card-cat.cat-cardio { background: rgba(88,166,255,0.14); color: #58a6ff; }
 .rec-card-cat.cat-fitness { background: rgba(255,159,67,0.14); color: #ff9f43; }
-.rec-card-edit {
+/* Corner actions — edit + delete.
+   Both are 44px so they clear the touch-target minimum; the block is pulled
+   back by the extra padding so the card's top row keeps its original height. */
+.rec-card-acts {
+  display: flex; align-items: center;
+  gap: 2px;
+  margin: -6px -6px -6px 0;
+}
+.rec-card-edit,
+.rec-card-del {
   display: grid; place-items: center;
-  width: 32px; height: 32px;
+  width: 44px; height: 44px;
   border-radius: var(--radius-sm);
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--dur-base) var(--ease-std);
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-fast) var(--ease-std),
+              background var(--dur-fast) var(--ease-std),
+              border-color var(--dur-fast) var(--ease-std);
 }
 .rec-card-edit:hover { color: var(--accent); background: var(--glass-bg); border-color: var(--glass-border); }
+.rec-card-del:hover { color: var(--danger); background: rgba(255, 71, 87, 0.1); }
+.rec-card-edit:focus-visible,
+.rec-card-del:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .rec-card-name {
   margin: 0 0 var(--space-3);
   font-size: var(--text-lg); font-weight: 800; letter-spacing: -0.02em;
