@@ -16,6 +16,37 @@ const CATEGORIES = {
   muscleGain: { label: 'Muscle Gain', iconKey: 'zap' },
 };
 
+/**
+ * The exercise list tags 17 different muscle names, which is far too
+ * fine-grained to pick from. These are the groups a lifter actually thinks in.
+ * An exercise belongs to a group if *any* of its tags does, so Bench Press
+ * (Chest, Triceps) shows under both Chest and Arms — which is correct: it does
+ * train both, and hiding it from Arms would be the surprising behaviour.
+ */
+const MUSCLE_GROUPS = [
+  { id: 'chest', label: 'Chest', tags: ['chest', 'upper chest'] },
+  { id: 'back', label: 'Back', tags: ['back'] },
+  { id: 'shoulders', label: 'Shoulders', tags: ['shoulders', 'rear delts'] },
+  { id: 'arms', label: 'Arms', tags: ['biceps', 'triceps', 'forearms', 'arms'] },
+  { id: 'legs', label: 'Legs', tags: ['quads', 'hamstrings', 'glutes', 'legs'] },
+  { id: 'core', label: 'Core', tags: ['core'] },
+  { id: 'cardio', label: 'Cardio', tags: ['cardio', 'full body', 'power'] },
+];
+
+function muscleTokens(ex) {
+  return String(ex.muscles || '')
+    .split(',')
+    .map((m) => m.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function matchesMuscleGroup(ex, groupId) {
+  if (!groupId) return true;
+  const group = MUSCLE_GROUPS.find((g) => g.id === groupId);
+  if (!group) return true;
+  return muscleTokens(ex).some((t) => group.tags.includes(t));
+}
+
 const FILTERS = [
   { id: null, label: 'All', iconKey: 'target' },
   { id: 'strength', label: 'Strength', iconKey: 'dumbbell' },
@@ -33,6 +64,12 @@ export default function PlannerPage() {
   const [expandedId, setExpandedId] = useState(null);
   /** Plan waiting on confirmation because another session is already running. */
   const [pendingStart, setPendingStart] = useState(null);
+  /** Muscle group narrowing the create-plan exercise list; null = all. */
+  const [exFilter, setExFilter] = useState(null);
+  /* Selection lives in state, not in the DOM. The filter has to be free to
+     unmount rows, and reading `.cp-exercise:checked` at submit would then drop
+     every exercise picked under a different group without telling anyone. */
+  const [pickedIds, setPickedIds] = useState([]);
 
   const userPlans = user ? (Store.get('customPlans') || []) : [];
   const history = Store.get('workoutHistory') || [];
@@ -106,17 +143,35 @@ export default function PlannerPage() {
     const name = String(fd.get('cp-name'));
     const category = String(fd.get('cp-cat'));
     const duration = String(fd.get('cp-dur'));
-    const checkboxes = ev.target.querySelectorAll('.cp-exercise:checked');
-    const exercises = [...checkboxes].map(cb => cb.value);
+    const exercises = pickedIds;
     if (exercises.length === 0) {
       Toast.show('Select at least one exercise!', 'warning');
       return;
     }
     Store.addCustomPlan({ name, category, duration, level: 'Custom', description: 'Your custom workout plan.', exercises, calories: exercises.length * 50 });
-    setCreateOpen(false);
+    closeCreate();
     Toast.show('Custom plan "' + name + '" created!', 'success');
     setPlanFilter(null);
   }
+
+  function openCreate() {
+    setPickedIds([]);
+    setExFilter(null);
+    setCreateOpen(true);
+  }
+
+  function closeCreate() {
+    setCreateOpen(false);
+    setPickedIds([]);
+    setExFilter(null);
+  }
+
+  function togglePicked(id) {
+    setPickedIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  }
+
+  const allExercises = getAllExercises();
+  const visibleExercises = allExercises.filter((ex) => matchesMuscleGroup(ex, exFilter));
 
   return (
     <div className="plan" ref={rootRef}>
@@ -127,7 +182,7 @@ export default function PlannerPage() {
         subtitle="Organize your training plans for strength, fat loss and growth — your personal library."
         action={
           hasAnyPlans ? (
-            <button type="button" className="gx-btn gx-btn-primary" onClick={() => setCreateOpen(true)}>
+            <button type="button" className="gx-btn gx-btn-primary" onClick={openCreate}>
               {icon('plus', 15)} Create Plan
             </button>
           ) : undefined
@@ -272,7 +327,7 @@ export default function PlannerPage() {
           <p className="plan-empty-desc">
             Build your training around your goals. Create your first plan to organize your routine for strength, fat loss, or muscle gain.
           </p>
-          <button type="button" className="gx-btn gx-btn-primary" onClick={() => setCreateOpen(true)}>
+          <button type="button" className="gx-btn gx-btn-primary" onClick={openCreate}>
             {icon('plus', 15)} Create Your First Plan
           </button>
         </div>
@@ -283,12 +338,12 @@ export default function PlannerPage() {
         <div
           className="gx-modal-overlay"
           role="presentation"
-          onClick={(e) => { if (e.target === e.currentTarget) setCreateOpen(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeCreate(); }}
         >
           <div className="gx-modal gx-modal-wide" role="dialog" aria-modal="true" aria-label="Create custom plan">
             <div className="gx-modal-head">
               <h2>Create Custom Plan</h2>
-              <button type="button" className="gx-modal-close" onClick={() => setCreateOpen(false)} aria-label="Close">
+              <button type="button" className="gx-modal-close" onClick={closeCreate} aria-label="Close">
                 {icon('x', 18)}
               </button>
             </div>
@@ -313,12 +368,56 @@ export default function PlannerPage() {
                 </label>
               </div>
               <div className="prof-field">
-                <span>Select exercises</span>
+                <div className="plan-ex-head">
+                  <span>Select exercises</span>
+                  <span className={`plan-ex-count ${pickedIds.length > 0 ? 'is-on' : ''}`}>
+                    {pickedIds.length} selected
+                  </span>
+                </div>
+
+                {/* Muscle-group narrowing. The full list is 34 exercises across
+                    17 muscle tags — unusable to scan when you know you're
+                    training chest today. */}
+                <div className="plan-ex-filters" role="group" aria-label="Filter exercises by muscle group">
+                  <button
+                    type="button"
+                    className={`plan-ex-chip ${exFilter === null ? 'is-active' : ''}`}
+                    aria-pressed={exFilter === null}
+                    onClick={() => setExFilter(null)}
+                  >
+                    All <span className="plan-ex-chip-n">{allExercises.length}</span>
+                  </button>
+                  {MUSCLE_GROUPS.map((g) => {
+                    const n = allExercises.filter((ex) => matchesMuscleGroup(ex, g.id)).length;
+                    if (n === 0) return null;
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        className={`plan-ex-chip ${exFilter === g.id ? 'is-active' : ''}`}
+                        aria-pressed={exFilter === g.id}
+                        onClick={() => setExFilter(exFilter === g.id ? null : g.id)}
+                      >
+                        {g.label} <span className="plan-ex-chip-n">{n}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <div className="plan-ex-picker">
-                  {getAllExercises().map(ex => (
+                  {visibleExercises.length === 0 ? (
+                    <p className="plan-ex-empty">No exercises for this muscle group.</p>
+                  ) : visibleExercises.map(ex => (
                     <label key={ex.id} className="plan-ex-item">
-                      <input type="checkbox" value={ex.id} className="cp-exercise" />
+                      <input
+                        type="checkbox"
+                        value={ex.id}
+                        className="cp-exercise"
+                        checked={pickedIds.includes(ex.id)}
+                        onChange={() => togglePicked(ex.id)}
+                      />
                       <span className="plan-ex-name">{ex.name}</span>
+                      <span className="plan-ex-muscles">{ex.muscles}</span>
                     </label>
                   ))}
                 </div>

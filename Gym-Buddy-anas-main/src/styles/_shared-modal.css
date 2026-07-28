@@ -6,6 +6,12 @@
   inset: 0;
   z-index: var(--z-modal);
   display: grid;
+  /* Without an explicit track the implicit column is `auto`, which sizes to the
+     dialog's max-content — a long row inside pushes the whole modal past the
+     screen edge on a phone, and `width: 100%` then resolves against that
+     overflowing track instead of the viewport. minmax(0, 1fr) caps the track at
+     the overlay's own width; `place-items: center` still centres the dialog. */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 24px;
   background: rgba(6, 6, 7, 0.85);
