@@ -1,0 +1,25 @@
+{
+  "name": "GymBuddy",
+  "short_name": "GymBuddy",
+  "description": "Your AI-powered gym assistant for workout tracking, personalized plans, and progress monitoring.",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": ".",
+  "scope": ".",
+  "theme_color": "#0B0B0B",
+  "background_color": "#0B0B0B",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

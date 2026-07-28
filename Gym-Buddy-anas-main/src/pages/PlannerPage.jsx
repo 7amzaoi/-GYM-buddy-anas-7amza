@@ -1,10 +1,10 @@
-import { useState, useContext, useEffect, useRef } from 'react';
-import { getAllExercises } from '../data.js';
+import { useState, useEffect, useRef } from 'react';
+import { getAllExercises, getExerciseById } from '../data.js';
 import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
-import { NavigateContext } from '../context/NavigateContext.jsx';
 import { Toast } from '../lib/interactions.js';
 import { revealOnScroll } from '../lib/motion.js';
+import AppHeader from '../components/AppHeader.jsx';
 
 const CATEGORIES = {
   strength: { label: 'Strength', iconKey: 'dumbbell' },
@@ -22,11 +22,11 @@ const FILTERS = [
 ];
 
 export default function PlannerPage() {
-  const navigateToPage = useContext(NavigateContext);
   const rootRef = useRef(null);
   const user = Store.get('user');
   const [planFilter, setPlanFilter] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
 
   const userPlans = user ? (Store.get('customPlans') || []) : [];
   const history = Store.get('workoutHistory') || [];
@@ -53,18 +53,9 @@ export default function PlannerPage() {
     return cleanup;
   }, [planFilter, createOpen, userPlans.length]);
 
-  function handleStartWorkout(planId) {
-    Store.startSession(planId);
-    if (Store.get('activeSession')) {
-      Toast.show("Workout session started! Let's go!", 'success');
-      navigateToPage?.('session');
-    } else {
-      Toast.show('Could not start session', 'error');
-    }
-  }
-
   function deleteCustomPlan(id) {
     Store.deleteCustomPlan(id);
+    if (expandedId === id) setExpandedId(null);
   }
 
   function handleCreatePlan(ev) {
@@ -88,18 +79,18 @@ export default function PlannerPage() {
   return (
     <div className="plan" ref={rootRef}>
       {/* ===== Header ===== */}
-      <header className="plan-header" data-reveal>
-        <div>
-          <span className="gx-eyebrow">{icon('dumbbell', 13)} Training</span>
-          <h1 className="plan-h1">Workout Planner</h1>
-          <p className="gx-subtitle">Your personal training plans, built around your goals.</p>
-        </div>
-        {hasAnyPlans ? (
-          <button type="button" className="gx-btn gx-btn-primary" onClick={() => setCreateOpen(true)}>
-            {icon('plus', 15)} Create Plan
-          </button>
-        ) : null}
-      </header>
+      <AppHeader
+        eyebrow={<>{icon('dumbbell', 13)} Plans</>}
+        title="My Plans"
+        subtitle="Organize your training plans for strength, fat loss and growth — your personal library."
+        action={
+          hasAnyPlans ? (
+            <button type="button" className="gx-btn gx-btn-primary" onClick={() => setCreateOpen(true)}>
+              {icon('plus', 15)} Create Plan
+            </button>
+          ) : undefined
+        }
+      />
 
       {hasAnyPlans ? (
         <>
@@ -146,8 +137,12 @@ export default function PlannerPage() {
                   : null;
                 const cat = CATEGORIES[p.category] || { label: p.category, iconKey: 'dumbbell' };
                 const exCount = Array.isArray(p.exercises) ? p.exercises.length : 0;
+                const isOpen = expandedId === p.id;
+                const exDetails = (p.exercises || [])
+                  .map((eid) => getExerciseById(eid))
+                  .filter(Boolean);
                 return (
-                  <article key={p.id} className={`gx-card plan-card ${completed ? 'is-completed' : ''}`} data-reveal>
+                  <article key={p.id} className={`gx-card plan-card ${completed ? 'is-completed' : ''} ${isOpen ? 'is-open' : ''}`} data-category={p.category} data-reveal>
                     <div className="plan-card-top">
                       <span className="plan-card-cat">{icon(cat.iconKey, 13)} {cat.label}</span>
                       <button
@@ -179,11 +174,32 @@ export default function PlannerPage() {
 
                     <button
                       type="button"
-                      className={`gx-btn ${completed ? 'gx-btn-ghost' : 'gx-btn-primary'} plan-card-cta`}
-                      onClick={() => handleStartWorkout(p.id)}
+                      className="plan-card-toggle"
+                      onClick={() => setExpandedId(isOpen ? null : p.id)}
+                      aria-expanded={isOpen}
                     >
-                      {icon('play', 14)} {completed ? 'Start Again' : 'Start Workout'}
+                      <span>{isOpen ? 'Hide exercises' : 'View exercises'}</span>
+                      <span className={`plan-card-toggle-chev ${isOpen ? 'is-open' : ''}`} aria-hidden="true">
+                        {icon('arrow', 13)}
+                      </span>
                     </button>
+
+                    {isOpen && (
+                      <ul className="plan-card-exlist">
+                        {exDetails.length === 0 ? (
+                          <li className="plan-card-exlist-empty">No exercises in this plan.</li>
+                        ) : exDetails.map((ex, i) => (
+                          <li key={ex.id} className="plan-card-exlist-item">
+                            <span className="plan-card-exlist-idx">{i + 1}</span>
+                            <div className="plan-card-exlist-info">
+                              <span className="plan-card-exlist-name">{ex.name}</span>
+                              <span className="plan-card-exlist-muscles">{ex.muscles}</span>
+                            </div>
+                            <span className="plan-card-exlist-sets">{ex.sets}×{ex.reps}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </article>
                 );
               })}
@@ -203,7 +219,7 @@ export default function PlannerPage() {
           <div className="plan-empty-icon plan-empty-icon-lg">{icon('dumbbell', 52)}</div>
           <h2 className="plan-empty-title">No workout plans yet</h2>
           <p className="plan-empty-desc">
-            Build your training around your goals. Create your first plan to start tracking sets, reps, and progress.
+            Build your training around your goals. Create your first plan to organize your routine for strength, fat loss, or muscle gain.
           </p>
           <button type="button" className="gx-btn gx-btn-primary" onClick={() => setCreateOpen(true)}>
             {icon('plus', 15)} Create Your First Plan

@@ -1,0 +1,53 @@
+/* ============================================================
+   ERROR BOUNDARY — graceful fallback when a screen crashes
+   ============================================================ */
+.error-boundary {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  margin: var(--space-6) auto;
+  max-width: 480px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgba(255,71,87,0.06), rgba(255,71,87,0.015));
+  border: 1px solid rgba(255, 71, 87, 0.28);
+}
+.error-boundary-icon {
+  display: grid; place-items: center;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 71, 87, 0.18);
+  color: #ff4757;
+  font-size: 32px; font-weight: 900;
+}
+.error-boundary h2 {
+  margin: 0;
+  font-size: var(--text-xl); font-weight: 800; letter-spacing: -0.02em;
+}
+.error-boundary p {
+  margin: 0;
+  font-size: 13px; color: var(--text-secondary);
+  max-width: 380px; line-height: 1.6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.error-boundary-actions {
+  display: flex; gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* Lanyard deferred wrapper inherits sizing from .lanyard-wrapper child */
+.lanyard-deferred { width: 100%; }
+
+/* Mobile tweaks for Phase A pieces */
+@media (max-width: 640px) {
+  .wko-set-extras { padding: 4px 6px 8px 32px; gap: 6px; }
+  .wko-set-rpe-btn { width: 24px; height: 24px; font-size: 10.5px; }
+  .wko-plate-bars { grid-template-columns: 1fr; }
+  .wko-rest { left: 12px; right: 12px; transform: none; width: auto; }
+  .wko-rest { animation-name: wkoRestSlideUpMobile; }
+  @keyframes wkoRestSlideUpMobile {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .wko-rest-time { font-size: 32px; }
+}

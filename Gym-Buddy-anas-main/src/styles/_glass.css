@@ -1,0 +1,124 @@
+/* ============================================================
+   GLASS SYSTEM — one definition, every card.
+
+   Glass only reads if there is something BEHIND it to refract. On a flat
+   background a blurred pane is just a grey box, so this file ships two parts:
+
+     1. an ambient wash fixed behind the whole app (accent-tinted, very low
+        opacity) that gives every pane something to pick up;
+     2. the `.glass` recipe, applied to the app's card primitives.
+
+   Both themes are covered: the --glass-* tokens in _theme.css already flip
+   (white-alpha over dark / white-heavy over light), so nothing here is
+   theme-specific.
+
+   Performance: backdrop-filter is expensive per-layer. It is applied to card
+   surfaces and chrome only — never to list rows or repeated small elements —
+   and disabled wholesale on browsers without support.
+   ============================================================ */
+
+/* ---------- 1. Ambient wash ---------- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 42% at 10% 4%, rgba(var(--accent-rgb), 0.13), transparent 62%),
+    radial-gradient(48% 38% at 92% 22%, rgba(var(--accent-rgb), 0.07), transparent 60%),
+    radial-gradient(64% 46% at 78% 96%, rgba(var(--accent-rgb), 0.09), transparent 64%);
+}
+:root[data-theme='light'] body::before {
+  background:
+    radial-gradient(58% 42% at 10% 4%, rgba(var(--accent-rgb), 0.22), transparent 62%),
+    radial-gradient(48% 38% at 92% 22%, rgba(var(--accent-rgb), 0.12), transparent 60%),
+    radial-gradient(64% 46% at 78% 96%, rgba(var(--accent-rgb), 0.16), transparent 64%);
+}
+
+/* ---------- 2. The recipe ---------- */
+.gx-card,
+.m1-stat,
+.m1-delta,
+.m1-chartcard,
+.m1-summary,
+.m1-rec,
+.m1-list,
+.m1-seg,
+.wko-active .wko-ex,
+.wko-active .wko-live-stat,
+.smart-banner,
+.m1-themeopt,
+.m1-chip {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+}
+
+/* Cards sit on the page; nested panes must stay flatter or the stack muddies. */
+.gx-card .m1-stat,
+.gx-card .m1-seg,
+.m1-chartcard .m1-delta {
+  background: var(--glass-bg-strong);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* Inputs read as recessed, not floating. */
+.wko-active .wko-set-input,
+.prof-field input,
+.dash-field input,
+.input {
+  background: var(--surface-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+/* Where backdrop-filter is unsupported, fall back to an opaque surface so the
+   cards never render as near-invisible translucent boxes. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gx-card,
+  .m1-stat,
+  .m1-delta,
+  .m1-chartcard,
+  .m1-summary,
+  .m1-rec,
+  .m1-list,
+  .m1-seg,
+  .wko-active .wko-ex,
+  .wko-active .wko-live-stat,
+  .smart-banner,
+  .m1-themeopt,
+  .m1-chip,
+  .mobile-nav {
+    background: var(--surface-1);
+  }
+}
+
+/* ============================================================
+   3. Floating glass tab bar.
+   Replaces the flush edge-to-edge bar: detached from the screen edges, fully
+   rounded, glass, with the raised FAB still breaking its top edge.
+   ============================================================ */
+@media (max-width: 768px) {
+  .mobile-nav {
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: calc(var(--safe-bottom) + var(--space-3));
+    height: var(--tabbar-h);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow), var(--glass-highlight);
+  }
+  /* The FAB's ring matched the old flush bar's backdrop; on a floating bar it
+     must match the page behind it instead. */
+  .mnav-fab-glyph { border-color: transparent; }
+}

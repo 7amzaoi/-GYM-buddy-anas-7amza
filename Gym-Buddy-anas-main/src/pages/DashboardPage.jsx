@@ -1,320 +1,189 @@
-import { useMemo, useState, useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
-import { getRandomQuote } from '../data.js';
+import { getExerciseById } from '../data.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
-import { setWater } from '../lib/interactions.js';
-import { renderPerfAreaChart } from './dashboardCharts.js';
 import { revealOnScroll } from '../lib/motion.js';
-import SmartBanner from '../components/SmartBanner.jsx';
+import PhotoFrame from '../components/PhotoFrame.jsx';
+import * as haptics from '../lib/haptics.js';
 
-const perfLabels = {
-  strengthVolume: 'Strength Volume',
-  caloriesBurned: 'Calories Burned',
-  duration: 'Duration (min)',
-};
-const perfUnits = { strengthVolume: 'kg', caloriesBurned: 'cal', duration: 'min' };
+/**
+ * TODAY — the athletic-editorial home screen.
+ *
+ * One job: answer "what do I do right now" above the fold. A full-bleed hero
+ * carries today's session and the single primary action; everything below it is
+ * glanceable proof you're on track.
+ *
+ * All figures come from the store: streak / workoutsThisWeek / weekly
+ * strengthVolume / workoutHistory / customPlans, and the user's own weeklyGoal
+ * (set in Profile) as the "x / y" denominator.
+ */
 
-/** Local-only BMI estimate — not persisted. */
-function BMIBlock() {
-  const [heightCm, setHeightCm] = useState(175);
-  const [weightKg, setWeightKg] = useState(80);
-  const [age, setAge] = useState(25);
+/** Photo slots the recent-session rail cycles through, so consecutive tiles
+ *  never repeat the same image. */
+const RAIL_SLOTS = ['record-tile', 'plan-strength', 'plan-custom', 'plan-cardio'];
 
-  const bmiRaw = weightKg / Math.pow(heightCm / 100, 2);
-  const bmiNum = Number.isFinite(bmiRaw) ? Number(bmiRaw.toFixed(1)) : NaN;
-  const bmi = Number.isFinite(bmiNum) ? String(bmiNum) : '--';
-  let category = '—';
-  let color = 'var(--text-secondary)';
-  if (Number.isFinite(bmiNum)) {
-    if (bmiNum < 18.5) { category = 'Underweight'; color = '#FFA502'; }
-    else if (bmiNum < 25) { category = 'Normal'; color = '#2ED573'; }
-    else if (bmiNum < 30) { category = 'Overweight'; color = '#FFA502'; }
-    else { category = 'Obese'; color = '#FF4757'; }
-  }
-  const pct = Number.isFinite(bmiNum) ? Math.min(Math.max(((bmiNum - 15) / 25) * 100, 0), 100) : 0;
-
-  return (
-    <div className="gx-card dash-bmi" data-reveal>
-      <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
-        <span className="gx-eyebrow">{icon('activity', 13)} Body Index</span>
-        <h3 className="gx-title" style={{ fontSize: 'var(--text-xl)' }}>BMI Calculator</h3>
-        <p className="gx-subtitle">Quick estimate only — nothing here is saved.</p>
-      </div>
-      <div className="dash-bmi-fields">
-        {[
-          { label: 'Height (cm)', value: heightCm, set: setHeightCm, min: 80, max: 250 },
-          { label: 'Weight (kg)', value: weightKg, set: setWeightKg, min: 20, max: 400 },
-          { label: 'Age', value: age, set: (v) => setAge(v), min: 10, max: 120 },
-        ].map((f) => (
-          <label key={f.label} className="dash-field">
-            <span>{f.label}</span>
-            <input
-              type="number"
-              min={f.min}
-              max={f.max}
-              value={f.value}
-              onChange={(e) => f.set(Math.max(0, parseFloat(e.target.value) || 0))}
-            />
-          </label>
-        ))}
-      </div>
-      <div className="dash-bmi-readout">
-        <div className="dash-bmi-num" style={{ color }}>{bmi}</div>
-        <div className="dash-bmi-cat" style={{ color }}>{category}</div>
-      </div>
-      <div className="dash-bmi-track">
-        <div className="dash-bmi-marker" style={{ left: `${pct}%` }} />
-      </div>
-      <div className="dash-bmi-scale">
-        <span>Under</span><span>Normal</span><span>Over</span><span>Obese</span>
-      </div>
-    </div>
-  );
-}
-
-function WaterCard() {
-  const water = Store.get('waterIntake') || 0;
-  const goal = 8;
-  const pct = Math.min((water / goal) * 100, 100);
-  return (
-    <div className="gx-card" data-reveal>
-      <div className="dash-card-head">
-        <span className="gx-eyebrow">{icon('activity', 13)} Hydration</span>
-        <span className={`gx-badge ${water >= goal ? 'is-accent' : ''}`}>{water}/{goal} glasses</span>
-      </div>
-      <div className="dash-water-row">
-        {Array.from({ length: goal }, (_, i) => (
-          <button
-            key={i}
-            type="button"
-            className={`dash-water-cell ${i < water ? 'is-filled' : ''}`}
-            onClick={() => setWater(i + 1)}
-            aria-label={`Set water to ${i + 1}`}
-          >
-            {i < water ? icon('check', 13) : i + 1}
-          </button>
-        ))}
-      </div>
-      <div className="dash-progress-track">
-        <div className="dash-progress-fill dash-progress-water" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
+/** 18_420 -> "18.4k" so a long number never breaks the 3-across stat row. */
+function compact(n) {
+  const v = Number(n) || 0;
+  if (v >= 1000) return `${(v / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+  return String(Math.round(v));
 }
 
 export default function DashboardPage() {
   const navigateToPage = useContext(NavigateContext);
   const rootRef = useRef(null);
-  const [perfMetric, setPerfMetric] = useState('strengthVolume');
-  const [quote] = useState(() => getRandomQuote());
 
   const user = Store.get('user');
   const progress = Store.get('progressData');
-  const history = Store.get('workoutHistory');
-  const metricsLog = Store.get('metricsLog') || [];
-  Store.get('waterIntake');
+  const history = Store.get('workoutHistory') || [];
+  const plans = Store.get('customPlans') || [];
 
-  const currentWeight = Number.isFinite(Number(user?.weight_kg))
-    ? Number(user.weight_kg)
-    : (metricsLog.at(-1)?.weight ?? progress.weight.at(-1)?.value ?? null);
-
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const today = new Date().getDay();
   const firstName = (user?.name || 'Athlete').trim().split(/\s+/)[0];
+  const streak = progress.streak || 0;
+  const thisWeek = progress.workoutsThisWeek || 0;
+  const weeklyGoal = Number(Store.get('weeklyGoal')) || 5;
+  const weekVol = (progress?.weeklyPerformance?.strengthVolume || []).reduce((a, b) => a + b, 0);
 
-  const perf = progress?.weeklyPerformance || {
-    strengthVolume: [0, 0, 0, 0, 0, 0, 0],
-    caloriesBurned: [0, 0, 0, 0, 0, 0, 0],
-    duration: [0, 0, 0, 0, 0, 0, 0],
-  };
-  const chartMarkup = useMemo(
-    () => renderPerfAreaChart(perf[perfMetric], perfUnits[perfMetric]),
-    [perfMetric, perf]
-  );
+  // The hero has three states, in priority order: a session already running,
+  // a plan ready to start, or nothing planned yet.
+  const session = Store.get('activeSession');
+  const plan = plans[0] || null;
+  const planExercises = plan ? (plan.exercises || []).filter((id) => getExerciseById(id)).length : 0;
 
-  // Personalized weekly summary line
-  const weekVol = (perf.strengthVolume || []).reduce((a, b) => a + b, 0);
-  const summary =
-    progress.workoutsThisWeek >= 4
-      ? 'Strong week — you are ahead of most athletes. Keep the streak alive.'
-      : progress.workoutsThisWeek >= 1
-        ? 'Solid start this week. One more session pushes you into the top tier.'
-        : 'Fresh week, clean slate. Log a session to get the momentum going.';
+  let heroState = 'empty';
+  if (session) heroState = 'resume';
+  else if (plan) heroState = 'plan';
 
-  const stats = [
-    { icon: 'fire', value: progress.calories.at(-1)?.value || 0, suffix: ' cal', label: 'Calories Today' },
-    { icon: 'activity', value: progress.workoutsThisWeek, suffix: '', label: 'Workouts This Week' },
-    { icon: 'target', value: progress.totalWorkouts, suffix: '', label: 'Total Workouts' },
-  ];
+  let heroTitle;
+  let heroMeta;
+  let ctaLabel;
+  let ctaIcon;
+  if (heroState === 'resume') {
+    const sets = (session.exercises || []).flatMap((e) => e.sets || []);
+    const doneSets = sets.filter((x) => x.done).length;
+    heroTitle = session.planName || 'Freestyle Workout';
+    heroMeta = `In progress · ${doneSets}/${sets.length} sets · ${(session.exercises || []).length} exercises`;
+    ctaLabel = 'Resume workout';
+    ctaIcon = 'play';
+  } else if (heroState === 'plan') {
+    heroTitle = plan.name;
+    heroMeta = [plan.category, `${planExercises} exercise${planExercises === 1 ? '' : 's'}`, plan.duration]
+      .filter(Boolean).join(' · ');
+    ctaLabel = 'Start workout';
+    ctaIcon = 'play';
+  } else {
+    heroTitle = 'Pick your first plan';
+    heroMeta = 'Choose a plan and it shows up here every day';
+    ctaLabel = 'Browse plans';
+    ctaIcon = 'dumbbell';
+  }
 
-  useEffect(() => {
-    const cleanup = revealOnScroll(rootRef.current, '[data-reveal]', { y: 28, stagger: 0.06 });
-    return cleanup;
-  }, []);
+  const recent = history.slice(0, 3);
+
+  useEffect(() => revealOnScroll(rootRef.current, '[data-reveal]', { y: 24, stagger: 0.05 }), []);
+
+  function onHeroAction() {
+    haptics.tap();
+    // A running session is resumed, never replaced — starting a new one here
+    // used to silently discard the sets already logged.
+    if (heroState === 'resume') {
+      navigateToPage?.('workouts');
+      return;
+    }
+    if (heroState === 'plan') {
+      Store.startSession(plan.id);
+      navigateToPage?.('workouts');
+      return;
+    }
+    navigateToPage?.('planner');
+  }
 
   return (
-    <div className="dash" ref={rootRef}>
-      {/* ===== Hero header ===== */}
-      <header className="dash-hero" data-reveal>
-        <div className="dash-hero-glow" aria-hidden="true" />
-        <div className="dash-hero-main">
-          <span className="gx-eyebrow">{greeting}</span>
-          <h1 className="dash-hero-title">
-            Hey <span className="dash-accent">{firstName}</span>
-          </h1>
-          <p className="dash-hero-quote">{quote}</p>
-        </div>
-        <div className="dash-streak-chip" title="Current streak">
-          <span className="dash-streak-icon">{icon('fire', 22)}</span>
-          <span className="dash-streak-num">{progress.streak}</span>
-          <span className="dash-streak-label">day streak</span>
-        </div>
-      </header>
-
-      {/* ===== Smart notification ===== */}
-      <SmartBanner />
-
-      {/* ===== Weekly summary banner ===== */}
-      <div className="dash-summary" data-reveal>
-        <span className="dash-summary-icon">{icon('zap', 18)}</span>
-        <p>{summary}</p>
-        <button type="button" className="gx-btn gx-btn-primary dash-summary-cta" onClick={() => navigateToPage?.('planner')}>
-          {icon('dumbbell', 16)} Start a Workout
+    <div className="m1-today" ref={rootRef}>
+      {/* ===== Top bar ===== */}
+      <div className="m1-topbar">
+        <span className="m1-wordmark">GymBuddy</span>
+        <button
+          type="button"
+          className="m1-iconbtn"
+          aria-label="Notifications"
+          onClick={() => navigateToPage?.('profile')}
+        >
+          {icon('bell', 21)}
         </button>
       </div>
 
-      {/* ===== Stat bento ===== */}
-      <div className="dash-stats">
-        {stats.map((s) => (
-          <div key={s.label} className="gx-card dash-stat-card" data-reveal>
-            <span className="dash-stat-icon">{icon(s.icon, 20)}</span>
-            <div className="gx-stat-value" data-counter={s.value} data-suffix={s.suffix}>0</div>
-            <div className="gx-stat-label">{s.label}</div>
-          </div>
-        ))}
-        <div className="gx-card dash-stat-card" data-reveal>
-          <span className="dash-stat-icon">{icon('chart', 20)}</span>
-          <div className="gx-stat-value">
-            {currentWeight ?? '--'}<span className="dash-stat-unit"> kg</span>
-          </div>
-          <div className="gx-stat-label">Current Weight</div>
+      {/* ===== Hero: today's session over a full-bleed photo ===== */}
+      <PhotoFrame slot="hero-today" ghost="dumbbell" className="m1-hero">
+        <div className="m1-hero-body">
+          <span className="m1-eyebrow">
+            {heroState === 'resume' ? 'Pick up where you left off' : "Today's session"}
+          </span>
+          <h1 className="m1-display m1-h1 m1-hero-title">{heroTitle}</h1>
+          <span className="m1-meta">{heroMeta}</span>
+          <button type="button" className="m1-cta" onClick={onHeroAction}>
+            {icon(ctaIcon, 16)} {ctaLabel}
+          </button>
         </div>
-      </div>
+      </PhotoFrame>
 
-      {/* ===== Weekly performance chart ===== */}
-      <div className="gx-card dash-chart-card" data-reveal id="perf-chart-card">
-        <div className="dash-card-head">
-          <div>
-            <span className="gx-eyebrow">{icon('chart', 13)} This Week</span>
-            <h3 className="gx-title dash-chart-title">{perfLabels[perfMetric]}</h3>
+      <div className="m1-body">
+        {/* ===== Stat row ===== */}
+        <div className="m1-stats" data-reveal role="list">
+          <div role="listitem" className="m1-stat is-accent">
+            <span className="m1-stat-val">{streak}</span>
+            <span className="m1-stat-lbl">Day streak</span>
           </div>
-          <div className="dash-tabs">
-            {[
-              ['strengthVolume', 'Volume'],
-              ['caloriesBurned', 'Calories'],
-              ['duration', 'Duration'],
-            ].map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                className={`dash-tab ${perfMetric === key ? 'is-active' : ''}`}
-                onClick={() => setPerfMetric(key)}
-              >
-                {label}
-              </button>
-            ))}
+          <div role="listitem" className="m1-stat">
+            <span className="m1-stat-val">{thisWeek}<span className="u">/{weeklyGoal}</span></span>
+            <span className="m1-stat-lbl">This week</span>
+          </div>
+          <div role="listitem" className="m1-stat">
+            <span className="m1-stat-val">{compact(weekVol)}</span>
+            <span className="m1-stat-lbl">Kg volume</span>
           </div>
         </div>
-        <div
-          id="perf-chart-container"
-          className="dash-chart-area"
-          dangerouslySetInnerHTML={{ __html: chartMarkup }}
-        />
-        <div className="dash-chart-foot">
-          Total volume this week: <strong>{weekVol.toLocaleString()} kg</strong>
-        </div>
-      </div>
 
-      {/* ===== Streak + Water ===== */}
-      <div className="dash-grid-2">
-        <div className="gx-card" data-reveal>
-          <div className="dash-card-head">
-            <span className="gx-eyebrow">{icon('fire', 13)} Activity Streak</span>
-            <span className="gx-badge is-accent">{icon('trophy', 11)} Keep going</span>
-          </div>
-          <div className="dash-streak-week">
-            {days.map((d, i) => {
-              const isDone = i <= today && i >= today - progress.streak + 1;
-              const isToday = i === today;
-              return (
-                <div
-                  key={d}
-                  className={`dash-day ${isDone ? 'is-done' : ''} ${isToday && !isDone ? 'is-today' : ''}`}
-                >
-                  {d}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <WaterCard />
-      </div>
-
-      {/* ===== Recent workouts + PRs ===== */}
-      <div className="dash-grid-2">
-        <div className="gx-card" data-reveal>
-          <div className="dash-card-head">
-            <span className="gx-eyebrow">{icon('clock', 13)} Recent Workouts</span>
-            <button type="button" className="dash-link" onClick={() => navigateToPage?.('progress')}>
-              View all {icon('arrow', 12)}
+        {/* ===== Recent sessions rail ===== */}
+        <section data-reveal>
+          <div className="m1-sechead">
+            <span className="m1-eyebrow is-muted">Recent sessions</span>
+            <button type="button" className="m1-seclink" onClick={() => navigateToPage?.('records')}>
+              See all
             </button>
           </div>
-          {history.length === 0 ? (
-            <div className="dash-empty">
-              <span className="dash-empty-icon">{icon('dumbbell', 26)}</span>
-              <p>No workouts yet — your first session starts the streak.</p>
-            </div>
-          ) : (
-            <div className="dash-list">
-              {history.slice(0, 3).map((w) => (
-                <div key={w.id || w.planName + w.date} className="dash-workout-row">
-                  <span className="dash-workout-icon">{icon('dumbbell', 16)}</span>
-                  <div className="dash-workout-info">
-                    <h4>{w.planName}</h4>
-                    <p>{w.duration || '?'} min · {w.calories} cal</p>
-                  </div>
-                  <span className="gx-badge is-accent">{icon('check', 11)} Done</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="gx-card" data-reveal>
-          <div className="dash-card-head">
-            <span className="gx-eyebrow">{icon('trophy', 13)} Personal Records</span>
-          </div>
-          {Object.keys(progress.personalRecords || {}).length === 0 ? (
-            <div className="dash-empty">
-              <span className="dash-empty-icon">{icon('trophy', 26)}</span>
-              <p>No PRs logged yet. They appear here automatically.</p>
-            </div>
-          ) : (
-            <div className="dash-list">
-              {Object.entries(progress.personalRecords || {}).map(([name, val]) => (
-                <div key={name} className="dash-pr-row">
-                  <span>{name}</span>
-                  <span className="dash-pr-val">{val}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
-      <BMIBlock />
+          {recent.length === 0 ? (
+            <p className="m1-empty">
+              No sessions yet, {firstName}. Your first one starts the streak.
+            </p>
+          ) : (
+            <div className="m1-rail">
+              {recent.map((w, i) => (
+                <PhotoFrame
+                  key={w.id || `${w.planName}-${w.date}`}
+                  /* Cycle the art so a run of same-named sessions (e.g. several
+                     freestyle ones) doesn't read as a repeated-image glitch. */
+                  slot={RAIL_SLOTS[i % RAIL_SLOTS.length]}
+                  ghost="activity"
+                  as="button"
+                  type="button"
+                  className="m1-railcard"
+                  onClick={() => navigateToPage?.('progress')}
+                >
+                  <span className="m1-railcard-name">
+                    {(w.planName && w.planName.trim()) || 'Freestyle'}
+                  </span>
+                  <span className="m1-railcard-date">
+                    {new Date(w.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                  </span>
+                </PhotoFrame>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

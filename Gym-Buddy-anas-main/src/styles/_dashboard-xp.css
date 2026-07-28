@@ -1,0 +1,127 @@
+/* ===== XP / Level card (Dashboard) ===== */
+.dash-xp {
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-5);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.10), rgba(255,255,255,0.025) 60%);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+}
+.dash-xp::before {
+  content: '';
+  position: absolute;
+  inset: -30% -10% auto auto;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.18), transparent 65%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+.dash-xp-head {
+  position: relative;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.dash-xp-left { display: flex; flex-direction: column; gap: 4px; }
+.dash-xp-tier {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent);
+  font-size: 11px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  width: fit-content;
+}
+.dash-xp-level {
+  margin: 0;
+  font-size: var(--text-xl); font-weight: 800; letter-spacing: -0.02em;
+  color: var(--text-secondary);
+}
+.dash-xp-level-num {
+  color: var(--text-primary);
+  font-size: var(--text-3xl); font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+.dash-xp-right { display: flex; align-items: baseline; gap: 4px; }
+.dash-xp-current {
+  font-size: var(--text-2xl); font-weight: 900;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
+  color: var(--accent);
+  text-shadow: 0 0 14px rgba(var(--accent-rgb), 0.45);
+}
+.dash-xp-suffix {
+  font-size: 12px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.dash-xp-track {
+  position: relative;
+  height: 12px;
+  background: rgba(255,255,255,0.06);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.dash-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.55), inset 0 0 0 1px rgba(255,255,255,0.18);
+  transition: width 1s var(--ease-spring);
+  position: relative;
+}
+.dash-xp-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+  animation: dashXpShine 3s var(--ease-std) infinite;
+}
+@keyframes dashXpShine {
+  0%, 70% { transform: translateX(-100%); }
+  100%    { transform: translateX(200%); }
+}
+.dash-xp-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11.5px; color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.dash-xp-next { color: var(--accent); font-weight: 700; }
+
+/* ===== Streak freeze (Dashboard) ===== */
+.dash-freeze {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: var(--space-3);
+  padding: 8px 12px;
+  border-radius: var(--radius-md, 14px);
+  background: linear-gradient(180deg, rgba(88, 166, 255, 0.10), rgba(88, 166, 255, 0.03));
+  border: 1px solid rgba(88, 166, 255, 0.25);
+}
+.dash-freeze-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(88, 166, 255, 0.2);
+  color: #8cc2ff;
+  font-size: 11px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.dash-freeze-note {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.dash-freeze-use {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: #58a6ff;
+  color: #04122b;
+  border: none;
+  font-family: inherit; font-size: 11px; font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--dur-base) var(--ease-spring), filter var(--dur-base) var(--ease-std);
+}
+.dash-freeze-use:hover { transform: translateY(-1px); filter: brightness(1.1); }
+

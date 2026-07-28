@@ -1,0 +1,225 @@
+/* ============================================================
+   GSAP-driven landing extras: scroll progress, kinetic title,
+   social-proof avatar cluster, infinite marquee strip.
+   ============================================================ */
+
+/* Scroll progress bar — pinned to top, scaleX driven by ScrollTrigger */
+.landing-v2 .scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 60;
+  background: linear-gradient(90deg, #d4ff00 0%, #84ff8e 60%, transparent 100%);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(212, 255, 0, 0.55);
+}
+
+/* Kinetic hero title — each word fades up via CSS keyframe so it can
+   never get stuck at opacity:0 if a JS animation is interrupted.
+   IMPORTANT: .hero-title uses background-clip:text on the parent, but
+   inline-block children break that clip. So each word repaints the same
+   white gradient through its own text. .accent overrides with the
+   neon gradient via the existing .hero-title .accent rule. */
+.landing-v2 .hero-title .hero-word {
+  display: inline-block;
+  will-change: transform, opacity;
+  background: linear-gradient(180deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: heroWordReveal 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.landing-v2 .hero-title .hero-word.accent {
+  background: linear-gradient(135deg, var(--accent) 0%, #B8E600 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow: 0 0 60px rgba(212, 255, 0, 0.4);
+}
+.landing-v2 .hero-title .hero-word:nth-child(1) { animation-delay: 0.10s; }
+.landing-v2 .hero-title .hero-word:nth-child(2) { animation-delay: 0.18s; }
+.landing-v2 .hero-title .hero-word:nth-child(3) { animation-delay: 0.26s; }
+.landing-v2 .hero-title .hero-word:nth-child(4) { animation-delay: 0.34s; }
+@keyframes heroWordReveal {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero social-proof cluster — overlapping avatars + rating */
+.landing-v2 .hero-social {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px) saturate(140%);
+  margin: 4px auto 0;
+}
+.landing-v2 .hero-avatars {
+  display: inline-flex;
+  align-items: center;
+}
+.landing-v2 .hero-avatars img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(0, 0, 0, 0.7);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  margin-left: -10px;
+  transition: transform 0.3s ease;
+}
+.landing-v2 .hero-avatars img:first-child { margin-left: 0; }
+.landing-v2 .hero-avatars:hover img { transform: translateX(2px); }
+.landing-v2 .hero-avatars img:hover {
+  transform: translateY(-3px) scale(1.08);
+  z-index: 99 !important;
+}
+
+.landing-v2 .hero-social-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  text-align: left;
+}
+.landing-v2 .hero-social-stars {
+  color: #d4ff00;
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  filter: drop-shadow(0 0 4px rgba(212, 255, 0, 0.4));
+}
+.landing-v2 .hero-social-text {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.78);
+  margin-top: 2px;
+}
+.landing-v2 .hero-social-text strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .landing-v2 .hero-social {
+    gap: 10px;
+    padding: 6px 12px 6px 6px;
+  }
+  .landing-v2 .hero-avatars img { width: 30px; height: 30px; }
+  .landing-v2 .hero-social-text { font-size: 0.74rem; }
+}
+
+/* Infinite marquee strip between hero and features */
+.landing-v2 .section-marquee {
+  position: relative;
+  padding: 28px 0;
+  margin: 0;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(212, 255, 0, 0.03), transparent 60%),
+    rgba(0, 0, 0, 0.35);
+}
+.landing-v2 .section-marquee::before,
+.landing-v2 .section-marquee::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 120px;
+  pointer-events: none;
+  z-index: 2;
+}
+.landing-v2 .section-marquee::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--bg, #0a0a0a) 0%, transparent 100%);
+}
+.landing-v2 .section-marquee::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--bg, #0a0a0a) 0%, transparent 100%);
+}
+.landing-v2 .marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+}
+.landing-v2 .marquee-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 56px;
+  padding-right: 56px;
+  flex-shrink: 0;
+}
+.landing-v2 .marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.78);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.landing-v2 .marquee-item:nth-child(odd) {
+  color: #d4ff00;
+  filter: drop-shadow(0 0 8px rgba(212, 255, 0, 0.25));
+}
+.landing-v2 .marquee-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d4ff00;
+  box-shadow: 0 0 10px rgba(212, 255, 0, 0.7);
+  flex-shrink: 0;
+}
+
+/* GSAP perspective for scrub mockup tilt */
+.landing-v2 .how-mockup-wrap { perspective: 1200px; }
+.landing-v2 .phone-mockup { transform-style: preserve-3d; }
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-v2 .scroll-progress,
+  .landing-v2 .marquee-track { animation: none !important; transition: none !important; }
+  .landing-v2 .hero-title .hero-word { transform: none !important; opacity: 1 !important; }
+}
+
+
+/* ============================================================
+   STATIC MEMBERSHIP CARD — the no-WebGL path.
+   Shown on mobile, under prefers-reduced-motion, and on low-core devices.
+   Same artwork as the 3D card; tilt is transform-only so it never lays out.
+   ============================================================ */
+.smc-wrap { display: grid; place-items: center; }
+.smc {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  perspective: 900px;
+}
+.smc-strap {
+  width: 8px;
+  height: clamp(60px, 12vh, 120px);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, var(--hairline-strong), rgba(var(--accent-rgb), 0.55));
+}
+.smc-card {
+  width: min(300px, 72vw);
+  height: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-3), 0 0 46px rgba(var(--accent-rgb), 0.16);
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transform-style: preserve-3d;
+  transition: transform var(--dur-slow) var(--ease-out);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .smc-card { transition: none; transform: none; }
+}

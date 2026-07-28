@@ -4,15 +4,7 @@ import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
 import { ROUTES } from '../routes.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
-
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard', iconKey: 'home' },
-  { id: 'planner', label: 'Planner', iconKey: 'dumbbell' },
-  { id: 'progress', label: 'Progress', iconKey: 'chart' },
-  { id: 'records', label: 'Records', iconKey: 'trophy' },
-  { id: 'assistant', label: 'AI Coach', iconKey: 'bot' },
-  { id: 'profile', label: 'Profile', iconKey: 'user' },
-];
+import { NAV_ITEMS } from '../lib/navItems.js';
 
 /** First-letter avatar fallback when the user has no photo. */
 function initialsOf(name) {
@@ -42,7 +34,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        {navItems.map((item) => {
+        {NAV_ITEMS.map((item) => {
           const active = location.pathname === ROUTES[item.id];
           return (
             <button

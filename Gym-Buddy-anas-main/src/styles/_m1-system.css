@@ -1,0 +1,259 @@
+/* ============================================================
+   M1 — design-system mapping.
+
+   Screens 3..6 (Progress, Records, Plans, Profile) are all built from the
+   shared `gx-*` primitives and AppHeader. Rather than rewrite four pages of
+   working markup, this file re-dresses those primitives in the
+   athletic-editorial language ONCE, so the identity lands consistently and
+   every feature on those screens keeps working.
+
+   Only presentational properties are touched — no layout/behaviour changes.
+   Depends on tokens from _m1.css.
+   ============================================================ */
+
+/* ---------- Page titles (AppHeader hero + compact bar) ---------- */
+.app-header__title,
+.app-header__bar-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.96;
+}
+.app-header__title { font-size: clamp(1.9rem, 8.4vw, 2.4rem); }
+
+/* Legacy page headings that predate AppHeader (Workouts idle, Planner, …). */
+.wko-h1,
+.page-header h1,
+.gx-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  text-transform: uppercase;
+  letter-spacing: -0.015em;
+}
+
+/* ---------- Eyebrows ---------- */
+.gx-eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-stretch: var(--display-stretch);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---------- Cards: flat M1 surfaces, no glass ---------- */
+.gx-card {
+  background: var(--m1-surface);
+  border: 1px solid var(--m1-hairline);
+  border-radius: var(--m1-radius);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* ---------- Numerals ---------- */
+.gx-stat-value,
+.prog-metric-val,
+.rec-val,
+.plan-summary-val {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.gx-stat-label,
+.prog-metric-label {
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ---------- Badges & primary buttons ---------- */
+.gx-badge {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: var(--radius-pill);
+}
+.gx-btn-primary {
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* `.gx-btn-ghost` is used in 5 places (Workouts idle, Planner, Modals,
+   ErrorBoundary) but was never given a definition in any stylesheet — it fell
+   back to a default white browser button on a black page. Defining it here as
+   the secondary action of the M1 set. */
+.gx-btn-ghost {
+  background: transparent;
+  border: 1px solid var(--m1-hairline);
+  color: var(--text-primary);
+}
+.gx-btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* The old primary sat at 42-43px — under the 44px floor on every page. */
+.gx-btn { min-height: 46px; }
+.gx-btn-sm { min-height: 44px; }
+/* Accent swatch buttons sat at 37px. 46 not 44: at Pixel 7's DPR the computed
+   box landed a fraction under the floor and failed the 44px check. */
+.prof-accent { min-height: 46px; }
+/* Inline "View all" links sat at 15px tall; extra height is absorbed by the
+   negative block margins so section baselines don't move. */
+.dash-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -14px;
+}
+
+/* ---------- Tabs / filter chips across pages ---------- */
+.dash-tab,
+.perf-tab,
+.prog-tab,
+.rec-chip,
+.plan-filter {
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.dash-tab.is-active,
+.perf-tab.active,
+.prog-tab.is-active,
+.rec-chip.is-active,
+.plan-filter.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0B0B0B;
+}
+
+/* ---------- Smart banner (Train screen) ----------
+   Re-dressed from the old blue glass bubble into the M1 language: flat surface,
+   accent hairline, condensed uppercase CTA. Both controls were under 44px. */
+.smart-banner {
+  background: var(--m1-surface);
+  border: 1px solid var(--m1-hairline);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--m1-radius-sm);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.smart-banner-text strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.smart-banner-cta {
+  min-height: 44px;
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: #0B0B0B;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.smart-banner-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: 0;
+}
+
+/* ---------- History row delete ----------
+   Sits over the row's right edge (the row itself is a full-width expand button,
+   so the delete cannot be nested inside it). Offset clears the chevron. */
+.hist-item { position: relative; }
+.hist-row { padding-right: 52px; }
+.hist-row-del {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-fast) var(--ease-std), background var(--dur-fast) var(--ease-std);
+}
+.hist-row-del:hover { color: var(--danger); background: rgba(255, 71, 87, 0.1); }
+.hist-row-del:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+/* ---------- Editorial surfaces ----------
+   The reference treats plan cards and the profile banner as photography. These
+   two surfaces are styled rather than wrapped in <PhotoFrame> because their
+   markup is deep inside existing pages — the photo is applied as a layered
+   background (image + scrim) which produces the same result. The scrim is part
+   of the same declaration so overlaid type stays legible on any crop. */
+.plan-card,
+.prof-hero {
+  background-color: #101012;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  border: 1px solid var(--m1-hairline);
+  border-radius: var(--m1-radius);
+}
+.plan-card {
+  background-image:
+    linear-gradient(180deg, rgba(11, 11, 11, 0.35) 0%, rgba(11, 11, 11, 0.82) 62%, rgba(11, 11, 11, 0.96) 100%),
+    url('/img/plan-strength.jpeg');
+}
+/* Category-specific art, matching the slots in lib/imagery. */
+.plan-card[data-category='cardio'] {
+  background-image:
+    linear-gradient(180deg, rgba(11, 11, 11, 0.35) 0%, rgba(11, 11, 11, 0.82) 62%, rgba(11, 11, 11, 0.96) 100%),
+    url('/img/plan-cardio.jpeg');
+}
+.plan-card[data-category='custom'] {
+  background-image:
+    linear-gradient(180deg, rgba(11, 11, 11, 0.35) 0%, rgba(11, 11, 11, 0.82) 62%, rgba(11, 11, 11, 0.96) 100%),
+    url('/img/plan-custom.jpeg');
+}
+.prof-hero {
+  background-image:
+    linear-gradient(180deg, rgba(11, 11, 11, 0.42) 0%, rgba(11, 11, 11, 0.86) 66%, rgba(11, 11, 11, 0.97) 100%),
+    url('/img/profile-banner.jpeg');
+}
+.plan-card-name,
+.prof-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  text-transform: uppercase;
+  letter-spacing: -0.015em;
+  line-height: 1.02;
+}
+.prof-hero-glow { display: none; } /* the fallback already carries the wash */
+
+/* ---------- Ambient decoration ----------
+   M1 draws atmosphere from photography and flat black; the legacy blob/grid
+   washes muddy it. Kept off across the migrated screens. */
+.wko-bg,
+.prog-bg,
+.plan-bg {
+  display: none;
+}

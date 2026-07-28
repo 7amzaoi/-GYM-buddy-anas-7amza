@@ -1,0 +1,26 @@
+/* ============================================================
+   PHASE B — Heatmap / Muscle Volume / Measurements / Overload
+   ============================================================ */
+
+/* Progressive overload hint on exercise card */
+.wko-ex-overload {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0 0 var(--space-3);
+  padding: 8px 11px;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--accent-rgb), 0.08);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+.wko-ex-overload-icon {
+  display: grid; place-items: center;
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.wko-ex-overload strong { color: var(--text-primary); font-weight: 800; font-variant-numeric: tabular-nums; }
+.wko-ex-overload-target { color: var(--accent) !important; }
+

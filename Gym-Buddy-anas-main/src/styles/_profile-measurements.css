@@ -1,0 +1,89 @@
+/* ===== Body Measurements (Profile) ===== */
+.prof-measurements .gx-section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.prof-bm-empty {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+}
+.prof-bm-empty p {
+  margin: 0;
+  font-size: 13px; color: var(--text-secondary);
+  max-width: 420px; margin-inline: auto; line-height: 1.55;
+}
+.prof-bm-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.prof-bm-row {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md, 14px);
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--glass-border);
+}
+.prof-bm-row-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.prof-bm-date {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--accent);
+}
+.prof-bm-del {
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: transparent; border: 1px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--dur-base) var(--ease-std);
+}
+.prof-bm-del:hover { color: #ff4757; background: rgba(255,71,87,0.1); border-color: rgba(255,71,87,0.3); }
+.prof-bm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 6px;
+}
+.prof-bm-cell {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+.prof-bm-cell-lbl {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-secondary);
+}
+.prof-bm-cell-val {
+  font-size: 14px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.prof-bm-cell-val small { font-size: 10px; color: var(--text-secondary); font-weight: 600; margin-left: 2px; }
+.prof-bm-notes {
+  margin: 8px 0 0;
+  font-size: 12px; color: var(--text-secondary);
+  font-style: italic;
+}
+.prof-bm-empty-row { margin: 0; font-size: 12px; color: var(--text-secondary); }
+.prof-bm-more {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: 11px; color: var(--text-secondary);
+}
+.prof-bm-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .prog-heatmap-grid, .prog-heatmap-months { grid-template-columns: repeat(12, 1fr); }
+  .prof-bm-form { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .prog-heatmap-cell:hover { transform: scale(1.2); }
+  .prog-muscle-row { grid-template-columns: 60px 1fr 56px; gap: 8px; }
+  .prog-muscle-name { font-size: 11px; }
+  .prof-bm-form { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prog-muscle-bar-fill { animation: none; }
+  .prog-heatmap-cell { transition: none; }
+}

@@ -7,6 +7,82 @@ import { initCounters } from '../lib/interactions.js';
 import { logBodyMetricsRemote } from '../services/profilesApi.js';
 import { refreshUserFromRemote } from '../lib/authBootstrap.js';
 import { revealOnScroll } from '../lib/motion.js';
+import { getExerciseById } from '../data.js';
+import AppHeader from '../components/AppHeader.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import DailyReport from '../components/progress/DailyReport.jsx';
+
+/** Group raw muscle names into 6 major bands for the volume chart. */
+const MUSCLE_BANDS = [
+  { id: 'chest', label: 'Chest', match: /chest/i, color: '#ff4757' },
+  { id: 'back', label: 'Back', match: /back|lat/i, color: '#58a6ff' },
+  { id: 'shoulders', label: 'Shoulders', match: /shoulder|delt/i, color: '#ff9f43' },
+  { id: 'arms', label: 'Arms', match: /biceps|triceps|forearm/i, color: '#dc269f' },
+  { id: 'legs', label: 'Legs', match: /quad|hamstr|glute|legs|calf|calves/i, color: '#2ed573' },
+  { id: 'core', label: 'Core', match: /core|abs/i, color: '#a78bfa' },
+];
+
+/** Sum total volume per muscle band over the last N days. */
+function computeMuscleVolume(history, days = 7) {
+  const cutoff = Date.now() - days * 86400000;
+  const totals = Object.fromEntries(MUSCLE_BANDS.map((b) => [b.id, 0]));
+  for (const h of history) {
+    if (!h.date || Date.parse(h.date) < cutoff) continue;
+    for (const log of (h.exerciseLog || [])) {
+      const ex = getExerciseById(log.id);
+      if (!ex || !ex.muscles || !log.volume) continue;
+      for (const band of MUSCLE_BANDS) {
+        if (band.match.test(ex.muscles)) totals[band.id] += log.volume;
+      }
+    }
+  }
+  return totals;
+}
+
+/** Build a 16-week calendar grid (oldest left → newest right). */
+function buildHeatmapColumns(history, weeks = 16) {
+  const dayMap = new Map();
+  let maxVol = 0;
+  for (const h of history) {
+    if (!h.date) continue;
+    const d = new Date(h.date);
+    d.setHours(0, 0, 0, 0);
+    const key = d.toISOString().slice(0, 10);
+    const cur = dayMap.get(key) || { volume: 0, count: 0 };
+    cur.volume += Number(h.volume || 0);
+    cur.count += 1;
+    dayMap.set(key, cur);
+    if (cur.volume > maxVol) maxVol = cur.volume;
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Current week's Saturday — newest column ends here.
+  const thisSat = new Date(today);
+  thisSat.setDate(today.getDate() + (6 - today.getDay()));
+  const columns = [];
+  for (let w = weeks - 1; w >= 0; w--) {
+    const weekStart = new Date(thisSat);
+    weekStart.setDate(thisSat.getDate() - w * 7 - 6);
+    const week = [];
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(weekStart);
+      day.setDate(weekStart.getDate() + d);
+      const future = day > today;
+      const key = day.toISOString().slice(0, 10);
+      const data = dayMap.get(key) || { volume: 0, count: 0 };
+      let intensity = 0;
+      if (!future && data.count > 0) {
+        if (maxVol === 0 || data.volume === 0) intensity = 1;
+        else if (data.volume < maxVol * 0.34) intensity = 2;
+        else if (data.volume < maxVol * 0.67) intensity = 3;
+        else intensity = 4;
+      }
+      week.push({ date: day, key, volume: data.volume, count: data.count, future, intensity });
+    }
+    columns.push(week);
+  }
+  return columns;
+}
 
 /** Small up/down trend pill — green when the change is "good". */
 function Trend({ change, goodWhenNegative = false, suffix = '%', tail = '' }) {
@@ -28,11 +104,16 @@ function Trend({ change, goodWhenNegative = false, suffix = '%', tail = '' }) {
 export default function ProgressPage() {
   const rootRef = useRef(null);
   const [logOpen, setLogOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
+  /** Session queued for deletion — drives the ConfirmDialog. */
+  const [pendingDelete, setPendingDelete] = useState(null);
+  /* Progress carried ~750 lines in one column. Categories keep each view to
+     roughly a screen or two instead of one very long scroll. */
+  const [cat, setCat] = useState('daily');
   const [, forceRender] = useReducer((x) => x + 1, 0);
 
-  useEffect(() => {
-    Store.subscribe(() => forceRender());
-  }, []);
+  useEffect(() => Store.subscribe(() => forceRender()), []);
 
   const progress = Store.get('progressData');
   const history = Store.get('workoutHistory') || [];
@@ -156,17 +237,35 @@ export default function ProgressPage() {
   return (
     <div className="prog" ref={rootRef}>
       {/* ===== Header ===== */}
-      <header className="prog-header" data-reveal>
-        <div>
-          <span className="gx-eyebrow">{icon('chart', 13)} Analytics</span>
-          <h1 className="prog-h1">Progress Analytics</h1>
-          <p className="gx-subtitle">Visualize your transformation and strength gains.</p>
-        </div>
-        <button type="button" className="gx-btn gx-btn-primary" onClick={showLogMetrics}>
-          {icon('plus', 15)} Log Metrics
-        </button>
-      </header>
+      <AppHeader
+        eyebrow={<>{icon('chart', 13)} Analytics</>}
+        title="Progress Analytics"
+        subtitle="Visualize your transformation and strength gains."
+        action={
+          <button type="button" className="gx-btn gx-btn-primary" onClick={showLogMetrics}>
+            {icon('plus', 15)} Log Metrics
+          </button>
+        }
+      />
 
+      <nav className="m1-chiprow prog-cats" role="tablist" aria-label="Progress sections">
+        {[['daily','Daily'],['body','Body'],['strength','Strength'],['history','History']].map(([id,label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={cat === id}
+            className={`m1-chip ${cat === id ? 'is-active' : ''}`}
+            onClick={() => setCat(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {cat === 'daily' && <DailyReport />}
+
+      {cat === 'body' && (<>
       {/* ===== 3 hero metrics ===== */}
       <div className="prog-hero-grid">
         <div className="gx-card" data-reveal>
@@ -251,6 +350,9 @@ export default function ProgressPage() {
         ))}
       </div>
 
+      </>)}
+
+      {cat === 'strength' && (<>
       {/* ===== Charts row ===== */}
       <div className="prog-grid-2">
         <div className="gx-card" data-reveal>
@@ -263,6 +365,115 @@ export default function ProgressPage() {
         </div>
       </div>
 
+      {/* ===== Calendar heatmap + Muscle volume ===== */}
+      <div className="prog-grid-2">
+        {(() => {
+          const heatmap = buildHeatmapColumns(history, 16);
+          const totalSessions = history.length;
+          const monthLabels = [];
+          let lastMonth = -1;
+          heatmap.forEach((week, idx) => {
+            const wkMonth = week[0].date.getMonth();
+            if (wkMonth !== lastMonth) {
+              monthLabels.push({ col: idx, label: week[0].date.toLocaleString(undefined, { month: 'short' }) });
+              lastMonth = wkMonth;
+            }
+          });
+          return (
+            <div className="gx-card prog-heatmap-card" data-reveal>
+              <div className="prog-heatmap-head">
+                <span className="gx-eyebrow">{icon('calendar', 13)} Training Days</span>
+                <span className="prog-heatmap-tally">{totalSessions} session{totalSessions === 1 ? '' : 's'} · last 16 weeks</span>
+              </div>
+              <div className="prog-heatmap-wrap">
+                <div className="prog-heatmap-months">
+                  {monthLabels.map((m, i) => (
+                    <span key={i} style={{ gridColumn: m.col + 1 }}>{m.label}</span>
+                  ))}
+                </div>
+                <div className="prog-heatmap-body">
+                  <div className="prog-heatmap-rows" aria-hidden>
+                    <span>Mon</span><span /><span>Wed</span><span /><span>Fri</span><span /><span />
+                  </div>
+                  <div className="prog-heatmap-grid" role="img" aria-label="Calendar heatmap of workout days">
+                    {heatmap.map((week, wi) => (
+                      <div key={wi} className="prog-heatmap-col">
+                        {week.map((cell) => (
+                          <span
+                            key={cell.key}
+                            className={`prog-heatmap-cell level-${cell.intensity} ${cell.future ? 'is-future' : ''}`}
+                            title={
+                              cell.future
+                                ? cell.date.toLocaleDateString()
+                                : `${cell.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} — ${
+                                    cell.count
+                                      ? `${cell.count} workout${cell.count > 1 ? 's' : ''} · ${Math.round(cell.volume).toLocaleString()} kg`
+                                      : 'Rest day'
+                                  }`
+                            }
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="prog-heatmap-legend">
+                  <span>Less</span>
+                  <span className="prog-heatmap-cell level-0" />
+                  <span className="prog-heatmap-cell level-1" />
+                  <span className="prog-heatmap-cell level-2" />
+                  <span className="prog-heatmap-cell level-3" />
+                  <span className="prog-heatmap-cell level-4" />
+                  <span>More</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {(() => {
+          const totals = computeMuscleVolume(history, 7);
+          const maxVol = Math.max(...Object.values(totals), 1);
+          const hasAny = Object.values(totals).some((v) => v > 0);
+          return (
+            <div className="gx-card prog-muscles-card" data-reveal>
+              <div className="prog-heatmap-head">
+                <span className="gx-eyebrow">{icon('zap', 13)} Volume by Muscle</span>
+                <span className="prog-heatmap-tally">Last 7 days</span>
+              </div>
+              {hasAny ? (
+                <div className="prog-muscles-list">
+                  {MUSCLE_BANDS.map((band) => {
+                    const v = totals[band.id];
+                    const pct = (v / maxVol) * 100;
+                    return (
+                      <div key={band.id} className="prog-muscle-row">
+                        <span className="prog-muscle-name">{band.label}</span>
+                        <div className="prog-muscle-bar-track">
+                          <div
+                            className="prog-muscle-bar-fill"
+                            style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${band.color}, ${band.color}cc)` }}
+                          />
+                        </div>
+                        <span className="prog-muscle-val">{Math.round(v).toLocaleString()} kg</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="prog-muscles-empty">
+                  <span className="dash-empty-icon">{icon('activity', 22)}</span>
+                  <p>Log a workout to see your muscle distribution.</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+
+      </>)}
+
+      {cat === 'body' && (<>
       {/* ===== Body comp + PRs ===== */}
       <div className="prog-grid-2">
         <div className="gx-card" data-reveal>
@@ -341,6 +552,9 @@ export default function ProgressPage() {
         </div>
       </div>
 
+      </>)}
+
+      {cat === 'strength' && (<>
       {/* ===== Weekly calories + summary ===== */}
       <div className="prog-grid-2">
         <div className="gx-card" data-reveal>
@@ -366,29 +580,153 @@ export default function ProgressPage() {
         </div>
       </div>
 
+      </>)}
+
+      {cat === 'history' && (<>
       {/* ===== History ===== */}
-      <div className="gx-card" data-reveal>
-        <span className="gx-eyebrow" style={{ marginBottom: 'var(--space-4)' }}>{icon('calendar', 13)} Workout History</span>
+      <div className="gx-card hist-card" data-reveal>
+        <button
+          type="button"
+          className="hist-toggle"
+          onClick={() => setHistoryOpen((v) => !v)}
+          aria-expanded={historyOpen}
+          aria-controls="hist-panel"
+        >
+          <span className="hist-toggle-label">
+            <span className="gx-eyebrow hist-toggle-eyebrow">
+              {icon('calendar', 13)} Workout History
+            </span>
+            <span className="hist-toggle-meta">
+              {history.length === 0
+                ? 'No workouts yet'
+                : `${history.length} session${history.length === 1 ? '' : 's'} logged`}
+            </span>
+          </span>
+          <span className={`hist-toggle-chev ${historyOpen ? 'is-open' : ''}`} aria-hidden="true">
+            {icon('arrow', 14)}
+          </span>
+        </button>
+
+        {historyOpen && (
+          <div id="hist-panel" className="hist-panel">
         {history.length === 0 ? (
           <div className="dash-empty">
             <span className="dash-empty-icon">{icon('calendar', 26)}</span>
             <p>Complete your first workout to see history here.</p>
           </div>
         ) : (
-          <div className="dash-list">
-            {history.slice(0, 10).map((w) => (
-              <div key={w.id || w.planName + w.date} className="dash-workout-row">
-                <span className="dash-workout-icon">{icon('dumbbell', 16)}</span>
-                <div className="dash-workout-info">
-                  <h4>{w.planName}</h4>
-                  <p>{new Date(w.date).toLocaleDateString()} · {w.duration || '?'} min · {w.calories} cal</p>
+          <div className="hist-list">
+            {history.slice(0, 10).map((w) => {
+              const key = w.id || w.planName + w.date;
+              const isOpen = expandedHistoryId === key;
+              const name = (w.planName && w.planName.trim()) || 'Freestyle Workout';
+              const date = new Date(w.date);
+              const completion = w.exercises > 0 ? Math.round((w.completed / w.exercises) * 100) : 0;
+              const isFreestyle = !w.planId;
+              return (
+                <div key={key} className={`hist-item ${isOpen ? 'is-open' : ''}`}>
+                  <button
+                    type="button"
+                    className="hist-row"
+                    onClick={() => setExpandedHistoryId(isOpen ? null : key)}
+                    aria-expanded={isOpen}
+                  >
+                    <span className="hist-row-icon">{icon(isFreestyle ? 'activity' : 'dumbbell', 16)}</span>
+                    <div className="hist-row-info">
+                      <h4>{name}</h4>
+                      <p>
+                        {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {' · '}
+                        {w.duration ? `${w.duration} min` : 'No duration'}
+                        {' · '}
+                        {Math.round(w.calories || 0)} cal
+                      </p>
+                    </div>
+                    <span className="gx-badge is-accent hist-row-badge">{w.completed}/{w.exercises}</span>
+                    <span className={`hist-row-chev ${isOpen ? 'is-open' : ''}`} aria-hidden="true">
+                      {icon('arrow', 14)}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="hist-row-del"
+                    aria-label={`Delete ${name} logged ${date.toLocaleDateString()}`}
+                    onClick={() => setPendingDelete({
+                      key: w.id || key,
+                      name,
+                      date: date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }),
+                    })}
+                  >
+                    {icon('trash', 15)}
+                  </button>
+
+                  {isOpen && (
+                    <div className="hist-detail">
+                      <div className="hist-detail-grid">
+                        <div className="hist-detail-stat">
+                          <span className="hist-detail-stat-lbl">Date</span>
+                          <span className="hist-detail-stat-val">
+                            {date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </span>
+                          <span className="hist-detail-stat-sub">
+                            {date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="hist-detail-stat">
+                          <span className="hist-detail-stat-lbl">Duration</span>
+                          <span className="hist-detail-stat-val">
+                            {w.duration ? `${w.duration}` : '—'}
+                            {w.duration ? <small> min</small> : null}
+                          </span>
+                        </div>
+                        <div className="hist-detail-stat">
+                          <span className="hist-detail-stat-lbl">Volume</span>
+                          <span className="hist-detail-stat-val">
+                            {Number(w.volume || 0).toLocaleString()}
+                            <small> kg</small>
+                          </span>
+                        </div>
+                        <div className="hist-detail-stat">
+                          <span className="hist-detail-stat-lbl">Calories</span>
+                          <span className="hist-detail-stat-val">
+                            {Math.round(w.calories || 0)}
+                            <small> cal</small>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="hist-detail-bar">
+                        <div className="hist-detail-bar-track">
+                          <div className="hist-detail-bar-fill" style={{ width: `${completion}%` }} />
+                        </div>
+                        <div className="hist-detail-bar-meta">
+                          <span>{w.completed} of {w.exercises} exercises completed</span>
+                          <span className="hist-detail-bar-pct">{completion}%</span>
+                        </div>
+                      </div>
+
+                      <div className="hist-detail-footer">
+                        <span className={`hist-detail-tag ${isFreestyle ? 'is-freestyle' : 'is-plan'}`}>
+                          {isFreestyle ? (
+                            <>{icon('activity', 12)} Freestyle</>
+                          ) : (
+                            <>{icon('dumbbell', 12)} From plan</>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <span className="gx-badge is-accent">{w.completed}/{w.exercises}</span>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+        )}
           </div>
         )}
       </div>
+
+      </>)}
 
       {/* ===== Log Metrics modal ===== */}
       {logOpen && (
@@ -424,6 +762,23 @@ export default function ProgressPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (Store.deleteWorkoutFromHistory(pendingDelete.key)) {
+            setExpandedHistoryId(null);
+            Toast.show('Session deleted.', 'info', 1800);
+          }
+          setPendingDelete(null);
+        }}
+        title="Delete this session?"
+        subject={pendingDelete ? `${pendingDelete.name} · ${pendingDelete.date}` : ''}
+        note="It will be removed from your history, and your streak, weekly volume and totals will be recalculated. This can't be undone."
+        confirmLabel="Delete"
+        tone="danger"
+      />
     </div>
   );
 }

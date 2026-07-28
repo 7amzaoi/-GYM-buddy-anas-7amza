@@ -1,0 +1,184 @@
+/* ========== AUTH PAGES ========== */
+.auth-page {
+  margin-left: 0 !important;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.auth-page::before,
+.auth-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+}
+.auth-page::before {
+  width: 420px;
+  height: 420px;
+  left: -120px;
+  top: -100px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent), transparent 65%);
+}
+.auth-page::after {
+  width: 360px;
+  height: 360px;
+  right: -120px;
+  bottom: -80px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%);
+}
+.auth-shell {
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  box-shadow: 0 20px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+}
+.auth-side-panel {
+  background: linear-gradient(160deg, rgba(212,255,0,.14), rgba(212,255,0,.04));
+  border-right: 1px solid var(--border);
+  padding: 34px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.auth-side-panel::after {
+  content: '';
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  right: -80px;
+  bottom: -90px;
+  background: radial-gradient(circle, rgba(212,255,0,.28), transparent 70%);
+  filter: blur(10px);
+}
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  margin-bottom: 22px;
+}
+.auth-side-panel h2 {
+  font-size: 1.8rem;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+.auth-side-panel p {
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+.auth-points {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text-secondary);
+}
+.auth-points > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.auth-card {
+  width: 100%;
+  padding: 34px 32px;
+  background: color-mix(in srgb, var(--bg-card) 88%, #ffffff 12%);
+  backdrop-filter: blur(8px);
+}
+.auth-card .btn-primary {
+  background: linear-gradient(135deg, #d4ff00, #c1ec00);
+}
+.auth-card .btn-primary:hover {
+  transform: translateY(-2px);
+}
+.auth-card h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; text-align: center; }
+.auth-card .subtitle { text-align: center; color: var(--text-secondary); margin-bottom: 32px; }
+.auth-form { display: flex; flex-direction: column; gap: 18px; }
+.auth-footer { text-align: center; margin-top: 24px; color: var(--text-secondary); font-size: .9rem; }
+.auth-footer a, .auth-footer button { color: var(--accent); cursor: pointer; background: none; border: none; font-family: inherit; font-size: inherit; text-decoration: underline; }
+
+.login-shell {
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+.login-side-panel {
+  position: relative;
+  overflow: hidden;
+}
+.login-brand {
+  letter-spacing: .2px;
+}
+.login-kpi-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.login-kpi-card {
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  background: rgba(0,0,0,.22);
+  border-radius: 12px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.login-kpi-card strong {
+  color: var(--accent);
+  font-size: .95rem;
+  line-height: 1;
+}
+.login-kpi-card span {
+  color: var(--text-secondary);
+  font-size: .75rem;
+}
+.login-card {
+  position: relative;
+}
+.login-card-head {
+  margin-bottom: 2px;
+}
+.password-wrap {
+  position: relative;
+}
+.password-wrap .input {
+  padding-right: 74px;
+}
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.password-toggle:hover {
+  color: var(--accent);
+}
+.login-trust-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--text-secondary);
+  font-size: .73rem;
+}
+.login-trust-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+

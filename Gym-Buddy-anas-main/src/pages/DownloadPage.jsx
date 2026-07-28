@@ -1,5 +1,5 @@
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react';
-import { gsap, ScrollTrigger } from '../gsap.config.js';
+import { gsap } from '../gsap.config.js';
 import { icon } from '../icons.jsx';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 

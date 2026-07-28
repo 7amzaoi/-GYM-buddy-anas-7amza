@@ -3,11 +3,12 @@ import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import { Store } from './store.js';
 import './gsap.config.js';
-import './styles.css';
+import './styles/index.css';
 import App from './App.jsx';
 import { hydrateAuthSession, ensureAuthSubscription } from './lib/authBootstrap.js';
-import { initAccent } from './lib/personalization.js';
+import { initAccent, initTheme } from './lib/personalization.js';
 
+initTheme();
 initAccent();
 Store.init();
 void hydrateAuthSession();

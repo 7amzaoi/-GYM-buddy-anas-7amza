@@ -1,0 +1,457 @@
+/* ========== LOGIN PAGE 2.0 ========== */
+.login-v2 {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  margin-left: 0 !important;
+  background: #050505;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+
+/* Back button — fixed top-left over the hero */
+.login-v2-back {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px 10px 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+.login-v2-back:hover {
+  background: rgba(212, 255, 0, 0.10);
+  border-color: rgba(212, 255, 0, 0.4);
+  transform: translateX(-2px);
+}
+.login-v2-back svg { width: 18px; height: 18px; }
+
+/* Full-bleed hero image with overlay */
+.login-v2-hero {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.login-v2-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  filter: saturate(0.75) contrast(1.1) brightness(0.7);
+  /* Mask the image so it fades on the right side, leaving room
+     for the floating card to breathe over a darker area. */
+  -webkit-mask-image: linear-gradient(90deg, #000 30%, rgba(0,0,0,0.4) 80%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 30%, rgba(0,0,0,0.4) 80%, transparent 100%);
+}
+.login-v2-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(5,5,5,0.4) 0%, rgba(5,5,5,0.65) 100%),
+    radial-gradient(ellipse at 70% 50%, transparent 0%, rgba(5,5,5,0.6) 100%);
+}
+.login-v2-hero-glow {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  top: 50%;
+  right: -200px;
+  transform: translateY(-50%);
+  background: radial-gradient(circle, rgba(212, 255, 0, 0.18) 0%, transparent 60%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+/* Brand wordmark over the hero (visible on wide screens, behind the card) */
+.login-v2-brand {
+  position: absolute;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+}
+
+/* The floating glass card */
+.login-v2-card {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 440px;
+  padding: 44px 40px 36px;
+  /* Glassmorphism: low-opacity gradient + heavy backdrop blur. The hero
+     image stays visible through the panel so it reads as frosted glass. */
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0.04) 60%,
+      rgba(212, 255, 0, 0.04) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 22px;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 30px 80px rgba(0, 0, 0, 0.45),
+    0 0 60px rgba(212, 255, 0, 0.10);
+}
+/* Subtle top-edge highlight strip — classic glass sheen */
+.login-v2-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  pointer-events: none;
+  border-radius: 22px;
+}
+
+.login-v2-card-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 28px;
+  color: var(--text-primary);
+}
+.login-v2-card-brand .logo-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow), 0 0 24px var(--accent-glow);
+}
+
+.login-v2-title {
+  text-align: center;
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 8px;
+}
+.login-v2-subtitle {
+  text-align: center;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+
+/* Form */
+.login-v2-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.login-v2-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.login-v2-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.7);
+}
+.login-v2-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.login-v2-input {
+  width: 100%;
+  padding: 13px 16px;
+  /* Glass field — semi-transparent over the blurred card */
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.login-v2-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+.login-v2-input:focus {
+  border-color: rgba(212, 255, 0, 0.55);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 3px rgba(212, 255, 0, 0.14);
+}
+.login-v2-input[data-invalid] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 30%, transparent);
+}
+
+.login-v2-password-wrap {
+  position: relative;
+}
+.login-v2-pass-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.25s ease, background 0.25s ease;
+}
+.login-v2-pass-toggle:hover {
+  color: var(--accent);
+  background: rgba(212, 255, 0, 0.08);
+}
+
+.login-v2-error {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+
+/* Submit button — neon green like Marc Jacobs's solid black, but in our palette */
+.login-v2-submit {
+  margin-top: 6px;
+  width: 100%;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, var(--accent) 0%, #B8E600 100%);
+  color: #0B0B0B;
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(212, 255, 0, 0.25), 0 0 0 0 rgba(212, 255, 0, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.login-v2-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(212, 255, 0, 0.35), 0 0 0 6px rgba(212, 255, 0, 0.1);
+}
+.login-v2-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+.login-v2-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-v2-resend {
+  width: 100%;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+.login-v2-resend:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--text-primary);
+}
+
+/* Trust row */
+.login-v2-trust {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+.login-v2-trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.02em;
+}
+.login-v2-trust span svg {
+  color: var(--accent);
+}
+
+.login-v2-footer {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+.login-v2-link {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0;
+}
+.login-v2-link:hover {
+  color: #B8E600;
+}
+.login-v2-link-sm {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .login-v2 { padding: 100px 16px 80px; }
+  .login-v2-back {
+    top: 18px; left: 18px;
+    padding: 8px 14px 8px 10px;
+    font-size: 0.8rem;
+  }
+  .login-v2-brand { display: none; }
+  .login-v2-hero img {
+    object-position: center;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+  }
+  .login-v2-hero-glow {
+    width: 480px; height: 480px;
+    right: 50%; top: 30%;
+    transform: translateX(50%);
+  }
+  .login-v2-card {
+    padding: 36px 24px 30px;
+  }
+  .login-v2-title { font-size: 1.6rem; }
+  .login-v2-trust { gap: 10px; font-size: 0.7rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-v2-back, .login-v2-submit, .login-v2-input { transition: none; }
+}
+
+/* ===== REGISTER variant ===== */
+.register-v2 .login-v2-card {
+  /* Register has 4 fields including goal pills — slightly wider feels balanced */
+  max-width: 480px;
+}
+.register-v2 .login-v2-hero img {
+  /* Lifter sits roughly centered; pull the focal point a touch left so the
+     floating card on the right doesn't cover the subject. */
+  object-position: 35% center;
+}
+
+/* Goal pill row — replaces the old <select> */
+.login-v2-goal-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+}
+.login-v2-goal-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.18s ease;
+}
+.login-v2-goal-pill:hover {
+  border-color: rgba(212, 255, 0, 0.3);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.login-v2-goal-pill.is-active {
+  background: linear-gradient(135deg, rgba(212, 255, 0, 0.18), rgba(212, 255, 0, 0.06));
+  border-color: rgba(212, 255, 0, 0.55);
+  color: var(--accent);
+  box-shadow:
+    inset 0 0 0 1px rgba(212, 255, 0, 0.2),
+    0 0 18px rgba(212, 255, 0, 0.18);
+}
+.login-v2-goal-emoji {
+  font-size: 1rem;
+  filter: drop-shadow(0 0 6px rgba(212, 255, 0, 0.25));
+}
+
+@media (max-width: 720px) {
+  .register-v2 .login-v2-card { max-width: 440px; }
+  .login-v2-goal-row { grid-template-columns: 1fr; }
+}
+

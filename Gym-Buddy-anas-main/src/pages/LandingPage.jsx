@@ -5,6 +5,72 @@ import { NavigateContext } from '../context/NavigateContext.jsx';
 
 // Heavy R3F + Rapier deps — only loads when the user reaches the landing page.
 const MembershipCard = lazy(() => import('../components/MembershipCard.jsx'));
+const StaticMembershipCard = lazy(() => import('../components/StaticMembershipCard.jsx'));
+
+/**
+ * Should this device get the WebGL card at all?
+ *
+ * The 3D card is ~2.4 MB and runs a rope physics sim every frame. Phones, users
+ * who asked for reduced motion, and low-core machines get the static card
+ * instead — same artwork, transform-only tilt, no WebGL and no download.
+ */
+function prefersStaticCard() {
+  if (typeof window === 'undefined') return true;
+  const mq = (q) => typeof matchMedia !== 'undefined' && matchMedia(q).matches;
+  if (mq('(max-width: 768px)')) return true;
+  if (mq('(prefers-reduced-motion: reduce)')) return true;
+  const cores = navigator.hardwareConcurrency;
+  if (typeof cores === 'number' && cores <= 4) return true;
+  return false;
+}
+
+/**
+ * Holds the 2 MB three.js bundle off the initial render. The card only mounts
+ * once its container is in (or near) the viewport — so users who never scroll
+ * to that section never download it.
+ */
+function DeferredMembershipCard() {
+  const ref = useRef(null);
+  const [shouldMount, setShouldMount] = useState(false);
+  // Decided once on mount — this must not change mid-session and re-mount WebGL.
+  const [useStatic] = useState(prefersStaticCard);
+  useEffect(() => {
+    if (shouldMount) return undefined;
+    const el = ref.current;
+    if (!el) return undefined;
+    if (!('IntersectionObserver' in window)) {
+      // Old browser fallback — mount after 2s so it still appears.
+      const t = setTimeout(() => setShouldMount(true), 2000);
+      return () => clearTimeout(t);
+    }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        setShouldMount(true);
+        io.disconnect();
+      }
+    }, { rootMargin: '400px 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [shouldMount]);
+  const skeleton = (
+    <div className="lanyard-wrapper landing-lanyard">
+      <div className="lanyard-skeleton">
+        <div className="lanyard-skeleton-strap" />
+        <div className="lanyard-skeleton-card"><div className="lanyard-skeleton-shimmer" /></div>
+        <p>Loading membership card…</p>
+      </div>
+    </div>
+  );
+  return (
+    <div ref={ref} className="lanyard-deferred">
+      {shouldMount ? (
+        <Suspense fallback={skeleton}>
+          {useStatic ? <StaticMembershipCard /> : <MembershipCard />}
+        </Suspense>
+      ) : skeleton}
+    </div>
+  );
+}
 
 // Public CDN sources tried in order. Pexels CDN now blocks hot-linking
 // (returns 403), so we use Mixkit which is explicitly hot-link friendly.
@@ -800,17 +866,7 @@ export default function LandingPage() {
           </div>
 
           <div className="card-section-stage" data-reveal>
-            <Suspense fallback={
-              <div className="lanyard-wrapper landing-lanyard">
-                <div className="lanyard-skeleton">
-                  <div className="lanyard-skeleton-strap" />
-                  <div className="lanyard-skeleton-card"><div className="lanyard-skeleton-shimmer" /></div>
-                  <p>Loading membership card…</p>
-                </div>
-              </div>
-            }>
-              <MembershipCard />
-            </Suspense>
+            <DeferredMembershipCard />
           </div>
         </div>
       </section>

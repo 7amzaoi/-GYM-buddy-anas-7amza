@@ -6,7 +6,13 @@ import { Toast } from '../lib/interactions.js';
 import { saveBodyMetricsRemote, upsertProfile } from '../services/profilesApi.js';
 import { refreshUserFromRemote } from '../lib/authBootstrap.js';
 import { revealOnScroll } from '../lib/motion.js';
-import { ACCENTS, applyAccent, getStoredAccentId } from '../lib/personalization.js';
+import { ACCENTS, applyAccent, getStoredAccentId, THEMES, applyTheme, getStoredTheme } from '../lib/personalization.js';
+import { computeXp, levelFromXp, titleForLevel, computeBadges } from '../lib/gamification.js';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import * as haptics from '../lib/haptics.js';
+import { photo } from '../lib/imagery.js';
+import XpCard from '../components/XpCard.jsx';
+import BMIBlock from '../components/BMIBlock.jsx';
 
 const GOALS = [
   { id: 'muscle gain', label: 'Muscle Gain', iconKey: 'dumbbell' },
@@ -28,6 +34,23 @@ export default function ProfilePage() {
   const [bodyFat, setBodyFat] = useState('');
   const [busy, setBusy] = useState(false);
   const [accentId, setAccentId] = useState(getStoredAccentId());
+  const [bmModalOpen, setBmModalOpen] = useState(false);
+  const [weeklyGoal, setWeeklyGoal] = useState(() => Number(Store.get('weeklyGoal')) || 5);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [theme, setTheme] = useState(() => getStoredTheme());
+  /** Profile photo, or null → the avatar falls back to the user's initials. */
+  const avatarSrc = photo('avatar');
+
+  /** Gear jumps to the settings stack. The app scrolls inside .main-content on
+   *  mobile, not the document, so scroll that container rather than the window. */
+  function jumpToSettings() {
+    const target = rootRef.current?.querySelector('.prof-accents');
+    const scroller = document.querySelector('.main-content');
+    if (!target || !scroller) return;
+    const top = target.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+    scroller.scrollTo({ top: scroller.scrollTop + top - 24, behavior: 'smooth' });
+  }
+  const measurements = Store.get('bodyMeasurements') || [];
 
   useEffect(() => {
     setHeight(user?.height_cm != null && user.height_cm !== '' ? String(user.height_cm) : '');
@@ -46,14 +69,11 @@ export default function ProfilePage() {
   const daysSinceJoin = Math.max(1, Math.floor((Date.now() - new Date(user.joinDate).getTime()) / 86400000));
   const synced = !!(user.source === 'supabase' && user.id);
 
-  const badges = [
-    { iconKey: 'check',    name: 'First Workout', unlocked: progress.totalWorkouts >= 1 },
-    { iconKey: 'fire',     name: '3-Day Streak',  unlocked: progress.streak >= 3 },
-    { iconKey: 'dumbbell', name: '10 Workouts',   unlocked: progress.totalWorkouts >= 10 },
-    { iconKey: 'zap',      name: '25 Workouts',   unlocked: progress.totalWorkouts >= 25 },
-    { iconKey: 'trophy',   name: '50 Workouts',   unlocked: progress.totalWorkouts >= 50 },
-    { iconKey: 'star',     name: '7-Day Streak',  unlocked: progress.streak >= 7 },
-  ];
+  const history = Store.get('workoutHistory') || [];
+  const xp = computeXp({ history, records, streak: progress.streak || 0 });
+  const lvl = levelFromXp(xp);
+  const tier = titleForLevel(lvl.level);
+  const badges = computeBadges({ history, records, progress, level: lvl.level });
   const unlockedCount = badges.filter((b) => b.unlocked).length;
 
   const topRecords = [...records]
@@ -151,33 +171,50 @@ export default function ProfilePage() {
 
   return (
     <div className="prof" ref={rootRef}>
-      {/* ===== Identity hero ===== */}
-      <header className="prof-hero" data-reveal>
-        <div className="prof-hero-glow" aria-hidden="true" />
-        <div className="prof-avatar">{initials}</div>
-        <div className="prof-identity">
-          <h1 className="prof-name">{user.name}</h1>
-          <p className="prof-email">{user.email}</p>
-          <div className="prof-tags">
-            <span className="gx-badge is-accent">
-              {icon(GOALS.find((g) => g.id === user.goal)?.iconKey || 'target', 12)}
-              {user.goal ? user.goal.charAt(0).toUpperCase() + user.goal.slice(1) : 'No goal'}
-            </span>
-            {synced && <span className="gx-badge">{icon('check', 11)} Synced</span>}
-          </div>
+      {/* ===== Identity banner — centred over the gym photo (M1 composition) ===== */}
+      <header className="prof-hero m1-prof-banner" data-reveal>
+        <button
+          type="button"
+          className="m1-iconbtn m1-prof-gear"
+          aria-label="Account settings"
+          onClick={jumpToSettings}
+        >
+          {icon('gear', 20)}
+        </button>
+
+        <div className="m1-prof-avatar">
+          {avatarSrc
+            ? <img src={avatarSrc} alt={`${user.name} profile photo`} />
+            : <span aria-hidden="true">{initials}</span>}
         </div>
-        <div className="prof-hero-stats">
-          <div className="prof-mini-stat">
-            <span className="prof-mini-num">{progress.totalWorkouts}</span>
-            <span className="prof-mini-label">Workouts</span>
+
+        <h1 className="prof-name m1-prof-name m1-display">{user.name}</h1>
+        <p className="m1-prof-goal m1-eyebrow">
+          {user.goal ? user.goal : 'No goal set'}
+        </p>
+        <div className="m1-prof-chips">
+          <span className="prof-level-chip" title={`${xp.toLocaleString()} XP — ${tier}`}>
+            {icon('zap', 11)} Lvl {lvl.level} · {tier}
+          </span>
+          {synced && <span className="gx-badge">{icon('check', 11)} Synced</span>}
+        </div>
+
+        <div className="m1-prof-stats">
+          <div className="m1-stat">
+            <span className="m1-stat-val">{progress.totalWorkouts}</span>
+            <span className="m1-stat-lbl">Workouts</span>
           </div>
-          <div className="prof-mini-stat">
-            <span className="prof-mini-num">{progress.streak}</span>
-            <span className="prof-mini-label">Streak</span>
+          <div className="m1-stat">
+            <span className="m1-stat-val">
+              {progress.totalVolume >= 1000
+                ? `${(progress.totalVolume / 1000).toFixed(1).replace(/\.0$/, '')}k`
+                : Math.round(progress.totalVolume || 0)}
+            </span>
+            <span className="m1-stat-lbl">Kg volume</span>
           </div>
-          <div className="prof-mini-stat">
-            <span className="prof-mini-num">{daysSinceJoin}</span>
-            <span className="prof-mini-label">Days</span>
+          <div className="m1-stat is-accent">
+            <span className="m1-stat-val">{progress.streak}</span>
+            <span className="m1-stat-lbl">Day streak</span>
           </div>
         </div>
       </header>
@@ -189,6 +226,22 @@ export default function ProfilePage() {
           <h3 className="gx-title" style={{ fontSize: 'var(--text-lg)' }}>Accent color</h3>
           <p className="gx-subtitle">Recolors the whole app instantly. Saved to this device.</p>
         </div>
+        {/* Theme first: it decides the canvas the accent then sits on. */}
+        <div className="m1-themepick" role="group" aria-label="Appearance mode">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`m1-themeopt ${theme === t.id ? 'is-active' : ''}`}
+              aria-pressed={theme === t.id}
+              onClick={() => { setTheme(applyTheme(t.id)); haptics.tap(); }}
+            >
+              <span className={`m1-themeswatch is-${t.id}`} aria-hidden="true" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         <div className="prof-accents">
           {ACCENTS.map((a) => (
             <button
@@ -272,6 +325,33 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
+
+        {/* Weekly training goal — the denominator of the "x / y" readout on Today. */}
+        <div className="gx-card" data-reveal>
+          <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
+            <span className="gx-eyebrow">{icon('calendar', 13)} Weekly Goal</span>
+            <p className="gx-subtitle">
+              How many sessions a week are you aiming for? Shown on your Today screen.
+            </p>
+          </div>
+          <div className="prof-weekgoal" role="group" aria-label="Sessions per week">
+            {[2, 3, 4, 5, 6, 7].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`prof-weekgoal-opt ${weeklyGoal === n ? 'is-active' : ''}`}
+                aria-pressed={weeklyGoal === n}
+                onClick={() => {
+                  Store.set('weeklyGoal', n);
+                  setWeeklyGoal(n);
+                  Toast.show(`Weekly goal set to ${n} sessions.`, 'success', 1800);
+                }}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* ===== Personal records ===== */}
@@ -311,7 +391,7 @@ export default function ProfilePage() {
         </div>
         <div className="prof-badges">
           {badges.map((b) => (
-            <div key={b.name} className={`prof-badge ${b.unlocked ? 'is-unlocked' : ''}`}>
+            <div key={b.id} className={`prof-badge tier-${b.tier} ${b.unlocked ? 'is-unlocked' : ''}`} title={b.desc}>
               <span className="prof-badge-icon">{icon(b.iconKey, 22)}</span>
               <span className="prof-badge-name">{b.name}</span>
               <span className="prof-badge-state">
@@ -322,21 +402,129 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* ===== Body Measurements ===== */}
+      <div className="gx-card prof-measurements" data-reveal>
+        <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
+          <span className="gx-eyebrow">{icon('target', 13)} Body Measurements</span>
+          <button type="button" className="gx-btn gx-btn-primary" onClick={() => setBmModalOpen(true)}>
+            {icon('plus', 14)} Log Measurements
+          </button>
+        </div>
+        {measurements.length === 0 ? (
+          <div className="prof-bm-empty">
+            <p>No measurements yet. Track chest, arms, waist and more to see how your body changes over time.</p>
+          </div>
+        ) : (
+          <div className="prof-bm-list">
+            {measurements.slice(0, 5).map((m) => {
+              const fields = [
+                ['Chest', m.chest], ['Shoulders', m.shoulders], ['Biceps', m.biceps],
+                ['Waist', m.waist], ['Hips', m.hips], ['Thighs', m.thighs],
+                ['Calves', m.calves], ['Neck', m.neck],
+              ].filter(([, v]) => v != null);
+              return (
+                <div key={m.id} className="prof-bm-row">
+                  <div className="prof-bm-row-head">
+                    <span className="prof-bm-date">{new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    <button
+                      type="button"
+                      className="prof-bm-del"
+                      onClick={() => Store.removeBodyMeasurement(m.id)}
+                      aria-label="Delete measurement"
+                    >
+                      {icon('trash', 13)}
+                    </button>
+                  </div>
+                  {fields.length === 0 ? (
+                    <p className="prof-bm-empty-row">{m.notes || 'Empty entry'}</p>
+                  ) : (
+                    <div className="prof-bm-grid">
+                      {fields.map(([label, val]) => (
+                        <div key={label} className="prof-bm-cell">
+                          <span className="prof-bm-cell-lbl">{label}</span>
+                          <span className="prof-bm-cell-val">{val}<small> cm</small></span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {m.notes ? <p className="prof-bm-notes">{m.notes}</p> : null}
+                </div>
+              );
+            })}
+            {measurements.length > 5 && (
+              <p className="prof-bm-more">+ {measurements.length - 5} older entries</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ===== Measurements modal ===== */}
+      {bmModalOpen && (
+        <div className="gx-modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setBmModalOpen(false); }}>
+          <div className="gx-modal gx-modal-wide" role="dialog" aria-modal="true" aria-label="Log measurements">
+            <div className="gx-modal-head">
+              <h2>Log Measurements</h2>
+              <button type="button" className="gx-modal-close" onClick={() => setBmModalOpen(false)} aria-label="Close">
+                {icon('x', 18)}
+              </button>
+            </div>
+            <form
+              className="gx-modal-form"
+              onSubmit={(ev) => {
+                ev.preventDefault();
+                const fd = new FormData(ev.target);
+                const values = Object.fromEntries(['chest','shoulders','biceps','waist','hips','thighs','calves','neck','notes']
+                  .map((k) => [k, fd.get(`bm-${k}`)]));
+                const hasAny = ['chest','shoulders','biceps','waist','hips','thighs','calves','neck']
+                  .some((k) => Number(values[k]) > 0);
+                if (!hasAny) {
+                  Toast.show('Enter at least one measurement.', 'warning');
+                  return;
+                }
+                Store.logBodyMeasurements(values);
+                setBmModalOpen(false);
+                Toast.show('Measurements saved.', 'success');
+              }}
+            >
+              <div className="prof-bm-form">
+                {[
+                  ['chest', 'Chest'], ['shoulders', 'Shoulders'], ['biceps', 'Biceps'], ['waist', 'Waist'],
+                  ['hips', 'Hips'], ['thighs', 'Thighs'], ['calves', 'Calves'], ['neck', 'Neck'],
+                ].map(([k, label]) => (
+                  <label key={k} className="prof-field">
+                    <span>{label} (cm)</span>
+                    <input type="number" step="0.1" min="0" name={`bm-${k}`} placeholder="—" />
+                  </label>
+                ))}
+              </div>
+              <label className="prof-field">
+                <span>Notes (optional)</span>
+                <input name="bm-notes" placeholder="e.g. Morning, fasted" />
+              </label>
+              <button type="submit" className="gx-btn gx-btn-primary" style={{ width: '100%' }}>
+                {icon('check', 15)} Save Measurements
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ===== Account ===== */}
       <div className="gx-card prof-account" data-reveal>
         <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
           <span className="gx-eyebrow" style={{ color: 'var(--danger)' }}>{icon('logout', 13)} Account</span>
         </div>
+        {/* Re-homed from the Dashboard when it became the "Today" screen: the
+            level-progress bar (the header chip only shows the current level)
+            and the BMI estimator. */}
+        <XpCard />
+        <BMIBlock />
+
         <div className="prof-account-actions">
           <button
             type="button"
             className="gx-btn gx-btn-glass"
-            onClick={() => {
-              if (window.confirm('Clear all local data? This cannot be undone.')) {
-                localStorage.clear();
-                window.location.reload();
-              }
-            }}
+            onClick={() => setResetOpen(true)}
           >
             {icon('trash', 14)} Reset all data
           </button>
@@ -349,6 +537,20 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={resetOpen}
+        onCancel={() => setResetOpen(false)}
+        onConfirm={() => {
+          localStorage.clear();
+          window.location.reload();
+        }}
+        title="Reset all data?"
+        subject="Every workout, plan and record on this device"
+        note="This wipes your entire local history, saved plans, personal records and settings. It can't be undone."
+        confirmLabel="Reset"
+        tone="danger"
+      />
     </div>
   );
 }

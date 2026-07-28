@@ -5,6 +5,7 @@ import { getAllExercises } from '../data.js';
 import { Toast } from '../lib/interactions.js';
 import { upsertPersonalRecords } from '../services/personalRecordsApi.js';
 import { revealOnScroll } from '../lib/motion.js';
+import AppHeader from '../components/AppHeader.jsx';
 
 const categoryLabels = {
   all: 'All',
@@ -264,16 +265,16 @@ export default function RecordsPage() {
   return (
     <div className="rec" ref={rootRef}>
       {/* ===== Header ===== */}
-      <header className="rec-header" data-reveal>
-        <div>
-          <span className="gx-eyebrow">{icon('trophy', 13)} Achievements</span>
-          <h1 className="rec-h1">Personal Records</h1>
-          <p className="gx-subtitle">Your best lifts, reps, cardio, and fitness milestones.</p>
-        </div>
-        <button type="button" className="gx-btn gx-btn-primary" onClick={() => setShowAdd(true)}>
-          {icon('plus', 15)} Add Record
-        </button>
-      </header>
+      <AppHeader
+        eyebrow={<>{icon('trophy', 13)} Achievements</>}
+        title="Personal Records"
+        subtitle="Your best lifts, reps, cardio, and fitness milestones."
+        action={
+          <button type="button" className="gx-btn gx-btn-primary" onClick={() => setShowAdd(true)}>
+            {icon('plus', 15)} Add Record
+          </button>
+        }
+      />
 
       {/* ===== Summary ===== */}
       <div className="rec-summary" data-reveal>

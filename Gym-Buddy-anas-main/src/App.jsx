@@ -1,36 +1,80 @@
-import { useEffect, useLayoutEffect, useReducer, useCallback, useState } from 'react';
+import { useEffect, useLayoutEffect, useReducer, useCallback, useState, useRef, lazy, Suspense } from 'react';
+import { flushSync } from 'react-dom';
 import { Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Store } from './store.js';
 import { pathForPage, pageIdFromPath } from './routes.js';
+import { NAV_ITEMS } from './lib/navItems.js';
 import { NavigateContext } from './context/NavigateContext.jsx';
 import { registerNavigator, initGlobalInteractions, initCounters, initScrollReveal } from './lib/interactions.js';
+
+// Canonical left-to-right order of the app's pages, used to pick a transition
+// direction: navigating to a later page slides forward (in from the right); to
+// an earlier page slides back (in from the left).
+const NAV_ORDER = NAV_ITEMS.map((n) => n.id);
 import { isOnboarded } from './lib/personalization.js';
 import Sidebar from './components/Sidebar.jsx';
 import MobileNav from './components/MobileNav.jsx';
+import ActiveSessionBar from './components/ActiveSessionBar.jsx';
 import Onboarding from './components/Onboarding.jsx';
-import LandingPage from './pages/LandingPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
-import RegisterPage from './pages/RegisterPage.jsx';
-import DownloadPage from './pages/DownloadPage.jsx';
-import DashboardPage from './pages/DashboardPage.jsx';
-import PlannerPage from './pages/PlannerPage.jsx';
-import SessionPage from './pages/SessionPage.jsx';
-import ProgressPage from './pages/ProgressPage.jsx';
-import RecordsPage from './pages/RecordsPage.jsx';
-import AssistantPage from './pages/AssistantPage.jsx';
-import ProfilePage from './pages/ProfilePage.jsx';
+import PageSkeleton from './components/PageSkeleton.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
+
+
+/* Route-level code splitting. Marketing surfaces (Landing, Download, auth)
+ * are the biggest win — an app user loads them once, if ever, yet they were
+ * bundled into the shell every session. Each page now ships as its own chunk
+ * fetched on navigation. */
+const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
+const DownloadPage = lazy(() => import('./pages/DownloadPage.jsx'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
+const WorkoutsPage = lazy(() => import('./pages/WorkoutsPage.jsx'));
+const PlannerPage = lazy(() => import('./pages/PlannerPage.jsx'));
+const ProgressPage = lazy(() => import('./pages/ProgressPage.jsx'));
+const RecordsPage = lazy(() => import('./pages/RecordsPage.jsx'));
+const AssistantPage = lazy(() => import('./pages/AssistantPage.jsx'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
 
 function AuthenticatedChrome() {
   const user = Store.get('user');
+  const location = useLocation();
+  const mainRef = useRef(null);
   // Show the first-login onboarding overlay until the user finishes it.
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboarded());
+
+  // Turn the app chrome into an inner-scroll shell: the document itself never
+  // scrolls (see `.app-shell` CSS), so the mobile address bar can't collapse
+  // and the fixed bottom nav stays pinned on every page, tall or short.
+  useEffect(() => {
+    document.documentElement.classList.add('app-shell');
+    return () => document.documentElement.classList.remove('app-shell');
+  }, []);
+
+  // Reset the inner scroll container to the top on each route change (the
+  // element persists across child routes, so its scrollTop would otherwise stick).
+  useEffect(() => {
+    mainRef.current?.scrollTo?.(0, 0);
+  }, [location.pathname]);
+
   if (!user) return <Navigate to="/login" replace />;
   return (
     <>
       <Sidebar />
-      <main className="main-content page">
-        <Outlet />
+      <main
+        className="main-content page"
+        ref={mainRef}
+        style={{ paddingBottom: 'calc(var(--tabbar-total) + var(--space-6))' }}
+      >
+        <ErrorBoundary resetKey={location.pathname}>
+          {/* Inside the chrome: the sidebar and tab bar stay mounted while a
+              page chunk downloads, so only the content area shows a skeleton. */}
+          <Suspense fallback={<PageSkeleton />}>
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </main>
+      <ActiveSessionBar />
       <MobileNav />
       {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
     </>
@@ -43,15 +87,45 @@ export default function App() {
 
   const rrNavigate = useNavigate();
   const location = useLocation();
+  // The page we're currently on, so navigateToPage can pick a slide direction.
+  const currentPageRef = useRef(pageIdFromPath(location.pathname));
 
   const navigateToPage = useCallback((pageId) => {
     const publicPages = ['landing', 'login', 'register', 'download'];
     let page = pageId;
     if (!publicPages.includes(page) && !Store.get('user')) page = 'login';
-    rrNavigate(pathForPage(page));
-    window.scrollTo(0, 0);
-    Store.set('currentPage', page);
-  }, [rrNavigate]);
+
+    const targetPath = pathForPage(page);
+    const apply = () => {
+      rrNavigate(targetPath);
+      window.scrollTo(0, 0);
+      Store.set('currentPage', page);
+    };
+
+    const from = currentPageRef.current;
+    currentPageRef.current = page;
+
+    // Skip the transition when we're already here, when the View Transition API
+    // is unavailable, or when the user prefers reduced motion — just navigate.
+    const canAnimate =
+      location.pathname !== targetPath &&
+      typeof document !== 'undefined' &&
+      typeof document.startViewTransition === 'function' &&
+      !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!canAnimate) {
+      apply();
+      return;
+    }
+
+    const fi = NAV_ORDER.indexOf(from);
+    const ti = NAV_ORDER.indexOf(page);
+    document.documentElement.dataset.nav = fi >= 0 && ti >= 0 && ti < fi ? 'back' : 'forward';
+    // flushSync forces React Router's DOM update to commit *inside* the
+    // transition callback, so the API captures the new page (not the old one).
+    // Required because we drive navigation ourselves rather than via a
+    // view-transition-aware router integration.
+    document.startViewTransition(() => flushSync(apply));
+  }, [rrNavigate, location.pathname]);
 
   useEffect(() => registerNavigator(navigateToPage), [navigateToPage]);
 
@@ -70,6 +144,7 @@ export default function App() {
 
   return (
     <NavigateContext.Provider value={navigateToPage}>
+      <Suspense fallback={<PageSkeleton />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -78,8 +153,10 @@ export default function App() {
 
         <Route element={<AuthenticatedChrome />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/workouts" element={<WorkoutsPage />} />
           <Route path="/planner" element={<PlannerPage />} />
-          <Route path="/session" element={<SessionPage />} />
+          {/* Legacy /session URLs now redirect to the unified Workouts page. */}
+          <Route path="/session" element={<Navigate to="/workouts" replace />} />
           <Route path="/progress" element={<ProgressPage />} />
           <Route path="/records" element={<RecordsPage />} />
           <Route path="/assistant" element={<AssistantPage />} />
@@ -88,6 +165,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </NavigateContext.Provider>
   );
 }

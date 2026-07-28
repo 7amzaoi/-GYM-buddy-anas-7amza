@@ -1,0 +1,20 @@
+/* ============================================================
+   MODAL VARIANTS + form select (shared)
+   ============================================================ */
+.gx-modal-wide { max-width: 520px; }
+.gx-modal-sm { max-width: 380px; text-align: center; }
+.prof-field select {
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-family: inherit; font-size: var(--text-sm);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--dur-base) var(--ease-std), box-shadow var(--dur-base) var(--ease-std);
+}
+.prof-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14);
+}

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="GymBuddy">
+  <rect width="512" height="512" fill="#0B0B0B"/>
+  <g fill="#D4FF00">
+    <!-- handle bar -->
+    <rect x="176" y="236" width="160" height="40" rx="12"/>
+    <!-- left plates -->
+    <rect x="158" y="176" width="30" height="160" rx="14"/>
+    <rect x="120" y="196" width="34" height="120" rx="14"/>
+    <!-- right plates -->
+    <rect x="324" y="176" width="30" height="160" rx="14"/>
+    <rect x="358" y="196" width="34" height="120" rx="14"/>
+  </g>
+</svg>
