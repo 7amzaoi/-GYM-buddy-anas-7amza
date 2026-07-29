@@ -112,7 +112,7 @@
 }
 .prof-stat-row:last-child { border-bottom: none; }
 .prof-stat-row strong { color: var(--text-primary); font-weight: 700; }
-.prof-accent-text { color: var(--accent) !important; }
+.prof-accent-text { color: var(--accent-ink) !important; }
 
 /* Goal list */
 .prof-goal-list { display: flex; flex-direction: column; gap: var(--space-2); }

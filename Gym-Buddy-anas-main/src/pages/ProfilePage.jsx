@@ -512,7 +512,9 @@ export default function ProfilePage() {
       {/* ===== Account ===== */}
       <div className="gx-card prof-account" data-reveal>
         <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
-          <span className="gx-eyebrow" style={{ color: 'var(--danger)' }}>{icon('logout', 13)} Account</span>
+          {/* --status-bad, not --danger: identical in dark mode, but the light
+              theme darkens it so the label clears 4.5:1 on a white card. */}
+          <span className="gx-eyebrow" style={{ color: 'var(--status-bad)' }}>{icon('logout', 13)} Account</span>
         </div>
         {/* Re-homed from the Dashboard when it became the "Today" screen: the
             level-progress bar (the header chip only shows the current level)

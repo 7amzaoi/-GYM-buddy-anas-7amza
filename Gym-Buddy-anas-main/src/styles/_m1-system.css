@@ -203,12 +203,16 @@
 .hist-row-del:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 
 /* ---------- Editorial surfaces ----------
-   The reference treats plan cards and the profile banner as photography. These
-   two surfaces are styled rather than wrapped in <PhotoFrame> because their
-   markup is deep inside existing pages — the photo is applied as a layered
-   background (image + scrim) which produces the same result. The scrim is part
-   of the same declaration so overlaid type stays legible on any crop. */
-.plan-card,
+   The profile banner is photography: the photo is applied as a layered
+   background (image + scrim) rather than wrapped in <PhotoFrame>, because its
+   markup is deep inside an existing page. The scrim is part of the same
+   declaration so overlaid type stays legible on any crop.
+
+   Plan cards were treated the same way, but _glass.css loads after this file
+   and sets `background` — the shorthand resets background-image — so those
+   rules never rendered once the glass system landed. They are gone rather than
+   left in place looking authoritative; the plan cards on Today (.m1-plancard)
+   are where the plan photography lives now. */
 .prof-hero {
   background-color: #101012;
   background-repeat: no-repeat;
@@ -217,22 +221,7 @@
   border: 1px solid var(--m1-hairline);
   border-radius: var(--m1-radius);
 }
-.plan-card {
-  background-image:
-    linear-gradient(180deg, rgba(11, 11, 11, 0.35) 0%, rgba(11, 11, 11, 0.82) 62%, rgba(11, 11, 11, 0.96) 100%),
-    url('/img/plan-strength.jpeg');
-}
-/* Category-specific art, matching the slots in lib/imagery. */
-.plan-card[data-category='cardio'] {
-  background-image:
-    linear-gradient(180deg, rgba(11, 11, 11, 0.35) 0%, rgba(11, 11, 11, 0.82) 62%, rgba(11, 11, 11, 0.96) 100%),
-    url('/img/plan-cardio.jpeg');
-}
-.plan-card[data-category='custom'] {
-  background-image:
-    linear-gradient(180deg, rgba(11, 11, 11, 0.35) 0%, rgba(11, 11, 11, 0.82) 62%, rgba(11, 11, 11, 0.96) 100%),
-    url('/img/plan-custom.jpeg');
-}
+.plan-card { border-radius: var(--m1-radius); }
 .prof-hero {
   background-image:
     linear-gradient(180deg, rgba(11, 11, 11, 0.42) 0%, rgba(11, 11, 11, 0.86) 66%, rgba(11, 11, 11, 0.97) 100%),

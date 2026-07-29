@@ -125,8 +125,13 @@
    fighting the light theme selector-by-selector we RE-SCOPE the text tokens
    here. Every descendant that reads a token gets light ink automatically, and
    the accent stays neon (it sits on dark, not on white). */
+/* NOTE: `.plan-card` used to be listed here, back when _m1-system.css gave it a
+   photographic background. _glass.css loads later and sets `background` — the
+   shorthand, which resets background-image — so the card has been a plain glass
+   surface since. It kept forcing white ink regardless, which is invisible on
+   the light theme's near-white glass. A glass card is not a photo context, so
+   it now reads the normal theme tokens. */
 .m1-photo,
-.plan-card,
 .prof-hero,
 .m1-prof-stats,
 /* The Today top bar is a DOM sibling of the hero, but the hero's negative

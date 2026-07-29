@@ -40,6 +40,13 @@
   --on-photo: #FFFFFF;
   --on-photo-dim: rgba(255, 255, 255, 0.78);
 
+  /* Status colours, for meaning-carrying text (BMI bands and the like).
+     Bright enough to read on the dark surfaces; the light theme overrides them
+     with darker mixes, because these exact values sit around 1.9:1 on white. */
+  --status-ok: #2ED573;
+  --status-warn: #FFA502;
+  --status-bad: #FF4757;
+
   /* Scrim stops used over photography. */
   --scrim-0: rgba(11, 11, 11, 0.10);
   --scrim-1: rgba(11, 11, 11, 0.42);
@@ -79,6 +86,12 @@
   --on-accent: #0B0B0B;
   /* Deepened accent so accent-coloured TEXT stays legible on white. */
   --accent-ink: var(--accent-deep);
+
+  /* Darkened so the band still reads as green/amber/red but clears 4.5:1 on
+     white: measured 5.4, 5.9 and 6.7 respectively. */
+  --status-ok: #1B7A3E;
+  --status-warn: #8A5A00;
+  --status-bad: #B3202C;
 
   /* Scrims deliberately NOT flipped: they sit over dark photography, so the
      overlay stays a dark-on-image context in both themes (see --on-photo). */

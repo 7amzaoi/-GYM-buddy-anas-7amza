@@ -63,7 +63,32 @@
 :root[data-theme='light'] .wko-recent-more:not(.m1-photo *),
 :root[data-theme='light'] .m1-themeopt.is-active:not(.m1-photo *),
 :root[data-theme='light'] .dash-accent:not(.m1-photo *),
+/* Found by a contrast sweep of every screen in light mode: these all set
+   `color: var(--accent)` directly, which is the neon lime — about 1.1:1 on a
+   white card, i.e. invisible. Same fix as the rest of this block. */
+:root[data-theme='light'] .plan-accent:not(.m1-photo *),
+:root[data-theme='light'] .plan-card-cat:not(.m1-photo *),
+:root[data-theme='light'] .plan-card-last:not(.m1-photo *),
+:root[data-theme='light'] .plan-card-toggle:not(.m1-photo *),
+:root[data-theme='light'] .plan-summary-val.plan-accent:not(.m1-photo *),
+:root[data-theme='light'] .rec-accent:not(.m1-photo *),
+:root[data-theme='light'] .rec-summary-latest-name:not(.m1-photo *),
+:root[data-theme='light'] .rec-card-cat:not(.m1-photo *),
+:root[data-theme='light'] .rec-card-badge:not(.m1-photo *),
+:root[data-theme='light'] .prof-accent-text:not(.m1-photo *),
+:root[data-theme='light'] .prof-badge-state:not(.m1-photo *),
+:root[data-theme='light'] .dash-xp-tier:not(.m1-photo *),
+:root[data-theme='light'] .dash-xp-current:not(.m1-photo *),
+:root[data-theme='light'] .dash-xp-next:not(.m1-photo *),
+:root[data-theme='light'] .dash-bmi-num:not(.m1-photo *),
+:root[data-theme='light'] .dash-bmi-cat:not(.m1-photo *),
+:root[data-theme='light'] .gx-eyebrow:not(.m1-photo *),
 :root[data-theme='light'] .wko-accent {
+  color: var(--accent-ink);
+}
+/* The chip count sits on an accent pill, so it needs the ink treatment too. */
+:root[data-theme='light'] .rec-chip:not(.is-active) .rec-chip-count {
+  background: rgba(0, 0, 0, 0.10);
   color: var(--accent-ink);
 }
 /* Accent-tinted fills need a stronger tint to register on white. */

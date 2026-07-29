@@ -20,10 +20,10 @@ export default function BMIBlock() {
   let category = '—';
   let color = 'var(--text-secondary)';
   if (Number.isFinite(bmiNum)) {
-    if (bmiNum < 18.5) { category = 'Underweight'; color = '#FFA502'; }
-    else if (bmiNum < 25) { category = 'Normal'; color = '#2ED573'; }
-    else if (bmiNum < 30) { category = 'Overweight'; color = '#FFA502'; }
-    else { category = 'Obese'; color = '#FF4757'; }
+    if (bmiNum < 18.5) { category = 'Underweight'; color = 'var(--status-warn)'; }
+    else if (bmiNum < 25) { category = 'Normal'; color = 'var(--status-ok)'; }
+    else if (bmiNum < 30) { category = 'Overweight'; color = 'var(--status-warn)'; }
+    else { category = 'Obese'; color = 'var(--status-bad)'; }
   }
   const pct = Number.isFinite(bmiNum) ? Math.min(Math.max(((bmiNum - 15) / 25) * 100, 0), 100) : 0;
 

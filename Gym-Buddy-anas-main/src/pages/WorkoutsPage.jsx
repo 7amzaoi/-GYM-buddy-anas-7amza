@@ -15,7 +15,6 @@ import IdleScreen from '../components/workouts/IdleScreen.jsx';
 import ExerciseCard from '../components/workouts/ExerciseCard.jsx';
 import RestBanner from '../components/workouts/RestBanner.jsx';
 import { PickerModal, PlateModal, DiscardModal, SummaryModal } from '../components/workouts/Modals.jsx';
-import FocusMode from '../components/workouts/FocusMode.jsx';
 import useSessionTimer from '../hooks/useSessionTimer.js';
 import useWakeLock from '../hooks/useWakeLock.js';
 
@@ -86,26 +85,6 @@ export default function WorkoutsPage() {
   /* Full-screen focus mode: session running AND a mobile viewport. The class
      lives on <html> so the tab bar (rendered in AuthenticatedChrome, outside
      this tree) can be translated off-screen without unmounting it. */
-  const [isMobile, setIsMobile] = useState(
-    () => typeof matchMedia !== 'undefined' && matchMedia('(max-width: 768px)').matches
-  );
-  useEffect(() => {
-    if (typeof matchMedia === 'undefined') return undefined;
-    const mq = matchMedia('(max-width: 768px)');
-    const onChange = (e) => setIsMobile(e.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-
-  const [overviewOpen, setOverviewOpen] = useState(false);
-  const focusActive = !!session && isMobile && !overviewOpen && !summaryOpen;
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('wko-focus', focusActive);
-    return () => root.classList.remove('wko-focus');
-  }, [focusActive]);
-
   // Reveal-on-scroll for idle state.
   useEffect(() => revealOnScroll(rootRef.current, '[data-reveal]'), [!!session]);
 
@@ -133,20 +112,6 @@ export default function WorkoutsPage() {
   // ===== Derived =====
   const liveStats = computeLiveStats(session);
 
-  /* Focus target: the first set that still needs logging. Falls back to the
-     last set of the last exercise once everything is done, so the view always
-     has something to render. */
-  const focus = useMemo(() => {
-    const exs = session?.exercises || [];
-    for (let ei = 0; ei < exs.length; ei++) {
-      const sets = exs[ei].sets || [];
-      for (let si = 0; si < sets.length; si++) {
-        if (!sets[si].done) return { ei, si };
-      }
-    }
-    const lastEi = Math.max(0, exs.length - 1);
-    return { ei: lastEi, si: Math.max(0, (exs[lastEi]?.sets || []).length - 1) };
-  }, [session]);
   const recentAll = useMemo(() => history.slice(0, 10), [history]);
   const RECENT_PREVIEW = 3;
   const recentVisible = recentExpanded ? recentAll : recentAll.slice(0, RECENT_PREVIEW);
@@ -210,27 +175,6 @@ export default function WorkoutsPage() {
       setRestRemaining(restDuration);
       setRestActive(true);
     }
-  }
-
-  /* Focus mode's dominant action: mark the current set done and advance.
-     Delegates to toggleSetDone so the rest timer, haptics and validation stay
-     in exactly one place. */
-  function completeCurrentSet() {
-    toggleSetDone(focus.ei, focus.si);
-  }
-
-  /* Skip = drop this set from the plan, not mark it done. Keeps the "sets done"
-     stat honest. Falls back to clearing the inputs when it's the only set. */
-  function skipCurrentSet() {
-    const sets = session?.exercises?.[focus.ei]?.sets || [];
-    if (sets.length <= 1) {
-      updateSet(focus.ei, focus.si, 'weight', '');
-      updateSet(focus.ei, focus.si, 'reps', '');
-      Toast.show('Set cleared.', 'info', 1200);
-      return;
-    }
-    removeSet(focus.ei, focus.si);
-    haptics.tap();
   }
 
   function bumpRest(delta) { setRestRemaining((prev) => Math.max(0, Math.min(900, prev + delta))); }
@@ -353,34 +297,6 @@ export default function WorkoutsPage() {
         <span className="wko-bg-grid" />
       </div>
 
-      {focusActive && (
-        <FocusMode
-          exIndex={focus.ei}
-          setIndex={focus.si}
-          ex={session.exercises[focus.ei]}
-          data={getExerciseById(session.exercises[focus.ei]?.id)}
-          elapsedSec={elapsedSec}
-          paused={paused}
-          onUpdateSet={updateSet}
-          onCompleteSet={completeCurrentSet}
-          onSkipSet={skipCurrentSet}
-          onOpenPlates={() => setPlateModal({
-            ei: focus.ei,
-            weight: session.exercises[focus.ei]?.sets?.[focus.si]?.weight || '',
-            bar: 20,
-          })}
-          onOpenOverview={() => setOverviewOpen(true)}
-          onTogglePause={togglePause}
-          rest={{
-            active: restActive,
-            remaining: restRemaining,
-            duration: restDuration,
-            onSkip: skipRest,
-            onBump: bumpRest,
-            onChangeDuration: setRestDuration,
-          }}
-        />
-      )}
 
       {/* Sticky live header — eyebrow, plan name, oversized timer, completion bar. */}
       <header className="m1-wkhead">
