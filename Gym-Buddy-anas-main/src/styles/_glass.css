@@ -49,7 +49,6 @@ body::before {
 .wko-active .wko-live-stat,
 .smart-banner,
 .m1-themeopt,
-.m1-planrow,
 .m1-chip {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
@@ -94,7 +93,6 @@ body::before {
   .wko-active .wko-live-stat,
   .smart-banner,
   .m1-themeopt,
-  .m1-planrow,
   .m1-chip,
   .mobile-nav {
     background: var(--surface-1);

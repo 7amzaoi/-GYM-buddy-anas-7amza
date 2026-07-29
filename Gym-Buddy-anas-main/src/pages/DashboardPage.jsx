@@ -5,6 +5,7 @@ import { getExerciseById } from '../data.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { revealOnScroll } from '../lib/motion.js';
 import PhotoFrame from '../components/PhotoFrame.jsx';
+import { photo } from '../lib/imagery.js';
 import * as haptics from '../lib/haptics.js';
 
 /**
@@ -22,6 +23,24 @@ import * as haptics from '../lib/haptics.js';
 /** Photo slots the recent-session rail cycles through, so consecutive tiles
  *  never repeat the same image. */
 const RAIL_SLOTS = ['record-tile', 'plan-strength', 'plan-custom', 'plan-cardio'];
+
+/** Plan categories are stored as camelCase keys; these are the display names.
+ *  Same labels the Planner screen uses, so a plan reads identically in both. */
+const CATEGORY_LABELS = {
+  strength: 'Strength',
+  cardio: 'Cardio',
+  fatLoss: 'Fat Loss',
+  muscleGain: 'Muscle Gain',
+};
+
+/** Candidate photos per plan category, best fit first. See planSlot(). */
+const PLAN_SLOT_POOL = {
+  strength: ['plan-strength', 'plan-strength-2', 'plan-strength-3'],
+  cardio: ['plan-cardio', 'plan-cardio-2'],
+  fatLoss: ['plan-fatloss', 'plan-cardio-2', 'plan-cardio'],
+  muscleGain: ['plan-muscle', 'plan-strength-2', 'plan-custom'],
+  default: ['plan-custom', 'plan-custom-2'],
+};
 
 /** 18_420 -> "18.4k" so a long number never breaks the 3-across stat row. */
 function compact(n) {
@@ -80,6 +99,7 @@ export default function DashboardPage() {
   }
 
   const recent = history.slice(0, 3);
+  const today = new Date();
 
   /* Plans ordered by when they were last trained. `workoutHistory` is
    * newest-first and every completed session carries the `planId` it ran, so
@@ -102,12 +122,31 @@ export default function DashboardPage() {
     .map((p) => ({ ...p, lastUsed: null }));
   const recentPlans = [...trained, ...untrained].slice(0, 3);
 
-  function planMeta(p) {
+  /** The three facts worth carrying on a plan card, in priority order. */
+  function planFacts(p) {
     const count = (p.exercises || []).filter((id) => getExerciseById(id)).length;
-    const exercises = `${count} exercise${count === 1 ? '' : 's'}`;
-    if (!p.lastUsed) return `${exercises} · Not trained yet`;
-    const when = new Date(p.lastUsed).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-    return `${exercises} · Last ${when}`;
+    const facts = [`${count} exercise${count === 1 ? '' : 's'}`];
+    if (p.duration) facts.push(p.duration);
+    facts.push(
+      p.lastUsed
+        ? `Last ${new Date(p.lastUsed).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`
+        : 'Not trained yet'
+    );
+    return facts;
+  }
+
+  /* Art stays in the plan's own category so a cardio plan never gets a squat
+   * rack, but each category has a pool: with one photo per category, two
+   * strength plans on the same screen showed the identical picture. The choice
+   * is keyed off the plan id, so a given plan always keeps the same photo
+   * instead of reshuffling on every render. Slots without a file yet are
+   * filtered out, so the pool grows on its own as images are added. */
+  function planSlot(p) {
+    const pool = (PLAN_SLOT_POOL[p.category] || PLAN_SLOT_POOL.default).filter((s) => photo(s));
+    if (pool.length === 0) return 'plan-custom';
+    let h = 0;
+    for (const ch of String(p.id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return pool[h % pool.length];
   }
 
   useEffect(() => revealOnScroll(rootRef.current, '[data-reveal]', { y: 24, stagger: 0.05 }), []);
@@ -146,8 +185,19 @@ export default function DashboardPage() {
       {/* ===== Hero: today's session over a full-bleed photo ===== */}
       <PhotoFrame slot="hero-today" ghost="dumbbell" className="m1-hero">
         <div className="m1-hero-body">
+          {/* The real weekday and date. The big title below is the plan's own
+              name — a plan called "Monday" used to be the only date-looking
+              thing on the screen, which read as the app being stuck on Monday. */}
           <span className="m1-eyebrow">
-            {heroState === 'resume' ? 'Pick up where you left off' : "Today's session"}
+            {heroState === 'resume' ? 'Pick up where you left off' : (
+              <>
+                Today
+                <span className="m1-eyebrow-sep" aria-hidden="true">·</span>
+                <time dateTime={today.toISOString().slice(0, 10)}>
+                  {today.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+                </time>
+              </>
+            )}
           </span>
           <h1 className="m1-display m1-h1 m1-hero-title">{heroTitle}</h1>
           <span className="m1-meta">{heroMeta}</span>
@@ -230,26 +280,33 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <ul className="m1-plans" role="list">
+            <div className="m1-plangrid">
               {recentPlans.map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    className="m1-planrow"
-                    onClick={() => { haptics.tap(); navigateToPage?.('planner'); }}
-                  >
-                    <span className="m1-planrow-mark" aria-hidden="true">
-                      {icon(String(p.category).toLowerCase() === 'cardio' ? 'activity' : 'dumbbell', 18)}
+                <PhotoFrame
+                  key={p.id}
+                  slot={planSlot(p)}
+                  ghost="dumbbell"
+                  as="button"
+                  type="button"
+                  className="m1-plancard"
+                  onClick={() => { haptics.tap(); navigateToPage?.('planner'); }}
+                >
+                  <span className="m1-plancard-tag">
+                    {icon(p.category === 'cardio' ? 'activity' : 'dumbbell', 12)}
+                    {CATEGORY_LABELS[p.category] || 'Custom'}
+                  </span>
+                  <span className="m1-plancard-foot">
+                    <span className="m1-plancard-text">
+                      <span className="m1-plancard-name">{p.name}</span>
+                      <span className="m1-plancard-meta">
+                        {planFacts(p).map((f) => <span key={f}>{f}</span>)}
+                      </span>
                     </span>
-                    <span className="m1-planrow-body">
-                      <span className="m1-planrow-name">{p.name}</span>
-                      <span className="m1-planrow-meta">{planMeta(p)}</span>
-                    </span>
-                    <span className="m1-planrow-chev" aria-hidden="true">{icon('chevron', 16)}</span>
-                  </button>
-                </li>
+                    <span className="m1-plancard-go" aria-hidden="true">{icon('arrow', 17)}</span>
+                  </span>
+                </PhotoFrame>
               ))}
-            </ul>
+            </div>
           </section>
         )}
       </div>

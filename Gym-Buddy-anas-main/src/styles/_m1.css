@@ -65,6 +65,9 @@
   color: var(--accent);
 }
 .m1-eyebrow.is-muted { color: var(--text-secondary); }
+/* Dot between "Today" and the date; margin rather than letter-spacing so the
+   eyebrow's wide tracking doesn't leave it hanging off the second word. */
+.m1-eyebrow-sep { margin: 0 0.5em 0 0.35em; opacity: 0.6; }
 
 /* Metadata line: STRENGTH · 6 EXERCISES · 45 MIN */
 .m1-meta {
@@ -419,78 +422,99 @@
   color: var(--text-secondary);
 }
 
-/* -- Plans: compact rows.
-   Deliberately a different rhythm from the photo rail above — two stacked
-   horizontal photo rails read as one repeated block, and rows fill the vertical
-   space the screen actually has. Surface treatment comes from _glass.css. -- */
-.m1-plans {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* -- Plans: full-width poster cards.
+   Each plan carries the same photograph it shows on the Planner screen, so it
+   is recognisable by its picture in both places. Full-bleed and stacked, which
+   is a different read from the small horizontal tiles above even though both
+   are photographic — the rail is a strip of thumbnails, this is a poster. -- */
+.m1-plangrid {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-.m1-planrow {
-  width: 100%;
-  min-height: 64px;
-  display: flex;
-  align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--m1-radius-sm);
-  color: var(--text-primary);
+}
+.m1-plancard {
+  position: relative;
+  width: 100%;
+  min-height: 138px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border: 0;
+  border-radius: var(--m1-radius);
   text-align: left;
   font-family: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color var(--dur-fast) var(--ease-std);
+  transition: transform var(--dur-base) var(--ease-spring);
 }
-.m1-planrow:hover { border-color: var(--glass-border-hover); }
-.m1-planrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.m1-planrow-mark {
-  flex: 0 0 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-sm);
-  background: rgba(var(--accent-rgb), 0.12);
+.m1-plancard:active { transform: scale(0.985); }
+.m1-plancard:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Category pill, top-left. */
+.m1-plancard-tag {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   color: var(--accent);
+  font-size: 0.62rem; font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
-/* min-width:0 so a long plan name ellipsises instead of pushing the chevron out. */
-.m1-planrow-body {
-  flex: 1;
-  min-width: 0;
+
+.m1-plancard-foot {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
-.m1-planrow-name,
-.m1-planrow-meta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.m1-planrow-name {
+/* min-width:0 so a long plan name ellipsises instead of pushing the go button
+   off the card. */
+.m1-plancard-text { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.m1-plancard-name {
   font-family: var(--font-display);
   font-weight: 800;
   font-stretch: var(--display-stretch);
-  font-size: 0.9rem;
-  line-height: 1.1;
+  font-size: 1.35rem;
+  line-height: 1;
   text-transform: uppercase;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.m1-planrow-meta {
-  font-size: 0.66rem;
+/* Facts are separated by a rendered dot rather than punctuation in the string,
+   so a missing fact never leaves a dangling separator. */
+.m1-plancard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 0.63rem;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--on-photo-dim);
 }
-.m1-planrow-chev {
+.m1-plancard-meta > span + span::before {
+  content: '';
+  display: inline-block;
+  width: 3px; height: 3px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+  opacity: 0.7;
+}
+.m1-plancard-go {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  color: var(--text-secondary);
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 /* -- Empty state (no sessions logged yet) -- */
