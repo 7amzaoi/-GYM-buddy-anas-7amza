@@ -120,7 +120,9 @@ export default function DashboardPage() {
     .slice()
     .reverse()
     .map((p) => ({ ...p, lastUsed: null }));
-  const recentPlans = [...trained, ...untrained].slice(0, 3);
+  /* Two, not three: the cards are full-width posters, so a third pushes the
+     section past a screenful and "All plans" is right there for the rest. */
+  const recentPlans = [...trained, ...untrained].slice(0, 2);
 
   /** The three facts worth carrying on a plan card, in priority order. */
   function planFacts(p) {
