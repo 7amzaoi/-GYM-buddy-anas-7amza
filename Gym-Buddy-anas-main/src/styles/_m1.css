@@ -65,9 +65,6 @@
   color: var(--accent);
 }
 .m1-eyebrow.is-muted { color: var(--text-secondary); }
-/* Dot between "Today" and the date; margin rather than letter-spacing so the
-   eyebrow's wide tracking doesn't leave it hanging off the second word. */
-.m1-eyebrow-sep { margin: 0 0.5em 0 0.35em; opacity: 0.6; }
 
 /* Metadata line: STRENGTH · 6 EXERCISES · 45 MIN */
 .m1-meta {

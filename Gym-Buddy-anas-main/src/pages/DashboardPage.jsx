@@ -74,32 +74,44 @@ export default function DashboardPage() {
   if (session) heroState = 'resume';
   else if (plan) heroState = 'plan';
 
-  let heroTitle;
+  const recent = history.slice(0, 3);
+  const today = new Date();
+
+  /* The hero title is the weekday, and only ever the weekday.
+   *
+   * It used to be the plan's name, which made the largest element on the screen
+   * mean something different per user: a plan name, a fallback prompt for
+   * anyone who never made a plan, or "Freestyle Workout" mid-session. The day
+   * is true for everybody, every day, whether or not they plan anything — so
+   * the plan moves down into the meta line, where it varies without the screen
+   * changing shape. */
+  const heroTitle = today.toLocaleDateString(undefined, { weekday: 'long' });
+
+  let heroEyebrow;
   let heroMeta;
   let ctaLabel;
   let ctaIcon;
+  const dayDate = today.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   if (heroState === 'resume') {
     const sets = (session.exercises || []).flatMap((e) => e.sets || []);
     const doneSets = sets.filter((x) => x.done).length;
-    heroTitle = session.planName || 'Freestyle Workout';
-    heroMeta = `In progress · ${doneSets}/${sets.length} sets · ${(session.exercises || []).length} exercises`;
+    heroEyebrow = 'Pick up where you left off';
+    heroMeta = [session.planName || 'Freestyle Workout', `${doneSets}/${sets.length} sets done`]
+      .join(' · ');
     ctaLabel = 'Resume workout';
     ctaIcon = 'play';
   } else if (heroState === 'plan') {
-    heroTitle = plan.name;
-    heroMeta = [plan.category, `${planExercises} exercise${planExercises === 1 ? '' : 's'}`, plan.duration]
+    heroEyebrow = `Today · ${dayDate}`;
+    heroMeta = [plan.name, `${planExercises} exercise${planExercises === 1 ? '' : 's'}`, plan.duration]
       .filter(Boolean).join(' · ');
     ctaLabel = 'Start workout';
     ctaIcon = 'play';
   } else {
-    heroTitle = 'Pick your first plan';
-    heroMeta = 'Choose a plan and it shows up here every day';
+    heroEyebrow = `Today · ${dayDate}`;
+    heroMeta = 'Nothing planned yet — build one and it shows up here';
     ctaLabel = 'Browse plans';
     ctaIcon = 'dumbbell';
   }
-
-  const recent = history.slice(0, 3);
-  const today = new Date();
 
   /* Plans ordered by when they were last trained. `workoutHistory` is
    * newest-first and every completed session carries the `planId` it ran, so
@@ -187,21 +199,10 @@ export default function DashboardPage() {
       {/* ===== Hero: today's session over a full-bleed photo ===== */}
       <PhotoFrame slot="hero-today" ghost="dumbbell" className="m1-hero">
         <div className="m1-hero-body">
-          {/* The real weekday and date. The big title below is the plan's own
-              name — a plan called "Monday" used to be the only date-looking
-              thing on the screen, which read as the app being stuck on Monday. */}
-          <span className="m1-eyebrow">
-            {heroState === 'resume' ? 'Pick up where you left off' : (
-              <>
-                Today
-                <span className="m1-eyebrow-sep" aria-hidden="true">·</span>
-                <time dateTime={today.toISOString().slice(0, 10)}>
-                  {today.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
-                </time>
-              </>
-            )}
-          </span>
-          <h1 className="m1-display m1-h1 m1-hero-title">{heroTitle}</h1>
+          <span className="m1-eyebrow">{heroEyebrow}</span>
+          <h1 className="m1-display m1-h1 m1-hero-title">
+            <time dateTime={today.toISOString().slice(0, 10)}>{heroTitle}</time>
+          </h1>
           <span className="m1-meta">{heroMeta}</span>
           <button type="button" className="m1-cta" onClick={onHeroAction}>
             {icon(ctaIcon, 16)} {ctaLabel}
