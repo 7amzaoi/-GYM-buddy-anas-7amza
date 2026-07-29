@@ -80,17 +80,29 @@
   color: var(--accent);
   font-size: var(--text-xs); font-weight: 700;
 }
+/* Corner actions — rename + delete. 44px each for touch; the block is pulled
+   back by the extra padding so the card's top row keeps its height. */
+.plan-card-acts {
+  display: flex; align-items: center;
+  gap: 2px;
+  margin: -6px -6px -6px 0;
+}
+.plan-card-edit,
 .plan-card-del {
   display: grid; place-items: center;
-  width: 32px; height: 32px;
+  width: 44px; height: 44px;
   border-radius: var(--radius-sm);
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--dur-base) var(--ease-std);
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-fast) var(--ease-std), background var(--dur-fast) var(--ease-std);
 }
+.plan-card-edit:hover { color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
 .plan-card-del:hover { color: var(--danger); background: rgba(255, 71, 87, 0.1); }
+.plan-card-edit:focus-visible,
+.plan-card-del:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .plan-card-stamp {
   align-self: flex-start;
   display: inline-flex; align-items: center; gap: 5px;

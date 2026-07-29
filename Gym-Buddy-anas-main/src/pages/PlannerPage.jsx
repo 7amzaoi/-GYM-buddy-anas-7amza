@@ -64,6 +64,8 @@ export default function PlannerPage() {
   const [expandedId, setExpandedId] = useState(null);
   /** Plan waiting on confirmation because another session is already running. */
   const [pendingStart, setPendingStart] = useState(null);
+  /** Plan being renamed: { id, name }. Drives the rename modal. */
+  const [renaming, setRenaming] = useState(null);
   /** Muscle group narrowing the create-plan exercise list; null = all. */
   const [exFilter, setExFilter] = useState(null);
   /* Selection lives in state, not in the DOM. The filter has to be free to
@@ -166,6 +168,19 @@ export default function PlannerPage() {
     setExFilter(null);
   }
 
+  function handleRename(ev) {
+    ev.preventDefault();
+    if (!renaming) return;
+    const name = String(renaming.name || '').trim();
+    if (!name) {
+      Toast.show('Give the plan a name.', 'warning');
+      return;
+    }
+    Store.renameCustomPlan(renaming.id, name);
+    setRenaming(null);
+    Toast.show('Plan renamed.', 'success');
+  }
+
   function togglePicked(id) {
     setPickedIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   }
@@ -242,14 +257,24 @@ export default function PlannerPage() {
                   <article key={p.id} className={`gx-card plan-card ${completed ? 'is-completed' : ''} ${isOpen ? 'is-open' : ''}`} data-category={p.category} data-reveal>
                     <div className="plan-card-top">
                       <span className="plan-card-cat">{icon(cat.iconKey, 13)} {cat.label}</span>
-                      <button
-                        type="button"
-                        className="plan-card-del"
-                        onClick={(e) => { e.stopPropagation(); deleteCustomPlan(p.id); }}
-                        aria-label={`Delete ${p.name}`}
-                      >
-                        {icon('trash', 15)}
-                      </button>
+                      <span className="plan-card-acts">
+                        <button
+                          type="button"
+                          className="plan-card-edit"
+                          onClick={(e) => { e.stopPropagation(); setRenaming({ id: p.id, name: p.name }); }}
+                          aria-label={`Rename ${p.name}`}
+                        >
+                          {icon('edit', 15)}
+                        </button>
+                        <button
+                          type="button"
+                          className="plan-card-del"
+                          onClick={(e) => { e.stopPropagation(); deleteCustomPlan(p.id); }}
+                          aria-label={`Delete ${p.name}`}
+                        >
+                          {icon('trash', 15)}
+                        </button>
+                      </span>
                     </div>
 
                     {completed ? (
@@ -424,6 +449,40 @@ export default function PlannerPage() {
               </div>
               <button type="submit" className="gx-btn gx-btn-primary" style={{ width: '100%' }}>
                 {icon('check', 15)} Create Plan
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Rename plan ===== */}
+      {renaming && (
+        <div
+          className="gx-modal-overlay"
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) setRenaming(null); }}
+        >
+          <div className="gx-modal gx-modal-sm" role="dialog" aria-modal="true" aria-label="Rename plan">
+            <div className="gx-modal-head">
+              <h2>Rename Plan</h2>
+              <button type="button" className="gx-modal-close" onClick={() => setRenaming(null)} aria-label="Close">
+                {icon('x', 18)}
+              </button>
+            </div>
+            <form className="gx-modal-form" onSubmit={handleRename}>
+              <label className="prof-field">
+                <span>Plan name</span>
+                {/* autoFocus: the modal exists only to edit this one field. */}
+                <input
+                  value={renaming.name}
+                  onChange={(e) => setRenaming((cur) => ({ ...cur, name: e.target.value }))}
+                  maxLength={40}
+                  autoFocus
+                  required
+                />
+              </label>
+              <button type="submit" className="gx-btn gx-btn-primary" style={{ width: '100%' }}>
+                {icon('check', 15)} Save Name
               </button>
             </form>
           </div>

@@ -630,4 +630,24 @@ export const Store = {
   deleteCustomPlan(id) {
     this.update('customPlans', cp => (cp || []).filter(p => p.id !== id));
   },
+
+  /**
+   * Rename a plan in place.
+   *
+   * The id is deliberately untouched: history entries reference the plan by
+   * `planId`, so keeping it preserves "last trained" and the completed stamp.
+   * Deleting and recreating — the only way to rename before this existed —
+   * silently broke both.
+   */
+  renameCustomPlan(id, name) {
+    const clean = String(name || '').trim();
+    if (!clean) return false;
+    let changed = false;
+    this.update('customPlans', cp => (cp || []).map(p => {
+      if (p.id !== id || p.name === clean) return p;
+      changed = true;
+      return { ...p, name: clean };
+    }));
+    return changed;
+  },
 };

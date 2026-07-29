@@ -370,6 +370,7 @@ interface StoreShape {
   captureAutoRecordsFromSession(session: ActiveSession | null | undefined): number;
   addCustomPlan(plan: CustomPlanInput): void;
   deleteCustomPlan(id: string): void;
+  renameCustomPlan(id: string, name: string): boolean;
 }
 
 export const Store: StoreShape = {
@@ -971,5 +972,25 @@ export const Store: StoreShape = {
 
   deleteCustomPlan(id) {
     this.update('customPlans', (cp: CustomPlan[]) => (cp || []).filter((p) => p.id !== id));
+  },
+
+  /**
+   * Rename a plan in place.
+   *
+   * The id is deliberately untouched: history entries reference the plan by
+   * `planId`, so keeping it preserves "last trained" and the completed stamp.
+   * Deleting and recreating — the only way to rename before this existed —
+   * silently broke both.
+   */
+  renameCustomPlan(id, name) {
+    const clean = String(name || '').trim();
+    if (!clean) return false;
+    let changed = false;
+    this.update('customPlans', (cp: CustomPlan[]) => (cp || []).map((p) => {
+      if (p.id !== id || p.name === clean) return p;
+      changed = true;
+      return { ...p, name: clean };
+    }));
+    return changed;
   },
 };
