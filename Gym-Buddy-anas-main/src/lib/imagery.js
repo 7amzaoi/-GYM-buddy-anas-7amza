@@ -23,15 +23,14 @@ const SLOTS = {
   avatar:           { file: 'avatar.jpeg',         available: false, alt: 'Profile photo' },
 
   /* Second and third takes per category. With one photo each, two strength
-     plans on the same screen showed the identical picture. These widen the pool
-     (see PLAN_SLOT_POOL in DashboardPage); until the files exist they resolve
-     to null and the pool simply skips them, so nothing regresses. */
-  'plan-strength-2': { file: 'plan-strength-2.jpeg', available: false, alt: 'Chalked hands on a bar' },
-  'plan-strength-3': { file: 'plan-strength-3.jpeg', available: false, alt: 'Squat rack under low light' },
-  'plan-cardio-2':   { file: 'plan-cardio-2.jpeg',   available: false, alt: 'Treadmill row at night' },
-  'plan-fatloss':    { file: 'plan-fatloss.jpeg',    available: false, alt: 'Battle ropes mid-swing' },
-  'plan-muscle':     { file: 'plan-muscle.jpeg',     available: false, alt: 'Cable machine and dumbbells' },
-  'plan-custom-2':   { file: 'plan-custom-2.jpeg',   available: false, alt: 'Kettlebells on a rack' },
+     plans on the same screen showed the identical picture; these widen the pool
+     that PLAN_SLOT_POOL in DashboardPage picks from. */
+  'plan-strength-2': { file: 'plan-strength-2.jpeg', available: true, alt: 'Chalked hands on a bar' },
+  'plan-strength-3': { file: 'plan-strength-3.jpeg', available: true, alt: 'Squat rack under low light' },
+  'plan-cardio-2':   { file: 'plan-cardio-2.jpeg',   available: true, alt: 'Treadmill row at night' },
+  'plan-fatloss':    { file: 'plan-fatloss.jpeg',    available: true, alt: 'Battle ropes mid-swing' },
+  'plan-muscle':     { file: 'plan-muscle.jpeg',     available: true, alt: 'Cable machine and dumbbells' },
+  'plan-custom-2':   { file: 'plan-custom-2.jpeg',   available: true, alt: 'Kettlebells on a rack' },
 };
 
 /** Resolved URL for a slot, or null when no photo has been supplied yet. */

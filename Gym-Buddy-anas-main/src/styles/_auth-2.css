@@ -325,7 +325,8 @@
   align-items: center;
   gap: 5px;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.4);
+  /* 0.4 alpha measured 3.7:1 on this background — under AA for 11px text. */
+  color: rgba(255, 255, 255, 0.62);
   letter-spacing: 0.02em;
 }
 .login-v2-trust span svg {

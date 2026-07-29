@@ -179,3 +179,30 @@
 :root[data-theme='light'] .m1-meta,
 :root[data-theme='light'] .m1-eyebrow.is-muted { color: var(--text-2); }
 :root[data-theme='light'] .prof-signout { color: #B3261E; }
+
+/* ---- Always-dark marketing surfaces ----
+   Landing, auth and download bake their own near-black background (measured
+   #050505 / #0A0A0A) and keep it in both themes — they are a brand surface, not
+   a themed app screen. But they still read the ink tokens, so in light mode
+   headings resolved to #0B0B0B on #050505: black on black. Section titles and
+   card titles vanished while descriptions survived, because those happened to
+   use a hardcoded white-alpha.
+
+   Same fix as the photo contexts in _m1.css: rather than chase individual
+   selectors, RE-SCOPE the tokens on the page roots. Anything inside that reads
+   a token gets light ink automatically, now and for anything added later. */
+:root[data-theme='light'] .landing,
+:root[data-theme='light'] .login-v2,
+:root[data-theme='light'] .download-page {
+  --text-1: #FFFFFF;
+  --text-2: rgba(255, 255, 255, 0.72);
+  --text-3: rgba(255, 255, 255, 0.55);
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.72);
+  --hairline: rgba(255, 255, 255, 0.10);
+  --hairline-strong: rgba(255, 255, 255, 0.18);
+  --border: rgba(255, 255, 255, 0.10);
+  /* The accent sits on dark here, so it stays neon rather than going deep. */
+  --accent-ink: var(--accent);
+  color: var(--text-1);
+}
