@@ -29,9 +29,9 @@ export function formatRecordValue(r) {
  */
 export function recordIconKey(r) {
   switch (r?.category) {
-    case 'cardio': return 'activity';
-    case 'fitness': return 'zap';
-    default: return 'dumbbell';
+    case 'cardio': return 'stopwatch';
+    case 'fitness': return 'peak';
+    default: return 'medal';
   }
 }
 
