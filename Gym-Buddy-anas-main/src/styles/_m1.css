@@ -424,6 +424,42 @@
   color: var(--text-secondary);
 }
 
+/* Section header carrying tabs instead of a label: chips are 44px, so the row
+   centres rather than sitting on the text baseline. */
+.m1-sechead-tabs { align-items: center; }
+/* Two tabs, not a scrolling rail — .m1-chiprow bleeds to the gutter, which
+   would break the header's alignment with the link on the right. */
+.m1-sectabs {
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.m1-sectabs .m1-chip { padding: 0 var(--space-4); }
+
+/* -- Records rows on Today.
+   Reuses the .m1-rec primitive from the Records screen; only the leading glyph
+   is new, since that screen's variant leads with a photo thumbnail and three
+   rows of the same photo would read as a rendering fault. -- */
+.m1-rec {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--dur-fast) var(--ease-std);
+}
+.m1-rec:hover { border-color: var(--glass-border-hover); }
+.m1-rec:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.m1-rec-mark {
+  flex: 0 0 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-ink);
+}
+
 /* -- Plans: full-width poster cards.
    Each plan carries the same photograph it shows on the Planner screen, so it
    is recognisable by its picture in both places. Full-bleed and stacked, which

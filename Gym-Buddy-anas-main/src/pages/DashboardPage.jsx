@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
 import { getExerciseById } from '../data.js';
@@ -6,6 +6,7 @@ import { NavigateContext } from '../context/NavigateContext.jsx';
 import { revealOnScroll } from '../lib/motion.js';
 import PhotoFrame from '../components/PhotoFrame.jsx';
 import { photo } from '../lib/imagery.js';
+import { formatRecordValue, recentRecords } from '../lib/records.js';
 import * as haptics from '../lib/haptics.js';
 
 /**
@@ -52,6 +53,9 @@ function compact(n) {
 export default function DashboardPage() {
   const navigateToPage = useContext(NavigateContext);
   const rootRef = useRef(null);
+  /* Plans and records share one section rather than stacking two: both answer
+     "what have I got", and records lived on Profile, three taps from here. */
+  const [libTab, setLibTab] = useState('plans');
 
   const user = Store.get('user');
   const progress = Store.get('progressData');
@@ -76,6 +80,7 @@ export default function DashboardPage() {
 
   const recent = history.slice(0, 3);
   const today = new Date();
+  const topRecords = recentRecords(Store.get('records') || [], 3);
 
   /* The hero title is the weekday, and only ever the weekday.
    *
@@ -266,23 +271,68 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* ===== Plans rail =====
-            Hidden entirely when there are no plans: the hero is already the
+        {/* ===== Library: plans / records =====
+            Hidden entirely when the user has neither: the hero is already the
             "pick your first plan" empty state, and a second empty box under it
-            would just repeat the same prompt. */}
-        {recentPlans.length > 0 && (
+            would just repeat the same prompt. When only one of the two has
+            content the tabs still show, so the other is discoverable. */}
+        {(recentPlans.length > 0 || topRecords.length > 0) && (
           <section data-reveal>
-            <div className="m1-sechead">
-              <span className="m1-eyebrow is-muted">Your plans</span>
+            <div className="m1-sechead m1-sechead-tabs">
+              <div className="m1-sectabs" role="tablist" aria-label="Plans and records">
+                {[['plans', 'Plans'], ['records', 'Records']].map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={libTab === id}
+                    className={`m1-chip ${libTab === id ? 'is-active' : ''}`}
+                    onClick={() => { haptics.tap(); setLibTab(id); }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
                 className="m1-seclink"
-                onClick={() => { haptics.tap(); navigateToPage?.('planner'); }}
+                onClick={() => { haptics.tap(); navigateToPage?.(libTab === 'plans' ? 'planner' : 'records'); }}
               >
-                All plans {icon('arrow', 12)}
+                {libTab === 'plans' ? 'All plans' : 'All records'} {icon('arrow', 12)}
               </button>
             </div>
 
+            {libTab === 'records' ? (
+              topRecords.length === 0 ? (
+                <p className="m1-empty">
+                  No records yet. Finish a session and your best lifts land here.
+                </p>
+              ) : (
+                <div className="m1-reclist">
+                  {topRecords.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      className="m1-rec"
+                      onClick={() => { haptics.tap(); navigateToPage?.('records'); }}
+                    >
+                      <span className="m1-rec-mark" aria-hidden="true">{icon('trophy', 20)}</span>
+                      <span className="m1-rec-body">
+                        <span className="m1-rec-name">{r.exercise_name}</span>
+                        <span className="m1-rec-val">{formatRecordValue(r)}</span>
+                      </span>
+                      <span className="m1-rec-date">
+                        {new Date(r.recorded_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )
+            ) : recentPlans.length === 0 ? (
+              <p className="m1-empty">
+                No plans yet. Build one and it shows up here.
+              </p>
+            ) : (
             <div className="m1-plangrid">
               {recentPlans.map((p) => (
                 <PhotoFrame
@@ -310,6 +360,7 @@ export default function DashboardPage() {
                 </PhotoFrame>
               ))}
             </div>
+            )}
           </section>
         )}
       </div>

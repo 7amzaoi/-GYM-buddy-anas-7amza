@@ -1,5 +1,6 @@
 import { useContext, useState, useEffect, useRef } from 'react';
 import { Store } from '../store.js';
+import { formatRecordValue, recentRecords } from '../lib/records.js';
 import { icon } from '../icons.jsx';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { Toast } from '../lib/interactions.js';
@@ -76,19 +77,7 @@ export default function ProfilePage() {
   const badges = computeBadges({ history, records, progress, level: lvl.level });
   const unlockedCount = badges.filter((b) => b.unlocked).length;
 
-  const topRecords = [...records]
-    .sort((a, b) => Date.parse(b.recorded_at) - Date.parse(a.recorded_at))
-    .slice(0, 3);
-  const formatRecordBadge = (r) => {
-    if (r.category === 'cardio') {
-      const dist = r.tertiary_value ? ` • ${r.tertiary_value} ${r.tertiary_unit || 'km'}` : '';
-      return `${r.value} sets • ${r.secondary_value || 0} ${r.secondary_unit || 'min'}${dist}`;
-    }
-    if (r.metric_type === 'weight') {
-      return `${r.value} kg${r.secondary_value ? ` x ${r.secondary_value} reps` : ''}`;
-    }
-    return `${r.value} ${r.unit || ''}`.trim();
-  };
+  const topRecords = recentRecords(records, 3);
 
   const initials = (user.name || 'G')
     .trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() || '').join('');
@@ -376,7 +365,7 @@ export default function ProfilePage() {
                   <h4>{r.exercise_name}</h4>
                   <p>{new Date(r.recorded_at).toLocaleDateString()}</p>
                 </div>
-                <span className="gx-badge is-accent">{formatRecordBadge(r)}</span>
+                <span className="gx-badge is-accent">{formatRecordValue(r)}</span>
               </div>
             ))}
           </div>
