@@ -38,6 +38,7 @@ export default function ProfilePage() {
   const [bmModalOpen, setBmModalOpen] = useState(false);
   const [weeklyGoal, setWeeklyGoal] = useState(() => Number(Store.get('weeklyGoal')) || 5);
   const [resetOpen, setResetOpen] = useState(false);
+  const [badgesExpanded, setBadgesExpanded] = useState(false);
   const [theme, setTheme] = useState(() => getStoredTheme());
   /** Profile photo, or null → the avatar falls back to the user's initials. */
   const avatarSrc = photo('avatar');
@@ -76,6 +77,16 @@ export default function ProfilePage() {
   const tier = titleForLevel(lvl.level);
   const badges = computeBadges({ history, records, progress, level: lvl.level });
   const unlockedCount = badges.filter((b) => b.unlocked).length;
+
+  /* Unlocked first, then locked. The source order is a real progression —
+     grouped by family, bronze to gold within each — but the unlocked ones are
+     scattered through it, so a six-badge preview in that order is almost all
+     grey boxes. Array.sort is stable, so the progression survives inside each
+     group. */
+  const BADGE_PREVIEW = 6;
+  const badgesOrdered = [...badges].sort((a, b) => (b.unlocked ? 1 : 0) - (a.unlocked ? 1 : 0));
+  const badgesVisible = badgesExpanded ? badgesOrdered : badgesOrdered.slice(0, BADGE_PREVIEW);
+  const badgesHidden = Math.max(0, badgesOrdered.length - BADGE_PREVIEW);
 
   const topRecords = recentRecords(records, 3);
 
@@ -379,7 +390,7 @@ export default function ProfilePage() {
           <span className="gx-badge is-accent">{unlockedCount}/{badges.length} unlocked</span>
         </div>
         <div className="prof-badges">
-          {badges.map((b) => (
+          {badgesVisible.map((b) => (
             <div key={b.id} className={`prof-badge tier-${b.tier} ${b.unlocked ? 'is-unlocked' : ''}`} title={b.desc}>
               <span className="prof-badge-icon">{icon(b.iconKey, 22)}</span>
               <span className="prof-badge-name">{b.name}</span>
@@ -389,6 +400,19 @@ export default function ProfilePage() {
             </div>
           ))}
         </div>
+        {badgesHidden > 0 && (
+          <button
+            type="button"
+            className="prof-badges-more"
+            onClick={() => setBadgesExpanded((v) => !v)}
+            aria-expanded={badgesExpanded}
+          >
+            <span>{badgesExpanded ? 'Show less' : `Show ${badgesHidden} more`}</span>
+            <span className={`prof-badges-more-chev ${badgesExpanded ? 'is-open' : ''}`} aria-hidden="true">
+              {icon('arrow', 13)}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* ===== Body Measurements ===== */}

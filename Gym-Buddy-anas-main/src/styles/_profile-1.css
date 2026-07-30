@@ -141,6 +141,41 @@
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
 }
+/* Collapse toggle — same affordance as the recent-sessions list on Workouts,
+   so the two read as one pattern rather than two inventions. */
+.prof-badges-more {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-3);
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accent-rgb), 0.10);
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
+  color: var(--accent-ink);
+  font-family: inherit; font-size: var(--text-sm); font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-base) var(--ease-std), transform var(--dur-base) var(--ease-spring);
+}
+.prof-badges-more:hover {
+  background: rgba(var(--accent-rgb), 0.18);
+  transform: translateY(-1px);
+}
+.prof-badges-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.prof-badges-more-chev {
+  display: inline-flex;
+  transform: rotate(90deg);
+  transition: transform var(--dur-base) var(--ease-std);
+}
+.prof-badges-more-chev.is-open { transform: rotate(-90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .prof-badges-more,
+  .prof-badges-more-chev { transition: none; }
+  .prof-badges-more:hover { transform: none; }
+}
 .prof-badge {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: var(--space-5) var(--space-3);
