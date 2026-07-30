@@ -4,6 +4,7 @@ import { icon } from '../icons.jsx';
 import { getAllExercises } from '../data.js';
 import { Toast } from '../lib/interactions.js';
 import { upsertPersonalRecords, deletePersonalRecord } from '../services/personalRecordsApi.js';
+import { recordIconKey } from '../lib/records.js';
 import { revealOnScroll } from '../lib/motion.js';
 import AppHeader from '../components/AppHeader.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
@@ -13,12 +14,6 @@ const categoryLabels = {
   strength: 'Strength',
   fitness: 'Fitness',
   cardio: 'Cardio',
-};
-
-const categoryIcon = {
-  strength: 'dumbbell',
-  fitness: 'zap',
-  cardio: 'activity',
 };
 
 function categoryForExerciseId(id) {
@@ -360,7 +355,7 @@ export default function RecordsPage() {
             <article key={r.id} className="gx-card rec-card" data-reveal>
               <div className="rec-card-top">
                 <span className={`rec-card-cat cat-${r.category}`}>
-                  {icon(categoryIcon[r.category] || 'trophy', 13)} {categoryLabels[r.category] || 'Training'}
+                  {icon(recordIconKey(r), 13)} {categoryLabels[r.category] || 'Training'}
                 </span>
                 <div className="rec-card-acts">
                   <button

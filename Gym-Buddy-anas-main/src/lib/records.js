@@ -22,6 +22,19 @@ export function formatRecordValue(r) {
   return `${r.value} ${r.unit || ''}`.trim();
 }
 
+/**
+ * Glyph for a record, by discipline. A repeated trophy on every row carries no
+ * information and reads as a smudge at 20px; the discipline icon tells you what
+ * kind of lift it was at a glance and gives the list some variety.
+ */
+export function recordIconKey(r) {
+  switch (r?.category) {
+    case 'cardio': return 'activity';
+    case 'fitness': return 'zap';
+    default: return 'dumbbell';
+  }
+}
+
 /** Newest-first, capped. Used wherever "recent records" is shown. */
 export function recentRecords(records = [], limit = 3) {
   return [...(records || [])]

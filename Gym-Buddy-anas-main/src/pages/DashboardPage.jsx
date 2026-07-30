@@ -6,7 +6,7 @@ import { NavigateContext } from '../context/NavigateContext.jsx';
 import { revealOnScroll } from '../lib/motion.js';
 import PhotoFrame from '../components/PhotoFrame.jsx';
 import { photo } from '../lib/imagery.js';
-import { formatRecordValue, recentRecords } from '../lib/records.js';
+import { formatRecordValue, recentRecords, recordIconKey } from '../lib/records.js';
 import * as haptics from '../lib/haptics.js';
 
 /**
@@ -316,7 +316,7 @@ export default function DashboardPage() {
                       className="m1-rec"
                       onClick={() => { haptics.tap(); navigateToPage?.('records'); }}
                     >
-                      <span className="m1-rec-mark" aria-hidden="true">{icon('trophy', 20)}</span>
+                      <span className="m1-rec-mark" aria-hidden="true">{icon(recordIconKey(r), 19)}</span>
                       <span className="m1-rec-body">
                         <span className="m1-rec-name">{r.exercise_name}</span>
                         <span className="m1-rec-val">{formatRecordValue(r)}</span>

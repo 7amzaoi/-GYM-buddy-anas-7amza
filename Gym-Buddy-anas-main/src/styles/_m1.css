@@ -455,8 +455,12 @@
   height: 44px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-sm);
-  background: rgba(var(--accent-rgb), 0.12);
+  /* Squircle + hairline ring rather than a flat filled square: the fill alone
+     read as a solid blob at this size and swallowed the glyph. */
+  border-radius: 14px;
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
+  background:
+    radial-gradient(120% 120% at 30% 0%, rgba(var(--accent-rgb), 0.20), rgba(var(--accent-rgb), 0.06));
   color: var(--accent-ink);
 }
 
