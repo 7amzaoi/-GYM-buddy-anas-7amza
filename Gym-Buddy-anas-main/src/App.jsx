@@ -57,6 +57,16 @@ function AuthenticatedChrome() {
     mainRef.current?.scrollTo?.(0, 0);
   }, [location.pathname]);
 
+  // App boot for a signed-in user: load the notification feed, then let the
+  // suggestion engine decide whether anything new deserves to exist. This
+  // chrome mounts once and survives route changes, so it runs once per session
+  // rather than on every navigation. Both calls swallow their own errors.
+  useEffect(() => {
+    if (!user) return;
+    void Store.refreshNotifications();
+    void Store._runNotificationSuggestions('boot');
+  }, [user]);
+
   if (!user) return <Navigate to="/login" replace />;
   return (
     <>

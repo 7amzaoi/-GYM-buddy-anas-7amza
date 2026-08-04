@@ -8,6 +8,8 @@ import PhotoFrame from '../components/PhotoFrame.jsx';
 import { photo } from '../lib/imagery.js';
 import { formatRecordValue, recentRecords, recordIconKey } from '../lib/records.js';
 import * as haptics from '../lib/haptics.js';
+import NotificationBell from '../components/notifications/NotificationBell.jsx';
+import NotificationSheet from '../components/notifications/NotificationSheet.jsx';
 
 /**
  * TODAY — the athletic-editorial home screen.
@@ -191,15 +193,11 @@ export default function DashboardPage() {
       {/* ===== Top bar ===== */}
       <div className="m1-topbar">
         <span className="m1-wordmark">GymBuddy</span>
-        <button
-          type="button"
-          className="m1-iconbtn"
-          aria-label="Notifications"
-          onClick={() => navigateToPage?.('profile')}
-        >
-          {icon('bell', 21)}
-        </button>
+        {/* Temporary slot: the bell moves to AppHeader once that gains a
+            global action slot, so it is reachable from every route. */}
+        <NotificationBell />
       </div>
+      <NotificationSheet />
 
       {/* ===== Hero: today's session over a full-bleed photo ===== */}
       <PhotoFrame slot="hero-today" ghost="dumbbell" className="m1-hero">

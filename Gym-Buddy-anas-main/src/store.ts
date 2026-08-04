@@ -4,6 +4,50 @@ import { upsertPersonalRecords } from './services/personalRecordsApi.js';
 
 const STATE_VERSION = 2;
 
+/**
+ * State keys that live in memory only — never written to localStorage and
+ * never mirrored to `gymbuddy_app_state`.
+ *
+ * `notifications` is here because the `public.notifications` TABLE is its
+ * source of truth. Mirroring the slice would create a second, always-staler
+ * copy that `applyCloudPatch` would then restore over the fresh one on the
+ * next boot — and `isOpen` would come back as `true`, popping the sheet open
+ * on load. Read it from the table via `refreshNotifications()` instead.
+ *
+ * Imported by sync/cloudMirror.js so both write paths strip the same keys.
+ */
+export const EPHEMERAL_STATE_KEYS: string[] = ['notifications'];
+
+/** A copy of `state` safe to persist or upload. */
+export function toPersistableState<T extends object>(state: T): Partial<T> {
+  const out = { ...(state || {}) } as Record<string, unknown>;
+  for (const k of EPHEMERAL_STATE_KEYS) delete out[k];
+  return out as Partial<T>;
+}
+
+export interface NotificationItem {
+  id: number;
+  kind: string;
+  title: string;
+  body: string | null;
+  data: Record<string, unknown> | null;
+  action_url: string | null;
+  read_at: string | null;
+  scheduled_for: string | null;
+  created_at: string;
+  priority: number;
+}
+
+export interface NotificationsSlice {
+  items: NotificationItem[];
+  unreadCount: number;
+  isOpen: boolean;
+}
+
+function emptyNotifications(): NotificationsSlice {
+  return { items: [], unreadCount: 0, isOpen: false };
+}
+
 /* ====================== Types ====================== */
 
 export interface WeightEntry {
@@ -162,6 +206,7 @@ export interface AppState {
   /** Sessions/week the user is aiming for — denominator of the Today
    *  screen's "x / y" readout. User-editable in Profile. */
   weeklyGoal: number;
+  notifications: NotificationsSlice;
   metricsLog?: MetricsLogEntry[];
   waterIntake?: number;
   _stateVersion: number;
@@ -350,6 +395,13 @@ interface StoreShape {
   update(key: string, fn: (current: unknown) => unknown): void;
   applyCloudPatch(patch: Partial<AppState> | null | undefined): void;
   _save(): void;
+  _setNotifications(fn: (prev: NotificationsSlice) => Partial<NotificationsSlice>): void;
+  openNotifications(): void;
+  closeNotifications(): void;
+  refreshNotifications(): Promise<void>;
+  markNotificationRead(id: number): Promise<void>;
+  markAllNotificationsRead(): Promise<void>;
+  _runNotificationSuggestions(trigger: string): Promise<number>;
   _notify(): void;
   subscribe(fn: Listener): () => void;
   login(email: string, name: string): void;
@@ -404,6 +456,7 @@ export const Store: StoreShape = {
       activeSession: null,
       bodyMeasurements: [],
       weeklyGoal: 5,
+      notifications: emptyNotifications(),
       _stateVersion: STATE_VERSION,
     };
 
@@ -421,6 +474,10 @@ export const Store: StoreShape = {
     } else {
       this._state = defaults;
     }
+
+    // Always start from a clean slice: it is memory-only, but an older build
+    // may have persisted one before EPHEMERAL_STATE_KEYS existed.
+    this._state.notifications = emptyNotifications();
 
     this._migrateIfNeeded();
     this.recomputeDerivedStats();
@@ -457,7 +514,7 @@ export const Store: StoreShape = {
     };
     this._state._stateVersion = STATE_VERSION;
     try {
-      localStorage.setItem('gymbuddy_state', JSON.stringify(this._state));
+      localStorage.setItem('gymbuddy_state', JSON.stringify(toPersistableState(this._state)));
     } catch {
       /* ignore */
     }
@@ -506,7 +563,9 @@ export const Store: StoreShape = {
   /** Merge server `gymbuddy_app_state.state` (never touches `user`). */
   applyCloudPatch(patch) {
     if (!patch || typeof patch !== 'object') return;
-    const skip = new Set(['user']);
+    // Also skip the memory-only keys: an app_state row written by an older
+    // build may still carry a stale `notifications` blob.
+    const skip = new Set(['user', ...EPHEMERAL_STATE_KEYS]);
     const state = this._state as Record<string, unknown>;
     const patchObj = patch as Record<string, unknown>;
     for (const k of Object.keys(patchObj)) {
@@ -541,7 +600,7 @@ export const Store: StoreShape = {
     }
     this.recomputeDerivedStats();
     try {
-      localStorage.setItem('gymbuddy_state', JSON.stringify(this._state));
+      localStorage.setItem('gymbuddy_state', JSON.stringify(toPersistableState(this._state)));
     } catch {
       /* ignore */
     }
@@ -550,7 +609,7 @@ export const Store: StoreShape = {
 
   _save() {
     try {
-      localStorage.setItem('gymbuddy_state', JSON.stringify(this._state));
+      localStorage.setItem('gymbuddy_state', JSON.stringify(toPersistableState(this._state)));
     } catch {
       /* ignore */
     }
@@ -770,7 +829,22 @@ export const Store: StoreShape = {
 
     this.set('activeSession', null);
 
+    // Fire-and-forget: streak and PR records are both final by this point.
+    // Never awaited — the finish flow must not wait on the network, and the
+    // engine swallows its own errors.
+    void this._runNotificationSuggestions('session-finish');
+
     return { newPRs };
+  },
+
+  /** Lazy so the suggestion engine (and its Supabase calls) stay out of the
+   *  boot chunk, and so store.ts keeps no static dependency on a module that
+   *  imports it back. */
+  _runNotificationSuggestions(trigger) {
+    if (!isSupabaseConfigured()) return Promise.resolve(0);
+    return import('./services/notificationSuggestions.js')
+      .then((m) => m.runSuggestionChecks({ trigger } as { trigger: 'boot' | 'session-finish' }))
+      .catch(() => 0);
   },
 
   /**
@@ -953,6 +1027,89 @@ export const Store: StoreShape = {
 
     // Number of exercises that set a genuinely-better record this session.
     return toUpsert.length;
+  },
+
+  // ---------------------------------------------------------------- notifications
+  // The `public.notifications` table is the source of truth; this slice is a
+  // memory-only view of it (see EPHEMERAL_STATE_KEYS). Every mutation writes
+  // through to the table first, then updates the slice, so a reload re-reads
+  // the same answer rather than trusting local state.
+  //
+  // `_setNotifications` bypasses `set()` deliberately: `set()` persists, and
+  // this slice must never reach localStorage or the cloud mirror.
+  _setNotifications(fn) {
+    const prev = this._state.notifications || emptyNotifications();
+    this._state.notifications = { ...prev, ...fn(prev) };
+    this._notify();
+  },
+
+  openNotifications() {
+    this._setNotifications(() => ({ isOpen: true }));
+    // Opening is the natural moment to re-read — the sheet should not show a
+    // list that went stale while the app sat in the background.
+    void this.refreshNotifications();
+  },
+
+  closeNotifications() {
+    this._setNotifications(() => ({ isOpen: false }));
+  },
+
+  /** Re-read the feed + unread count from the table. Safe to call anytime. */
+  async refreshNotifications() {
+    const u = this.get('user');
+    if (!isSupabaseConfigured() || u?.source !== 'supabase') {
+      this._setNotifications(() => ({ items: [], unreadCount: 0 }));
+      return;
+    }
+    try {
+      const api = await import('./services/notificationsApi.js');
+      const [{ notifications, error }, { count }] = await Promise.all([
+        api.list({ limit: 30 }),
+        api.unreadCount(),
+      ]);
+      if (error) return;
+      this._setNotifications(() => ({ items: notifications as NotificationItem[], unreadCount: count }));
+    } catch {
+      /* offline — keep whatever is on screen */
+    }
+  },
+
+  async markNotificationRead(id) {
+    if (id == null) return;
+    const before = this._state.notifications?.items || [];
+    if (!before.some((n) => n.id === id && !n.read_at)) return; // already read
+
+    try {
+      const { markRead } = await import('./services/notificationsApi.js');
+      const { error } = await markRead([id]);
+      if (error) return;
+    } catch {
+      return;
+    }
+
+    const readAt = new Date().toISOString();
+    this._setNotifications((p) => ({
+      items: p.items.map((n) => (n.id === id ? { ...n, read_at: n.read_at || readAt } : n)),
+      unreadCount: Math.max(0, p.unreadCount - 1),
+    }));
+  },
+
+  async markAllNotificationsRead() {
+    if ((this._state.notifications?.unreadCount || 0) === 0) return;
+
+    try {
+      const { markAllRead } = await import('./services/notificationsApi.js');
+      const { error } = await markAllRead();
+      if (error) return;
+    } catch {
+      return;
+    }
+
+    const readAt = new Date().toISOString();
+    this._setNotifications((p) => ({
+      items: p.items.map((n) => (n.read_at ? n : { ...n, read_at: readAt })),
+      unreadCount: 0,
+    }));
   },
 
   addCustomPlan(plan) {

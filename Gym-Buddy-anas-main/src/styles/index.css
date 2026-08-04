@@ -27,6 +27,7 @@
 @import './_shared-modal-2.css';
 @import './_session-shared.css';  /* sess-end-* modal styles reused by Workouts discard */
 @import './_bottom-sheet.css';    /* BottomSheet primitive (workout modals on mobile) */
+@import './_notifications.css';   /* header bell + notification feed rows */
 
 /* ===== 4. Marketing surfaces ===== */
 @import './_landing-1.css';

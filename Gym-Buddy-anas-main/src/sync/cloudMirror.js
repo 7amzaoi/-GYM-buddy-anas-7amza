@@ -14,7 +14,7 @@ export function scheduleCloudMirrorDebounced(delayMs = 1400) {
 }
 
 async function mirrorAppStateOnce() {
-  const [{ supabase, isSupabaseConfigured }, { Store }] = await Promise.all([
+  const [{ supabase, isSupabaseConfigured }, { Store, toPersistableState }] = await Promise.all([
     import('../lib/supabaseClient.js'),
     import('../store.js'),
   ]);
@@ -22,8 +22,10 @@ async function mirrorAppStateOnce() {
   const u = Store.get('user');
   if (!isSupabaseConfigured() || !supabase || !u?.id || u.source !== 'supabase') return;
 
+  // `toPersistableState` drops the memory-only keys (notifications), which have
+  // their own table and must not be duplicated into this blob.
   const snapshot = structuredClone({
-    ...Store._state || {},
+    ...toPersistableState(Store._state || {}),
     user: undefined,
   });
 
