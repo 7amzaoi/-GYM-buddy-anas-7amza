@@ -87,7 +87,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="page login-v2 register-v2">
+    <div className="page login-v2 register-v2 brand-lock">
 
       <button
         type="button"

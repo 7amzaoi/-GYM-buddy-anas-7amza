@@ -2,13 +2,16 @@ import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react';
 import { gsap } from '../gsap.config.js';
 import { icon } from '../icons.jsx';
 import { NavigateContext } from '../context/NavigateContext.jsx';
+import { BRAND_ACCENT } from '../lib/personalization.js';
 
 // Heavy three-based fluid sim — lazy so initial bundle stays small.
 const LiquidEther = lazy(() => import('../components/LiquidEther.jsx'));
 
-// Brand-tuned green palette for the fluid background (overrides the
-// default purple/pink palette).
-const LIQUID_COLORS = ['#70dc35', '#d3f02e', '#d4fe00'];
+// Brand-tuned palette for the fluid background (overrides the sim's default
+// purple/pink). This is a marketing surface, so it uses the brand accent
+// rather than the visitor's chosen one — same rule as `.brand-lock`.
+// WebGL takes literal colours, so it can't inherit the CSS scope.
+const LIQUID_COLORS = [BRAND_ACCENT.deep, BRAND_ACCENT.hex2, BRAND_ACCENT.hex];
 
 const FEATURES = [
   {
@@ -480,10 +483,10 @@ export default function DownloadPage() {
     // No real listing yet — placeholder behavior. Hook real URLs here later.
   }
 
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=12&bgcolor=0B0B0B&color=D4FF00&data=${encodeURIComponent('https://gymbuddy.app/download')}`;
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=12&bgcolor=0B0B0B&color=${BRAND_ACCENT.hex.replace('#', '')}&data=${encodeURIComponent('https://gymbuddy.app/download')}`;
 
   return (
-    <div className="page download-page" ref={rootRef}>
+    <div className="page download-page brand-lock" ref={rootRef}>
       {/* Scroll progress bar — neon strip, width tracks page scroll */}
       <div className="dl-scroll-progress" aria-hidden="true">
         <span className="dl-scroll-progress-fill" />

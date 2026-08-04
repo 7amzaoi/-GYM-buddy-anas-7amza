@@ -64,8 +64,9 @@
 :root[data-theme='light'] .m1-themeopt.is-active:not(.m1-photo *),
 :root[data-theme='light'] .dash-accent:not(.m1-photo *),
 /* Found by a contrast sweep of every screen in light mode: these all set
-   `color: var(--accent)` directly, which is the neon lime — about 1.1:1 on a
-   white card, i.e. invisible. Same fix as the rest of this block. */
+   `color: var(--accent)` directly, which is a neon hue whatever the user
+   picked — the brand cyan is about 1.8:1 on a white card, i.e. invisible.
+   Same fix as the rest of this block. */
 :root[data-theme='light'] .plan-accent:not(.m1-photo *),
 :root[data-theme='light'] .plan-card-cat:not(.m1-photo *),
 :root[data-theme='light'] .plan-card-last:not(.m1-photo *),

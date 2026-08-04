@@ -43,7 +43,7 @@
   box-shadow: 0 20px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
 }
 .auth-side-panel {
-  background: linear-gradient(160deg, rgba(212,255,0,.14), rgba(212,255,0,.04));
+  background: linear-gradient(160deg, rgba(var(--accent-rgb),.14), rgba(var(--accent-rgb),.04));
   border-right: 1px solid var(--border);
   padding: 34px 32px;
   display: flex;
@@ -58,7 +58,7 @@
   border-radius: 50%;
   right: -80px;
   bottom: -90px;
-  background: radial-gradient(circle, rgba(212,255,0,.28), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--accent-rgb),.28), transparent 70%);
   filter: blur(10px);
 }
 .auth-brand {
@@ -95,7 +95,7 @@
   backdrop-filter: blur(8px);
 }
 .auth-card .btn-primary {
-  background: linear-gradient(135deg, #d4ff00, #c1ec00);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
 }
 .auth-card .btn-primary:hover {
   transform: translateY(-2px);

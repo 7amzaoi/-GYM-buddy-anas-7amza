@@ -4,7 +4,7 @@
  * settings (Phase 8). Purely client-side; never touches auth/DB.
  */
 
-export type AccentId = 'lime' | 'cyan' | 'violet' | 'ember' | 'punch';
+export type AccentId = 'cyan' | 'lime' | 'violet' | 'ember' | 'punch';
 
 export interface Accent {
   id: AccentId;
@@ -18,22 +18,65 @@ export interface Accent {
 
 /** Selectable accent colors. Each has a main hex + a darker companion
  *  for gradients, and pre-split rgb channels for rgba() composition. */
+/**
+ * ORDER IS MEANINGFUL. `cyan` is the GymBuddy brand accent — it is first
+ * because `applyAccent` falls back to `ACCENTS[0]` for an unknown id, and
+ * because both pickers (Onboarding, Profile) render this array in order, so
+ * the brand colour is the one a new user sees selected.
+ *
+ * The other four are user options, not brand colours. Nothing outside the
+ * picker should assume any particular non-brand accent exists.
+ *
+ * Marketing surfaces (landing / download / login / register) deliberately
+ * ignore the user's pick and lock to cyan — see `.brand-lock` in
+ * styles/_brand-lock.css.
+ */
 export const ACCENTS: Accent[] = [
-  { id: 'lime',   label: 'Neon Lime', hex: '#D4FF00', hex2: '#B8E600', deep: '#4F6100', rgb: '212, 255, 0' },
   { id: 'cyan',   label: 'Ice Cyan',  hex: '#22E0D6', hex2: '#15B8AF', deep: '#0A6660', rgb: '34, 224, 214' },
+  { id: 'lime',   label: 'Neon Lime', hex: '#D4FF00', hex2: '#B8E600', deep: '#4F6100', rgb: '212, 255, 0' },
   { id: 'violet', label: 'Ultra',     hex: '#A78BFA', hex2: '#8B5CF6', deep: '#5B34C7', rgb: '167, 139, 250' },
   { id: 'ember',  label: 'Ember',     hex: '#FF8A3D', hex2: '#F0691E', deep: '#8F3D00', rgb: '255, 138, 61' },
   { id: 'punch',  label: 'Punch',     hex: '#FF5C8A', hex2: '#E63E70', deep: '#A11242', rgb: '255, 92, 138' },
 ];
+
+/** The brand accent id. Used as the storage fallback and by the marketing
+ *  brand lock, so the default lives in exactly one place. */
+export const DEFAULT_ACCENT_ID: AccentId = 'cyan';
+
+/** The brand accent itself. Canvas / WebGL code on a marketing surface can't
+ *  inherit `.brand-lock`, so it reads this instead of the user's pick. */
+export const BRAND_ACCENT: Accent =
+  ACCENTS.find((a) => a.id === DEFAULT_ACCENT_ID) || ACCENTS[0];
+
+/**
+ * Resolve the accent that is actually in effect, for code that paints outside
+ * CSS — 2D canvas, WebGL, and SVG built as a string all take literal colours
+ * and cannot use `var(--accent)`.
+ *
+ * Pass an element to read the value at that point in the tree; inside a
+ * `.brand-lock` subtree that yields the brand cyan rather than the user's
+ * accent. Omit it to read the app-wide value from :root.
+ */
+export function currentAccent(el?: Element | null): { hex: string; rgb: string } {
+  try {
+    const cs = getComputedStyle(el || document.documentElement);
+    const hex = cs.getPropertyValue('--accent').trim();
+    const rgb = cs.getPropertyValue('--accent-rgb').trim();
+    if (hex) return { hex, rgb: rgb || BRAND_ACCENT.rgb };
+  } catch {
+    /* no DOM (SSR/tests) — fall through to the brand default */
+  }
+  return { hex: BRAND_ACCENT.hex, rgb: BRAND_ACCENT.rgb };
+}
 
 const ACCENT_KEY = 'gymbuddy_accent';
 const ONBOARD_KEY = 'gymbuddy_onboarded';
 
 export function getStoredAccentId(): string {
   try {
-    return localStorage.getItem(ACCENT_KEY) || 'lime';
+    return localStorage.getItem(ACCENT_KEY) || DEFAULT_ACCENT_ID;
   } catch {
-    return 'lime';
+    return DEFAULT_ACCENT_ID;
   }
 }
 

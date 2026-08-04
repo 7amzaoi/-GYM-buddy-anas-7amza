@@ -13,8 +13,8 @@
      --on-accent  ink ON an accent fill  --accent-ink  accent used AS text
      --scrim-*    photo legibility stops
 
-   `--accent-ink` exists because the accents are neon: #D4FF00 as text on white
-   is ~1.4:1 and unreadable. In light mode it swaps to a deepened variant of the
+   `--accent-ink` exists because the accents are neon: #22E0D6 as text on white
+   is ~1.8:1 and unreadable. In light mode it swaps to a deepened variant of the
    same hue (set by applyAccent in lib/personalization).
    ============================================================ */
 

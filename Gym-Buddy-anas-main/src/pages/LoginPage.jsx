@@ -106,7 +106,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="page login-v2">
+    <div className="page login-v2 brand-lock">
       {/* Back button — returns to landing */}
       <button
         type="button"

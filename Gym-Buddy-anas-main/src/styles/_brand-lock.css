@@ -1,0 +1,52 @@
+/* ============================================================
+   BRAND LOCK — marketing surfaces always render in Ice Cyan
+   ============================================================
+
+   The app accent is user-configurable (5 options, lib/personalization).
+   The BRAND is not: landing, download, login and register are the first
+   thing a prospect sees, and they must be cyan whether the visitor is
+   logged out, or logged in with Ember picked.
+
+   HOW: this re-scopes the accent custom properties on the page root, so
+   everything inside inherits cyan. It is deliberately NOT an
+   `applyAccent('cyan')` call in a mount effect:
+
+     - `applyAccent` writes inline styles onto <html>, which is global
+       state. Restoring it on unmount is racy — during a route change the
+       incoming page mounts before the outgoing page's cleanup runs, so
+       landing's "restore" would clobber login's "set".
+     - An effect also runs after first paint, so the user's own accent
+       would flash for a frame before turning cyan.
+     - React StrictMode double-invokes effects in dev, doubling both.
+
+   A declarative scope has none of those failure modes and needs no
+   cleanup. It mirrors the pattern already used for photo surfaces
+   (see the `--on-photo` re-scoping in _m1.css) rather than fighting
+   specificity: <html> carrying an inline `--accent` does not beat this,
+   because these are different elements and inheritance takes the value
+   from the nearest declaring ancestor.
+
+   Values are ACCENTS[0] in lib/personalization.js — keep them in sync.
+   ============================================================ */
+.brand-lock {
+  --accent: #22E0D6;
+  --accent-2: #15B8AF;
+  --accent-rgb: 34, 224, 214;
+  --accent-dim: rgba(34, 224, 214, 0.15);
+  --accent-glow: rgba(34, 224, 214, 0.3);
+  --accent-deep: #0A6660;
+  /* These surfaces are always-dark (see _theme-light.css), so accent-as-text
+     stays the bright hue in both themes rather than dropping to `deep`. */
+  --accent-ink: var(--accent);
+}
+
+/* Fixed/absolute children are still DOM descendants, so they inherit the
+   lock. Portals are not — `#particles-bg` (interactions.js) is appended to
+   <body> as a fixed layer behind every route, so it sits OUTSIDE the lock and
+   would keep painting the user's accent through a cyan marketing page.
+   Scope it from the body instead: when a brand-locked page is mounted, the
+   ambient layer joins it. The dots read `var(--accent-rgb)` at paint time, so
+   redefining the channel here is enough. */
+body:has(.brand-lock) #particles-bg {
+  --accent-rgb: 34, 224, 214;
+}

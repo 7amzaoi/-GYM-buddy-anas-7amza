@@ -66,4 +66,5 @@
 @import './_m1-system.css';       /* M1 mapping of the shared gx-* primitives + AppHeader */
 @import './_daily-report.css';    /* Progress → Daily report + category bar */
 @import './_glass.css';           /* glassmorphism system + floating glass tab bar */
+@import './_brand-lock.css';      /* marketing surfaces pinned to the brand accent */
 @import './_theme-light.css';     /* light-mode patch for legacy hardcoded surfaces (last) */

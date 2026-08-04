@@ -1,6 +1,7 @@
 // ========== GYMBUDDY INTERACTIONS LAYER (legacy behavior, React-safe) ==========
 import { Store } from '../store.js';
 import { closestElement } from './domTargets.js';
+import { currentAccent } from './personalization.js';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -32,7 +33,7 @@ export const Toast: ToastApi = {
     const colors: Record<ToastType, string> = {
       success: '#2ED573',
       error: '#FF4757',
-      info: '#D4FF00',
+      info: currentAccent().hex,
       warning: '#FFA502',
     };
     const icons: Record<ToastType, string> = {
@@ -153,7 +154,7 @@ export function launchConfetti(duration = 2500): void {
     canvas.remove();
     return;
   }
-  const colors = ['#D4FF00', '#2ED573', '#FF4757', '#FFA502', '#FFFFFF', '#7B61FF'];
+  const colors = [currentAccent().hex, '#2ED573', '#FF4757', '#FFA502', '#FFFFFF', '#7B61FF'];
   const particles: ConfettiParticle[] = Array.from({ length: 120 }, () => ({
     x: Math.random() * canvas.width,
     y: -20 - Math.random() * 100,
@@ -232,7 +233,7 @@ export function initParticles(): void {
     dot.style.cssText = `
       position:absolute;border-radius:50%;
       width:${size}px;height:${size}px;
-      background:rgba(212,255,0,${0.05 + Math.random() * 0.1});
+      background:rgba(var(--accent-rgb),${0.05 + Math.random() * 0.1});
       left:${Math.random() * 100}%;top:${Math.random() * 100}%;
       animation:float ${5 + Math.random() * 10}s ease-in-out infinite;
       animation-delay:${Math.random() * 5}s;

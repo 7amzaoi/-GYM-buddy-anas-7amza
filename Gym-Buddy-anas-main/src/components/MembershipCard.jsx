@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BRAND_ACCENT } from '../lib/personalization.js';
 import { Component, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, extend, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer, useGLTF, useTexture } from '@react-three/drei';
@@ -242,7 +243,7 @@ function Band({ maxSpeed = 50, minSpeed = 0 }) {
       <mesh ref={band}>
         <meshLineGeometry />
         <meshLineMaterial
-          color="#D4FF00"
+          color={BRAND_ACCENT.hex}
           depthTest={false}
           resolution={isSmall ? [1000, 2000] : [1000, 1000]}
           useMap
@@ -269,7 +270,7 @@ function buildStrapTexture() {
   ctx.fillRect(0, 0, 256, 32);
 
   // Three-stripe pattern: thin neon edge, dark middle, thin neon edge
-  ctx.fillStyle = '#D4FF00';
+  ctx.fillStyle = BRAND_ACCENT.hex;
   ctx.fillRect(0, 0, 256, 4);   // top edge
   ctx.fillRect(0, 28, 256, 4);  // bottom edge
 
@@ -279,7 +280,7 @@ function buildStrapTexture() {
   ctx.fillRect(0, 27, 256, 1);
 
   // Centered dotted accent for texture (no logo, just visual rhythm)
-  ctx.fillStyle = 'rgba(212, 255, 0, 0.45)';
+  ctx.fillStyle = `rgba(${BRAND_ACCENT.rgb}, 0.45)`;
   for (let x = 8; x < 256; x += 32) {
     ctx.fillRect(x, 14, 4, 4);
   }

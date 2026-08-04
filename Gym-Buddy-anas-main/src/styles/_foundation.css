@@ -6,10 +6,13 @@
   --bg-card: #121212;
   --text-primary: #FFFFFF;
   --text-secondary: #BFBFBF;
-  /* --accent is overridable per-user (personalization layer). Default neon lime. */
-  --accent: #D4FF00;
-  --accent-dim: rgba(212,255,0,0.15);
-  --accent-glow: rgba(212,255,0,0.3);
+  /* --accent is overridable per-user (personalization layer). Default is the
+     BRAND accent, Ice Cyan — kept in sync with ACCENTS[0] / DEFAULT_ACCENT_ID
+     in lib/personalization. These values are what paints before the
+     personalization JS runs, so a mismatch shows as a first-paint colour flash. */
+  --accent: #22E0D6;
+  --accent-dim: rgba(34,224,214,0.15);
+  --accent-glow: rgba(34,224,214,0.3);
   --border: #2A2A2A;
   --card: #1C1C1E;
   --danger: #FF4757;
@@ -27,8 +30,9 @@
 
   /* -- Accent as channels: lets us build rgba() from the user's
         chosen accent without hardcoding the hex everywhere. -- */
-  --accent-rgb: 212, 255, 0;
-  --accent-2: #B8E600;
+  --accent-rgb: 34, 224, 214;
+  --accent-2: #15B8AF;
+  --accent-deep: #0A6660;
 
   /* -- Spacing scale (4 / 8px rhythm) -- */
   --space-1: 4px;
@@ -219,7 +223,7 @@ select.input { cursor: pointer; appearance: none; }
 }
 .card-glow {
   box-shadow: 0 0 20px var(--accent-dim);
-  border-color: rgba(212,255,0,.2);
+  border-color: rgba(var(--accent-rgb),.2);
 }
 
 /* ========== BADGES ========== */
@@ -480,7 +484,9 @@ select.input { cursor: pointer; appearance: none; }
   flex: 1; background: var(--accent); border-radius: 4px 4px 0 0;
   transition: height .6s cubic-bezier(.4,0,.2,1); position: relative; min-width: 20px;
 }
-.chart-bar:hover { background: #e5ff4d; }
+/* Was a baked lighter-lime (#e5ff4d), which stayed lime whatever accent the
+   user picked. Lighten the accent itself so the hover tracks it. */
+.chart-bar:hover { background: color-mix(in srgb, var(--accent) 82%, #FFFFFF); }
 .chart-bar-label {
   position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%);
   font-size: .7rem; color: var(--text-secondary); white-space: nowrap;

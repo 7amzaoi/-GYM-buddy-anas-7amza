@@ -105,7 +105,7 @@
   padding-bottom: 3px;
 }
 
-/* Thin lime completion bar under the header. */
+/* Thin accent completion bar under the header. */
 .m1-progress {
   height: 4px;
   margin-top: var(--space-3);
@@ -327,7 +327,7 @@
   .wko-ring.is-complete::before { animation: none; }
 }
 
-/* Full-width lime finish, at the end of the list as in the reference. */
+/* Full-width accent finish, at the end of the list as in the reference. */
 .m1-finish { margin-top: var(--space-5); }
 
 /* -- Touch targets on the logging screen --

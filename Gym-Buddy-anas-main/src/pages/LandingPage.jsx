@@ -490,7 +490,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="page landing landing-v2" ref={rootRef}>
+    <div className="page landing landing-v2 brand-lock" ref={rootRef}>
       <div className="scroll-progress" aria-hidden="true" />
       <div className="landing-ambient" aria-hidden="true">
         <div className="ambient-glow ambient-glow-1" />

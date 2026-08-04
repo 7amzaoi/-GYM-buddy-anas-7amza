@@ -1,6 +1,7 @@
 // ========== GYMBUDDY INTERACTIONS LAYER (legacy behavior, React-safe) ==========
 import { Store } from '../store.js';
 import { closestElement } from './domTargets.js';
+import { currentAccent } from './personalization.js';
 
 /** @type {(pageId: string) => void} | null */
 let navigateToPage = null;
@@ -20,7 +21,7 @@ export const Toast = {
   },
   show(message, type = 'success', duration = 3000) {
     this.init();
-    const colors = { success: '#2ED573', error: '#FF4757', info: '#D4FF00', warning: '#FFA502' };
+    const colors = { success: '#2ED573', error: '#FF4757', info: currentAccent().hex, warning: '#FFA502' };
     const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
     const toast = document.createElement('div');
     toast.style.cssText = `
@@ -107,7 +108,7 @@ export function launchConfetti(duration = 2500) {
   canvas.height = window.innerHeight;
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
-  const colors = ['#D4FF00', '#2ED573', '#FF4757', '#FFA502', '#FFFFFF', '#7B61FF'];
+  const colors = [currentAccent().hex, '#2ED573', '#FF4757', '#FFA502', '#FFFFFF', '#7B61FF'];
   const particles = Array.from({ length: 120 }, () => ({
     x: Math.random() * canvas.width,
     y: -20 - Math.random() * 100,
@@ -174,7 +175,7 @@ export function initParticles() {
     dot.style.cssText = `
       position:absolute;border-radius:50%;
       width:${size}px;height:${size}px;
-      background:rgba(212,255,0,${0.05 + Math.random() * 0.1});
+      background:rgba(var(--accent-rgb),${0.05 + Math.random() * 0.1});
       left:${Math.random() * 100}%;top:${Math.random() * 100}%;
       animation:float ${5 + Math.random() * 10}s ease-in-out infinite;
       animation-delay:${Math.random() * 5}s;

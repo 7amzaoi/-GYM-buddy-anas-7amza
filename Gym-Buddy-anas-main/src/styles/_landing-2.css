@@ -11,11 +11,11 @@
   right: 0;
   height: 3px;
   z-index: 60;
-  background: linear-gradient(90deg, #d4ff00 0%, #84ff8e 60%, transparent 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 60%, transparent 100%);
   transform: scaleX(0);
   transform-origin: 0 50%;
   pointer-events: none;
-  box-shadow: 0 0 12px rgba(212, 255, 0, 0.55);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.55);
 }
 
 /* Kinetic hero title — each word fades up via CSS keyframe so it can
@@ -34,10 +34,10 @@
   animation: heroWordReveal 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .landing-v2 .hero-title .hero-word.accent {
-  background: linear-gradient(135deg, var(--accent) 0%, #B8E600 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  text-shadow: 0 0 60px rgba(212, 255, 0, 0.4);
+  text-shadow: 0 0 60px rgba(var(--accent-rgb), 0.4);
 }
 .landing-v2 .hero-title .hero-word:nth-child(1) { animation-delay: 0.10s; }
 .landing-v2 .hero-title .hero-word:nth-child(2) { animation-delay: 0.18s; }
@@ -88,10 +88,10 @@
   text-align: left;
 }
 .landing-v2 .hero-social-stars {
-  color: #d4ff00;
+  color: var(--accent);
   font-size: 0.78rem;
   letter-spacing: 1px;
-  filter: drop-shadow(0 0 4px rgba(212, 255, 0, 0.4));
+  filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), 0.4));
 }
 .landing-v2 .hero-social-text {
   font-size: 0.82rem;
@@ -121,7 +121,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background:
-    linear-gradient(180deg, rgba(212, 255, 0, 0.03), transparent 60%),
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.03), transparent 60%),
     rgba(0, 0, 0, 0.35);
 }
 .landing-v2 .section-marquee::before,
@@ -166,15 +166,15 @@
   flex-shrink: 0;
 }
 .landing-v2 .marquee-item:nth-child(odd) {
-  color: #d4ff00;
-  filter: drop-shadow(0 0 8px rgba(212, 255, 0, 0.25));
+  color: var(--accent);
+  filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.25));
 }
 .landing-v2 .marquee-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #d4ff00;
-  box-shadow: 0 0 10px rgba(212, 255, 0, 0.7);
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.7);
   flex-shrink: 0;
 }
 

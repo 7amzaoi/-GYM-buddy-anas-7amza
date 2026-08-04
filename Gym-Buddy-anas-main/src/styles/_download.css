@@ -7,8 +7,8 @@
   --dl-fg: #ffffff;
   --dl-muted: rgba(255, 255, 255, 0.65);
   --dl-dim: rgba(255, 255, 255, 0.45);
-  --dl-accent: #d4ff00;
-  --dl-accent-2: #b8e600;
+  --dl-accent: var(--accent);
+  --dl-accent-2: var(--accent-2);
   --dl-glass: rgba(255, 255, 255, 0.05);
   --dl-glass-border: rgba(255, 255, 255, 0.12);
 
@@ -58,7 +58,7 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212, 255, 0, 0.10), transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(var(--accent-rgb), 0.10), transparent 60%),
     linear-gradient(180deg,
       rgba(0, 0, 0, 0.18) 0%,
       rgba(0, 0, 0, 0.32) 35%,
@@ -77,7 +77,7 @@
 .download-page .dl-backdrop-glow-1 {
   top: -120px;
   left: -120px;
-  background: radial-gradient(circle, rgba(212, 255, 0, 0.32), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.32), transparent 70%);
 }
 .download-page .dl-backdrop-glow-2 {
   bottom: -200px;
@@ -116,7 +116,7 @@
 }
 .download-page .dl-back:hover {
   background: rgba(255, 255, 255, 0.10);
-  border-color: rgba(212, 255, 0, 0.4);
+  border-color: rgba(var(--accent-rgb), 0.4);
   transform: translateX(-2px);
 }
 .download-page .dl-nav-brand {
@@ -168,11 +168,11 @@
   height: 8px;
   border-radius: 50%;
   background: var(--dl-accent);
-  box-shadow: 0 0 10px var(--dl-accent), 0 0 22px rgba(212, 255, 0, 0.4);
+  box-shadow: 0 0 10px var(--dl-accent), 0 0 22px rgba(var(--accent-rgb), 0.4);
   animation: dlPulse 1.6s ease-in-out infinite;
 }
 @keyframes dlPulse {
-  50% { box-shadow: 0 0 14px var(--dl-accent), 0 0 32px rgba(212, 255, 0, 0.7); }
+  50% { box-shadow: 0 0 14px var(--dl-accent), 0 0 32px rgba(var(--accent-rgb), 0.7); }
 }
 
 /* H1 */
@@ -227,8 +227,8 @@
 }
 .download-page .dl-store-btn:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(212, 255, 0, 0.55);
-  box-shadow: 0 14px 32px rgba(212, 255, 0, 0.22);
+  border-color: rgba(var(--accent-rgb), 0.55);
+  box-shadow: 0 14px 32px rgba(var(--accent-rgb), 0.22);
 }
 .download-page .dl-store-btn:hover .dl-store-btn-icon { color: var(--dl-accent); }
 /* Press feedback via filter (not transform — JS owns transform) */
@@ -314,7 +314,7 @@
   color: var(--dl-accent);
   font-size: 0.78rem;
   letter-spacing: 1px;
-  filter: drop-shadow(0 0 4px rgba(212, 255, 0, 0.45));
+  filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), 0.45));
 }
 .download-page .dl-social-text {
   font-size: 0.82rem;
@@ -379,7 +379,7 @@
   box-shadow:
     /* outer ambient + brand glow */
     0 50px 120px rgba(0, 0, 0, 0.75),
-    0 0 90px rgba(212, 255, 0, 0.18),
+    0 0 90px rgba(var(--accent-rgb), 0.18),
     /* the thin titanium edge highlight */
     inset 0 0 0 1px rgba(255, 255, 255, 0.10),
     /* inner shadow that defines the bezel */
@@ -476,7 +476,7 @@
   right: 8px;
   width: 8px;
   height: 8px;
-  box-shadow: inset 0 0 2px rgba(212, 255, 0, 0.4);
+  box-shadow: inset 0 0 2px rgba(var(--accent-rgb), 0.4);
 }
 .download-page .dl-phone-island::after {
   left: 14px;
@@ -499,7 +499,7 @@
   z-index: 3;
   box-shadow:
     0 60px 140px rgba(0, 0, 0, 0.85),
-    0 0 100px rgba(212, 255, 0, 0.28),
+    0 0 100px rgba(var(--accent-rgb), 0.28),
     inset 0 0 0 1px rgba(255, 255, 255, 0.12),
     inset 0 2px 0 rgba(255, 255, 255, 0.08),
     inset 0 -2px 0 rgba(0, 0, 0, 0.55);
@@ -510,7 +510,7 @@
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(212, 255, 0, 0.05), transparent 60%),
+    radial-gradient(ellipse at 50% 0%, rgba(var(--accent-rgb), 0.05), transparent 60%),
     linear-gradient(180deg, #0d0d10 0%, #050507 100%);
   border-radius: 36px;
   padding: 56px 18px 22px;
@@ -559,8 +559,8 @@
   font-weight: 700;
 }
 .download-page .dl-phone-pill-accent {
-  background: rgba(212, 255, 0, 0.16);
-  border-color: rgba(212, 255, 0, 0.55);
+  background: rgba(var(--accent-rgb), 0.16);
+  border-color: rgba(var(--accent-rgb), 0.55);
   color: var(--dl-accent);
 }
 .download-page .dl-phone-progress {
@@ -575,7 +575,7 @@
   width: 66%;
   height: 100%;
   background: linear-gradient(90deg, var(--dl-accent), var(--dl-accent-2));
-  box-shadow: 0 0 16px rgba(212, 255, 0, 0.6);
+  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.6);
   animation: dlProgress 4.2s ease-in-out infinite alternate;
 }
 @keyframes dlProgress {
@@ -598,7 +598,7 @@
 }
 .download-page .dl-phone-bar {
   height: var(--h, 50%);
-  background: linear-gradient(180deg, var(--dl-accent), rgba(212, 255, 0, 0.25));
+  background: linear-gradient(180deg, var(--dl-accent), rgba(var(--accent-rgb), 0.25));
   border-radius: 4px;
   opacity: 0;
   transform: translateY(8px);
@@ -625,13 +625,13 @@
   color: rgba(255, 255, 255, 0.7);
 }
 .download-page .dl-phone-set-row.done {
-  background: rgba(212, 255, 0, 0.06);
-  border-color: rgba(212, 255, 0, 0.2);
-  color: rgba(212, 255, 0, 0.85);
+  background: rgba(var(--accent-rgb), 0.06);
+  border-color: rgba(var(--accent-rgb), 0.2);
+  color: rgba(var(--accent-rgb), 0.85);
 }
 .download-page .dl-phone-set-row.active {
-  background: rgba(212, 255, 0, 0.16);
-  border-color: rgba(212, 255, 0, 0.55);
+  background: rgba(var(--accent-rgb), 0.16);
+  border-color: rgba(var(--accent-rgb), 0.55);
   color: var(--dl-accent);
   font-weight: 800;
 }
@@ -709,7 +709,7 @@
   left: 14%;
   right: 14%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212, 255, 0, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.4), transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -721,7 +721,7 @@
   border-radius: 18px;
   background: radial-gradient(
     260px circle at var(--mx) var(--my),
-    rgba(212, 255, 0, 0.14),
+    rgba(var(--accent-rgb), 0.14),
     transparent 70%
   );
   opacity: 0;
@@ -730,8 +730,8 @@
 }
 .download-page .dl-feature-card-inner:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(212, 255, 0, 0.35);
-  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.45), 0 0 50px rgba(212, 255, 0, 0.14);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.45), 0 0 50px rgba(var(--accent-rgb), 0.14);
 }
 .download-page .dl-feature-card-inner:hover::before,
 .download-page .dl-feature-card-inner:hover::after { opacity: 1; }
@@ -750,11 +750,11 @@
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: rgba(212, 255, 0, 0.12);
-  border: 1px solid rgba(212, 255, 0, 0.3);
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   color: var(--dl-accent);
   margin-bottom: 18px;
-  box-shadow: 0 0 24px rgba(212, 255, 0, 0.2);
+  box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.2);
 }
 .download-page .dl-feature-title {
   margin: 0 0 8px;
@@ -782,7 +782,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background:
-    linear-gradient(180deg, rgba(212, 255, 0, 0.04), transparent 60%),
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.04), transparent 60%),
     rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -798,8 +798,8 @@
   background:
     radial-gradient(
       circle 360px at var(--dl-mx) var(--dl-my),
-      rgba(212, 255, 0, 0.18),
-      rgba(212, 255, 0, 0.06) 40%,
+      rgba(var(--accent-rgb), 0.18),
+      rgba(var(--accent-rgb), 0.06) 40%,
       transparent 70%
     );
   opacity: 0;
@@ -819,7 +819,7 @@
   height: 1px;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(212, 255, 0, 0.7) 50%,
+    rgba(var(--accent-rgb), 0.7) 50%,
     transparent 100%);
   animation: dlBorderSweep 5s ease-in-out infinite;
   pointer-events: none;
@@ -832,7 +832,7 @@
   height: 1px;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(212, 255, 0, 0.5) 50%,
+    rgba(var(--accent-rgb), 0.5) 50%,
     transparent 100%);
   animation: dlBorderSweep 5s ease-in-out infinite reverse;
   animation-delay: 1.5s;
@@ -873,7 +873,7 @@
   content: '';
   position: absolute;
   inset: -20% -10%;
-  background: radial-gradient(circle, rgba(212, 255, 0, 0.18), transparent 60%);
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.18), transparent 60%);
   opacity: 0;
   filter: blur(20px);
   transition: opacity 0.4s ease;
@@ -892,14 +892,14 @@
   line-height: 1;
   color: var(--dl-accent);
   letter-spacing: -0.02em;
-  text-shadow: 0 0 40px rgba(212, 255, 0, 0.35);
+  text-shadow: 0 0 40px rgba(var(--accent-rgb), 0.35);
   font-variant-numeric: tabular-nums;
   transition: text-shadow 0.32s ease, transform 0.32s ease;
 }
 .download-page .dl-stat:hover .dl-stat-num {
   text-shadow:
-    0 0 30px rgba(212, 255, 0, 0.8),
-    0 0 60px rgba(212, 255, 0, 0.4);
+    0 0 30px rgba(var(--accent-rgb), 0.8),
+    0 0 60px rgba(var(--accent-rgb), 0.4);
   transform: scale(1.04);
 }
 /* Pulsing ring around the number on hover */
@@ -907,7 +907,7 @@
   content: '';
   position: absolute;
   inset: -14px -22px;
-  border: 1px solid rgba(212, 255, 0, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
   border-radius: 999px;
   opacity: 0;
   transform: scale(0.92);
@@ -922,8 +922,8 @@
 @keyframes dlRingPulse {
   50% {
     transform: scale(1.06);
-    border-color: rgba(212, 255, 0, 0.6);
-    box-shadow: 0 0 24px rgba(212, 255, 0, 0.25);
+    border-color: rgba(var(--accent-rgb), 0.6);
+    box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.25);
   }
 }
 
@@ -950,8 +950,8 @@
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: rgba(212, 255, 0, 0.4);
-  box-shadow: 0 0 10px rgba(212, 255, 0, 0.6);
+  background: rgba(var(--accent-rgb), 0.4);
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.6);
 }
 @media (max-width: 720px) {
   .download-page .dl-stat + .dl-stat::after { display: none; }
@@ -1011,14 +1011,14 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 20px 50px rgba(0, 0, 0, 0.5),
-    0 0 40px rgba(212, 255, 0, 0.12);
+    0 0 40px rgba(var(--accent-rgb), 0.12);
 }
 .download-page .dl-qr-frame {
   width: 168px;
   height: 168px;
   padding: 8px;
   background: #0b0b0b;
-  border: 1px solid rgba(212, 255, 0, 0.22);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -1070,8 +1070,8 @@
   height: 2px;
   background: linear-gradient(90deg,
     transparent,
-    rgba(212, 255, 0, 0.45) 20%,
-    rgba(212, 255, 0, 0.45) 80%,
+    rgba(var(--accent-rgb), 0.45) 20%,
+    rgba(var(--accent-rgb), 0.45) 80%,
     transparent);
   z-index: 0;
 }
@@ -1092,17 +1092,17 @@
   display: grid;
   place-items: center;
   background: linear-gradient(160deg, #15170d 0%, #0a0a0c 100%);
-  border: 1px solid rgba(212, 255, 0, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 30px rgba(212, 255, 0, 0.18);
+    0 0 30px rgba(var(--accent-rgb), 0.18);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
 }
 .download-page .dl-step:hover .dl-step-marker {
   transform: translateY(-4px) scale(1.06);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 44px rgba(212, 255, 0, 0.4);
+    0 0 44px rgba(var(--accent-rgb), 0.4);
 }
 /* The number sits as a faint badge top-right of the marker */
 .download-page .dl-step-num {
@@ -1116,7 +1116,7 @@
   background: var(--dl-accent);
   border-radius: 999px;
   padding: 3px 7px;
-  box-shadow: 0 0 14px rgba(212, 255, 0, 0.55);
+  box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.55);
 }
 .download-page .dl-step-icon {
   display: inline-flex;
@@ -1175,19 +1175,19 @@
   font-size: 5rem;
   line-height: 1;
   font-family: Georgia, serif;
-  color: rgba(212, 255, 0, 0.12);
+  color: rgba(var(--accent-rgb), 0.12);
   pointer-events: none;
 }
 .download-page .dl-testi-card:hover {
   transform: translateY(-6px);
-  border-color: rgba(212, 255, 0, 0.35);
-  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.45), 0 0 50px rgba(212, 255, 0, 0.12);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.45), 0 0 50px rgba(var(--accent-rgb), 0.12);
 }
 .download-page .dl-testi-stars {
   color: var(--dl-accent);
   font-size: 0.95rem;
   letter-spacing: 3px;
-  filter: drop-shadow(0 0 6px rgba(212, 255, 0, 0.45));
+  filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.45));
 }
 .download-page .dl-testi-quote {
   margin: 0;
@@ -1207,7 +1207,7 @@
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(212, 255, 0, 0.4);
+  border: 2px solid rgba(var(--accent-rgb), 0.4);
 }
 .download-page .dl-testi-name {
   font-size: 0.92rem;
@@ -1242,8 +1242,8 @@
   transition: border-color 0.3s ease, background 0.3s ease;
 }
 .download-page .dl-faq-item.is-open {
-  border-color: rgba(212, 255, 0, 0.35);
-  background: rgba(212, 255, 0, 0.04);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  background: rgba(var(--accent-rgb), 0.04);
 }
 .download-page .dl-faq-q {
   width: 100%;
@@ -1343,8 +1343,8 @@
   height: 100%;
   transform-origin: 0 50%;
   transform: scaleX(0);
-  background: linear-gradient(90deg, #70dc35, #d4ff00 60%, #ffffff);
-  box-shadow: 0 0 14px rgba(212, 255, 0, 0.7), 0 0 4px rgba(212, 255, 0, 0.9);
+  background: linear-gradient(90deg, var(--accent-2), var(--accent) 60%, #ffffff);
+  box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.7), 0 0 4px rgba(var(--accent-rgb), 0.9);
   will-change: transform;
 }
 
@@ -1362,7 +1362,7 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  filter: drop-shadow(0 0 22px rgba(212, 255, 0, 0.35));
+  filter: drop-shadow(0 0 22px rgba(var(--accent-rgb), 0.35));
   animation: dlAccentShimmer 5.5s ease-in-out infinite;
 }
 @keyframes dlAccentShimmer {
@@ -1411,8 +1411,8 @@
     height: auto;
     background: linear-gradient(180deg,
       transparent,
-      rgba(212, 255, 0, 0.45) 12%,
-      rgba(212, 255, 0, 0.45) 88%,
+      rgba(var(--accent-rgb), 0.45) 12%,
+      rgba(var(--accent-rgb), 0.45) 88%,
       transparent);
   }
   .download-page .dl-testi-grid {
