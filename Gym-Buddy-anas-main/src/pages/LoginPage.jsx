@@ -1,6 +1,5 @@
 import { useContext, useRef, useState } from 'react';
 import { icon } from '../icons.jsx';
-import { Store } from '../store.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { Toast } from '../lib/interactions.js';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
@@ -29,8 +28,12 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
   const submitLock = useRef(false);
+  /* Real accounts only. There used to be a dev-mode fallback here that called
+     Store.login() when Supabase was unconfigured — it accepted ANY email with
+     ANY password, checked nothing and stored nothing, which made the app look
+     signed-in while no account existed. Sign-in now always goes through
+     Supabase Auth (bcrypt-hashed passwords in auth.users). */
   const supabaseMode = !!(isSupabaseConfigured() && supabase);
-  const allowLocalAuthFallback = import.meta.env.DEV === true;
   const emailGlowInvalid =
     supabaseMode &&
     email.trim().length >= 4 &&
@@ -48,30 +51,30 @@ export default function LoginPage() {
       return;
     }
 
-    if (!supabaseMode && !allowLocalAuthFallback) {
-      Toast.show('Sign in is unavailable right now. Please contact support.', 'error', 5000);
+    if (!supabaseMode) {
+      Toast.show(
+        'Accounts are not connected yet. Add VITE_SUPABASE_URL and ' +
+        'VITE_SUPABASE_ANON_KEY to .env.local, then restart the dev server.',
+        'error',
+        8000
+      );
       return;
     }
 
     try {
-      if (isSupabaseConfigured() && supabase) {
-        submitLock.current = true;
-        setBusy(true);
-        const { error, data } = await withTimeout(
-          supabase.auth.signInWithPassword({ email: trimmed, password }),
-          12000,
-          'Sign in'
-        );
-        if (error) {
-          Toast.show(formatSupabaseAuthError(error), 'error', 8000);
-          return;
-        }
-        await loadUserIntoStore(data.user);
-        Toast.show('👋 Welcome back!', 'success');
-      } else {
-        Store.login(trimmed, trimmed.split('@')[0]);
-        Toast.show('👋 Welcome back, ' + trimmed.split('@')[0] + '!', 'success');
+      submitLock.current = true;
+      setBusy(true);
+      const { error, data } = await withTimeout(
+        supabase.auth.signInWithPassword({ email: trimmed, password }),
+        12000,
+        'Sign in'
+      );
+      if (error) {
+        Toast.show(formatSupabaseAuthError(error), 'error', 8000);
+        return;
       }
+      await loadUserIntoStore(data.user);
+      Toast.show('👋 Welcome back!', 'success');
       navigateToPage?.('dashboard');
     } catch {
       Toast.show('Sign in failed. Please try again.', 'error');
@@ -177,7 +180,7 @@ export default function LoginPage() {
                 id="login-pass"
                 placeholder="••••••••"
                 required
-                minLength={isSupabaseConfigured() ? 6 : 1}
+                minLength={6}
               />
               <button
                 type="button"
@@ -190,9 +193,10 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {!supabaseMode && !allowLocalAuthFallback && (
+          {!supabaseMode && (
             <p className="login-v2-error">
-              Account services are not configured on this deployment.
+              Accounts aren’t connected. Set VITE_SUPABASE_URL and
+              VITE_SUPABASE_ANON_KEY in .env.local, then restart the dev server.
             </p>
           )}
 
