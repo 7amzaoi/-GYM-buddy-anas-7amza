@@ -1,4 +1,5 @@
 import { useContext, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { icon } from '../icons.jsx';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { Toast } from '../lib/interactions.js';
@@ -23,6 +24,12 @@ async function withTimeout(promise, ms, label) {
 
 export default function LoginPage() {
   const navigateToPage = useContext(NavigateContext);
+  /* Where the visitor was heading before the auth gate bounced them here.
+     Set by AuthenticatedChrome. Used for share links, which are the only
+     deep destination a signed-out person is likely to arrive on. */
+  const location = useLocation();
+  const rrNavigate = useNavigate();
+  const returnTo = location.state?.from || null;
   const [email, setEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -75,7 +82,9 @@ export default function LoginPage() {
       }
       await loadUserIntoStore(data.user);
       Toast.show('👋 Welcome back!', 'success');
-      navigateToPage?.('dashboard');
+      // Back to the link they came for; the dashboard only if there wasn't one.
+      if (returnTo) rrNavigate(returnTo, { replace: true });
+      else navigateToPage?.('dashboard');
     } catch {
       Toast.show('Sign in failed. Please try again.', 'error');
     } finally {

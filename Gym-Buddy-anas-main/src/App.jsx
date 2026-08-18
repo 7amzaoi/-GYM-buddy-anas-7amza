@@ -32,6 +32,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
 const WorkoutsPage = lazy(() => import('./pages/WorkoutsPage.jsx'));
 const PlannerPage = lazy(() => import('./pages/PlannerPage.jsx'));
 const LibraryPage = lazy(() => import('./pages/LibraryPage.jsx'));
+const SharedSplitPage = lazy(() => import('./pages/SharedSplitPage.jsx'));
 const ProgressPage = lazy(() => import('./pages/ProgressPage.jsx'));
 const RecordsPage = lazy(() => import('./pages/RecordsPage.jsx'));
 const AssistantPage = lazy(() => import('./pages/AssistantPage.jsx'));
@@ -68,7 +69,17 @@ function AuthenticatedChrome() {
     void Store._runNotificationSuggestions('boot');
   }, [user]);
 
-  if (!user) return <Navigate to="/login" replace />;
+  /* Redirect-after-login. There was no existing pattern to follow here — the
+     bare <Navigate to="/login"> below used to discard where the visitor was
+     heading, which is fine for a tab but not for a share link someone was
+     sent. The intended path rides along in router state and LoginPage sends
+     them back after a successful sign-in.
+
+     This returns BEFORE <Outlet/> renders, so a protected page never mounts
+     for a logged-out visitor — no content flashes before the redirect. */
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
   return (
     <>
       <Sidebar />
@@ -167,6 +178,10 @@ export default function App() {
           <Route path="/workouts" element={<WorkoutsPage />} />
           <Route path="/planner" element={<PlannerPage />} />
           <Route path="/library" element={<LibraryPage />} />
+          {/* Only param route in the app. Inside AuthenticatedChrome, so the
+              auth gate above covers it — a shared link is never viewable
+              logged out. */}
+          <Route path="/split/:slug" element={<SharedSplitPage />} />
           {/* Legacy /session URLs now redirect to the unified Workouts page. */}
           <Route path="/session" element={<Navigate to="/workouts" replace />} />
           <Route path="/progress" element={<ProgressPage />} />

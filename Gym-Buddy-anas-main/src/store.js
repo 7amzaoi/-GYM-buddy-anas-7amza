@@ -163,6 +163,7 @@ export const Store = {
       currentPage: 'landing',
       workoutHistory: [],
       customPlans: [],
+      customSplits: [],
       progressData: emptyProgressData(),
       records: [],
       chatMessages: [],
@@ -753,6 +754,40 @@ export const Store = {
 
   deleteCustomPlan(id) {
     this.update('customPlans', cp => (cp || []).filter(p => p.id !== id));
+  },
+
+  /* ---- Weekly splits -------------------------------------------------
+     A split is 7 day slots, each either a rest day or a fully denormalized
+     plan snapshot. Days copy their exercises at assignment time rather than
+     referencing a customPlans id: that is what lets a split survive the
+     source plan being edited or deleted, and what makes it shareable as a
+     self-contained object. Same update()/get() calls as the plan actions
+     above — splits ride the existing cloudMirror blob, no new sync path. */
+
+  addCustomSplit(split) {
+    const id = split.id || 'split_' + Date.now();
+    const newSplit = {
+      id,
+      name: split.name,
+      description: split.description || '',
+      days: Array.isArray(split.days) ? split.days : [],
+      createdAt: split.createdAt || Date.now(),
+      // Provenance only. Never used to re-fetch or re-sync — an imported
+      // split is a fully independent copy.
+      sourceSplitId: split.sourceSplitId ?? null,
+    };
+    this.update('customSplits', cs => [...(cs || []), newSplit]);
+    return newSplit;
+  },
+
+  updateCustomSplit(id, patch) {
+    this.update('customSplits', cs => (cs || []).map(sp => (
+      sp.id === id ? { ...sp, ...patch, id: sp.id } : sp
+    )));
+  },
+
+  deleteCustomSplit(id) {
+    this.update('customSplits', cs => (cs || []).filter(sp => sp.id !== id));
   },
 
   /**

@@ -49,6 +49,7 @@
 @import './_progress-heatmap.css';
 @import './_progress-history.css';
 @import './_planner.css';
+@import './_split.css';        /* weekly splits: builder, list, shared view */
 @import './_records.css';
 @import './_assistant.css';
 @import './_workouts-base.css';

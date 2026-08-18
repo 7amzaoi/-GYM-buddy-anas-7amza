@@ -193,11 +193,35 @@ export interface ChatMessage {
   [key: string]: unknown;
 }
 
+/** One day slot in a weekly split. `rest` days carry no plan fields. */
+export interface SplitDay {
+  dayIndex: number;                 // 0 = Monday .. 6 = Sunday
+  type: 'plan' | 'rest';
+  planName?: string;
+  category?: string;
+  /** Denormalized snapshot — never a live customPlans reference. */
+  exercises?: { id: string; name: string; muscles: string }[];
+}
+
+export interface CustomSplit {
+  id: string;
+  name: string;
+  description: string;
+  days: SplitDay[];                 // exactly 7
+  createdAt: number;
+  /** Origin shared_splits row id when imported. Provenance display only. */
+  sourceSplitId: string | null;
+}
+
+export type CustomSplitInput = Partial<CustomSplit> &
+  Pick<CustomSplit, 'name' | 'days'>;
+
 export interface AppState {
   user: User | null;
   currentPage: string;
   workoutHistory: HistoryEntry[];
   customPlans: CustomPlan[];
+  customSplits: CustomSplit[];
   progressData: ProgressData;
   records: RecordEntry[];
   chatMessages: ChatMessage[];
@@ -422,6 +446,9 @@ interface StoreShape {
   captureAutoRecordsFromSession(session: ActiveSession | null | undefined): number;
   addCustomPlan(plan: CustomPlanInput): void;
   deleteCustomPlan(id: string): void;
+  addCustomSplit(split: CustomSplitInput): CustomSplit;
+  updateCustomSplit(id: string, patch: Partial<CustomSplit>): void;
+  deleteCustomSplit(id: string): void;
   renameCustomPlan(id: string, name: string): boolean;
 }
 
@@ -450,6 +477,7 @@ export const Store: StoreShape = {
       currentPage: 'landing',
       workoutHistory: [],
       customPlans: [],
+      customSplits: [],
       progressData: emptyProgressData(),
       records: [],
       chatMessages: [],
@@ -1129,6 +1157,40 @@ export const Store: StoreShape = {
 
   deleteCustomPlan(id) {
     this.update('customPlans', (cp: CustomPlan[]) => (cp || []).filter((p) => p.id !== id));
+  },
+
+  /* ---- Weekly splits -------------------------------------------------
+     A split is 7 day slots, each either a rest day or a fully denormalized
+     plan snapshot. Days copy their exercises at assignment time rather than
+     referencing a customPlans id: that is what lets a split survive the
+     source plan being edited or deleted, and what makes it shareable as a
+     self-contained object. Same update()/get() calls as the plan actions
+     above — splits ride the existing cloudMirror blob, no new sync path. */
+
+  addCustomSplit(split) {
+    const id = split.id || 'split_' + Date.now();
+    const newSplit: CustomSplit = {
+      id,
+      name: split.name,
+      description: split.description || '',
+      days: Array.isArray(split.days) ? split.days : [],
+      createdAt: split.createdAt || Date.now(),
+      // Provenance only. Never used to re-fetch or re-sync — an imported
+      // split is a fully independent copy.
+      sourceSplitId: split.sourceSplitId ?? null,
+    };
+    this.update('customSplits', (cs: CustomSplit[]) => [...(cs || []), newSplit]);
+    return newSplit;
+  },
+
+  updateCustomSplit(id, patch) {
+    this.update('customSplits', (cs: CustomSplit[]) => (cs || []).map((sp) => (
+      sp.id === id ? { ...sp, ...patch, id: sp.id } : sp
+    )));
+  },
+
+  deleteCustomSplit(id) {
+    this.update('customSplits', (cs: CustomSplit[]) => (cs || []).filter((sp) => sp.id !== id));
   },
 
   /**
