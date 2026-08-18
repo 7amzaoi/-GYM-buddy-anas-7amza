@@ -11,12 +11,14 @@ export type NavIconKey =
   | 'trophy'
   | 'bot'
   | 'user'
-  | 'plus';
+  | 'plus'
+  | 'target';
 
 export type NavId =
   | 'dashboard'
   | 'workouts'
   | 'planner'
+  | 'library'
   | 'progress'
   | 'records'
   | 'assistant'
@@ -34,6 +36,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', mobileLabel: 'Today',    iconKey: 'home',     mobile: true  },
   { id: 'workouts',  label: 'Workouts',  mobileLabel: 'Train',    iconKey: 'activity', mobile: true  },
   { id: 'planner',   label: 'Plans',     mobileLabel: 'Plans',    iconKey: 'dumbbell', mobile: true  },
+  { id: 'library',   label: 'Exercises', mobileLabel: 'Exercises', iconKey: 'target',  mobile: false },
   { id: 'progress',  label: 'Progress',  mobileLabel: 'Progress', iconKey: 'chart',    mobile: true  },
   { id: 'records',   label: 'Records',   mobileLabel: 'Records',  iconKey: 'trophy',   mobile: false },
   { id: 'assistant', label: 'AI Coach',  mobileLabel: 'Coach',    iconKey: 'bot',      mobile: false },

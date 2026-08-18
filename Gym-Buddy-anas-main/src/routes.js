@@ -6,6 +6,7 @@ export const ROUTES = {
   dashboard: '/dashboard',
   workouts: '/workouts',
   planner: '/planner',
+  library: '/library',
   progress: '/progress',
   records: '/records',
   assistant: '/assistant',

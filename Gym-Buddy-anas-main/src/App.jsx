@@ -31,6 +31,7 @@ const DownloadPage = lazy(() => import('./pages/DownloadPage.jsx'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
 const WorkoutsPage = lazy(() => import('./pages/WorkoutsPage.jsx'));
 const PlannerPage = lazy(() => import('./pages/PlannerPage.jsx'));
+const LibraryPage = lazy(() => import('./pages/LibraryPage.jsx'));
 const ProgressPage = lazy(() => import('./pages/ProgressPage.jsx'));
 const RecordsPage = lazy(() => import('./pages/RecordsPage.jsx'));
 const AssistantPage = lazy(() => import('./pages/AssistantPage.jsx'));
@@ -165,6 +166,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/workouts" element={<WorkoutsPage />} />
           <Route path="/planner" element={<PlannerPage />} />
+          <Route path="/library" element={<LibraryPage />} />
           {/* Legacy /session URLs now redirect to the unified Workouts page. */}
           <Route path="/session" element={<Navigate to="/workouts" replace />} />
           <Route path="/progress" element={<ProgressPage />} />
