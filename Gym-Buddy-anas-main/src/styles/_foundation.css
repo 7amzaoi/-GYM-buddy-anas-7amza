@@ -147,19 +147,40 @@ body {
 .delay-4 { animation-delay: .4s; }
 .delay-5 { animation-delay: .5s; }
 
-/* Neutralise the keyframe animations declared in this file for users who
-   prefer reduced motion. Covers the utilities and elements wired to
-   fadeIn / slideUp / slideRight / pulse / glow / spin / typing / scaleIn /
-   float / gradientShift above. */
+/* Ambient background dots (initParticles in lib/interactions.js).
+   The animation is declared here rather than inline so a media query can
+   actually reach it — the JS only supplies per-dot timing. */
+.particle-dot {
+  animation: float var(--dot-duration, 8s) ease-in-out var(--dot-delay, 0s) infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion.
+
+   The previous version of this block named four utility classes and claimed to
+   cover the rest. It didn't: an audit found 20-21 animations still looping on
+   every page with the preference on — 20 particle dots (whose animation was
+   written inline, where no media query can reach it) plus per-page decorative
+   loops (lanyardShimmer, dlBorderSweep, glow).
+
+   So the sweep is global now. Note what it does NOT touch: `transition`.
+   Killing transitions would remove the short opacity/colour changes that carry
+   meaning (state, focus, press feedback) — reduced motion means removing
+   vestibular motion, not removing feedback. Looping and travelling keyframe
+   animation is the actual problem, and that is what stops here.
+--------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  .page,
-  .animate-fade,
-  .animate-slide-up,
-  .animate-scale {
-    animation: none !important;
-  }
-  .delay-1, .delay-2, .delay-3, .delay-4, .delay-5 {
+  *,
+  *::before,
+  *::after {
+    /* Loops stop repeating; one-shot entrances resolve to their final state
+       instantly (fill-mode still applies), so nothing is left invisible. */
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     animation-delay: 0s !important;
+  }
+  .particle-dot {
+    animation: none !important;
   }
 }
 
@@ -171,7 +192,9 @@ body {
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 12px 28px; border-radius: var(--radius-sm); font-family: inherit;
-  font-weight: 600; font-size: 0.95rem; cursor: pointer; border: none;
+  font-weight: 600; font-size: var(--text-base); cursor: pointer; border: none;
+  /* Floor for every variant — .btn-sm's 8px padding rendered a 32px target. */
+  min-height: 44px;
   transition: all var(--transition); text-decoration: none; white-space: nowrap;
 }
 .btn-primary {
@@ -191,8 +214,8 @@ body {
 }
 .btn-ghost:hover { color: var(--accent); }
 .btn-danger { background: var(--danger); color: #fff; }
-.btn-sm { padding: 8px 18px; font-size: .85rem; }
-.btn-lg { padding: 16px 36px; font-size: 1.1rem; }
+.btn-sm { padding: 8px 18px; font-size: var(--text-sm); }
+.btn-lg { padding: 16px 36px; font-size: var(--text-lg); }
 .btn-icon {
   width: 44px; height: 44px; padding: 0; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
@@ -309,6 +332,7 @@ select.input { cursor: pointer; appearance: none; }
 }
 .sidebar-user:active { transform: scale(0.98); }
 .sidebar-user-avatar {
+  position: relative;
   flex-shrink: 0;
   width: 38px;
   height: 38px;
@@ -318,8 +342,17 @@ select.input { cursor: pointer; appearance: none; }
   font-size: 0.82rem;
   font-weight: 800;
   color: #0B0B0B;
+  /* The gradient is the initials backdrop; a photo covers it entirely. */
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.3);
+  overflow: hidden;
+}
+.sidebar-user-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .sidebar-user-meta {
   display: flex;

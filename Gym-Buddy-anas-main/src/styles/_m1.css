@@ -195,9 +195,13 @@
   overflow-x: auto;
   scrollbar-width: none;
   padding-bottom: 2px;
-  /* Bleed to the screen edges so the row reads as scrollable. */
-  margin-inline: calc(var(--m1-gutter) * -1);
-  padding-inline: var(--m1-gutter);
+  /* Bleed to the screen edges so the row reads as scrollable.
+     The bleed must cancel the gutter that actually exists, which is
+     .main-content's horizontal padding — 16px (--space-4), NOT --m1-gutter's
+     20px. Bleeding 20px into a 16px gutter overhangs by 4px on each side and
+     gave the Progress page a horizontal scroll. */
+  margin-inline: calc(var(--space-4) * -1);
+  padding-inline: var(--space-4);
 }
 .m1-chiprow::-webkit-scrollbar { display: none; }
 .m1-chip {

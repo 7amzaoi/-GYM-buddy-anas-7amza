@@ -54,7 +54,7 @@
   align-items: center;
   gap: 14px;
   padding: 8px 14px 8px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px) saturate(140%);
@@ -89,12 +89,12 @@
 }
 .landing-v2 .hero-social-stars {
   color: var(--accent);
-  font-size: 0.78rem;
-  letter-spacing: 1px;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
   filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), 0.4));
 }
 .landing-v2 .hero-social-text {
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   color: rgba(255, 255, 255, 0.78);
   margin-top: 2px;
 }
@@ -109,7 +109,7 @@
     padding: 6px 12px 6px 6px;
   }
   .landing-v2 .hero-avatars img { width: 30px; height: 30px; }
-  .landing-v2 .hero-social-text { font-size: 0.74rem; }
+  .landing-v2 .hero-social-text { font-size: var(--text-xs); }
 }
 
 /* Infinite marquee strip between hero and features */
@@ -159,8 +159,8 @@
   align-items: center;
   gap: 14px;
   font-family: 'Bebas Neue', system-ui, sans-serif;
-  font-size: 1.6rem;
-  letter-spacing: 0.06em;
+  font-size: var(--text-2xl);
+  letter-spacing: 0.04em;
   color: rgba(255, 255, 255, 0.78);
   text-transform: uppercase;
   flex-shrink: 0;
