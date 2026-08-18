@@ -10,6 +10,8 @@ import { revealOnScroll } from '../lib/motion.js';
 import { ACCENTS, applyAccent, getStoredAccentId, THEMES, applyTheme, getStoredTheme } from '../lib/personalization.js';
 import { computeXp, levelFromXp, titleForLevel, computeBadges } from '../lib/gamification.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import AvatarPicker from '../components/profile/AvatarPicker.jsx';
+import useAvatarUrl from '../hooks/useAvatarUrl.js';
 import * as haptics from '../lib/haptics.js';
 import { photo } from '../lib/imagery.js';
 import XpCard from '../components/XpCard.jsx';
@@ -40,8 +42,16 @@ export default function ProfilePage() {
   const [resetOpen, setResetOpen] = useState(false);
   const [badgesExpanded, setBadgesExpanded] = useState(false);
   const [theme, setTheme] = useState(() => getStoredTheme());
-  /** Profile photo, or null → the avatar falls back to the user's initials. */
-  const avatarSrc = photo('avatar');
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const storedAvatar = user?.avatar_url ?? null;
+  const storedAvatarSource = user?.avatar_source ?? null;
+  /* Shared with the sidebar chip (same hook, same cached signature) so the two
+     can't drift and one signing serves both. */
+  const resolvedAvatar = useAvatarUrl(storedAvatar, storedAvatarSource);
+
+  /** The resolved avatar wins; the bundled photo is the fallback, and null past
+   *  that → the circle shows the user's initials. */
+  const avatarSrc = resolvedAvatar || photo('avatar');
 
   /** Gear jumps to the settings stack. The app scrolls inside .main-content on
    *  mobile, not the document, so scroll that container rather than the window. */
@@ -182,11 +192,22 @@ export default function ProfilePage() {
           {icon('gear', 20)}
         </button>
 
-        <div className="m1-prof-avatar">
-          {avatarSrc
-            ? <img src={avatarSrc} alt={`${user.name} profile photo`} />
-            : <span aria-hidden="true">{initials}</span>}
-        </div>
+        {/* The circle itself keeps overflow:hidden so a photo is clipped to it,
+            which means the edit badge has to hang off this wrapper — inside the
+            circle it would be clipped away. */}
+        <button
+          type="button"
+          className="prof-avatar-btn"
+          onClick={() => setAvatarOpen(true)}
+          aria-label="Change profile photo"
+        >
+          <div className="m1-prof-avatar">
+            {avatarSrc
+              ? <img src={avatarSrc} alt={`${user.name} profile photo`} />
+              : <span aria-hidden="true">{initials}</span>}
+          </div>
+          <span className="prof-avatar-badge" aria-hidden="true">{icon('edit', 13)}</span>
+        </button>
 
         <h1 className="prof-name m1-prof-name m1-display">{user.name}</h1>
         <p className="m1-prof-goal m1-eyebrow">
@@ -552,6 +573,24 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      <AvatarPicker
+        open={avatarOpen}
+        onClose={() => setAvatarOpen(false)}
+        avatarUrl={avatarSrc}
+        avatarSource={storedAvatarSource}
+        selectedPresetPath={storedAvatarSource === 'preset' ? storedAvatar : null}
+        initials={initials}
+        onChange={(next) => {
+          // Reflect the new photo immediately; the row is already written.
+          Store.set('user', { ...Store.get('user'), ...next });
+          Toast.show(
+            next?.avatar_url ? 'Profile photo updated.' : 'Profile photo removed.',
+            'success',
+            2200
+          );
+        }}
+      />
 
       <ConfirmDialog
         open={resetOpen}

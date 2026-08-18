@@ -36,6 +36,38 @@
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: 0 0 32px rgba(var(--accent-rgb), 0.4);
 }
+/* Avatar as a control. The circle itself (.prof-avatar / .m1-prof-avatar) keeps
+   overflow:hidden so a photo is clipped to it — so the edit badge hangs off
+   this wrapper instead, where it isn't clipped. The circle's own shape is
+   untouched. */
+.prof-avatar-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+.prof-avatar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.prof-avatar-badge {
+  position: absolute;
+  right: 0;
+  /* .m1-prof-avatar carries margin-bottom: var(--space-4); offsetting by it
+     lands the badge on the circle's edge rather than below the whole wrapper. */
+  bottom: var(--space-4);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--elev-2);
+  pointer-events: none;
+}
+
 .prof-identity { position: relative; z-index: 1; flex: 1; min-width: 180px; }
 .prof-name { margin: 0; font-size: var(--text-2xl); font-weight: 900; letter-spacing: -0.02em; }
 .prof-email { margin: 2px 0 10px; font-size: var(--text-sm); color: var(--text-secondary); }
@@ -80,6 +112,7 @@
   letter-spacing: 0.04em; color: var(--text-secondary);
 }
 .prof-field input {
+  min-height: 44px;
   padding: 11px 13px;
   border-radius: var(--radius-sm);
   background: var(--glass-bg);

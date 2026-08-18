@@ -5,6 +5,7 @@ import { icon } from '../icons.jsx';
 import { ROUTES } from '../routes.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { NAV_ITEMS } from '../lib/navItems.js';
+import useAvatarUrl from '../hooks/useAvatarUrl.js';
 
 /** First-letter avatar fallback when the user has no photo. */
 function initialsOf(name) {
@@ -21,6 +22,10 @@ export default function Sidebar() {
   const navigateToPage = useContext(NavigateContext);
   const location = useLocation();
   const user = Store.get('user');
+  /* Same pointer the profile hero reads, so the chip changes the moment a new
+     photo is saved — the picker writes it straight into the Store. The
+     signature is shared with the hero rather than fetched twice. */
+  const avatarUrl = useAvatarUrl(user?.avatar_url ?? null, user?.avatar_source ?? null);
 
   function signOut() {
     Store.logout();
@@ -58,7 +63,11 @@ export default function Sidebar() {
             className="sidebar-user"
             onClick={() => navigateToPage?.('profile')}
           >
-            <span className="sidebar-user-avatar">{initialsOf(user.name)}</span>
+            <span className="sidebar-user-avatar">
+              {avatarUrl
+                ? <img src={avatarUrl} alt="" />
+                : initialsOf(user.name)}
+            </span>
             <span className="sidebar-user-meta">
               <span className="sidebar-user-name">{user.name || 'Athlete'}</span>
               <span className="sidebar-user-goal">{user.goal || 'View profile'}</span>

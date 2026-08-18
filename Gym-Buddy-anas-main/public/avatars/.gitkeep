@@ -1,0 +1,10 @@
+# Preset avatars live here as static assets: preset-01.webp … preset-10.webp.
+#
+# Vite copies public/ to the build root as-is, so these are served at
+# /avatars/<file> — see src/data/avatarPresets.json for the manifest and
+# src/services/avatarApi.js (listPresets) for the path building.
+#
+# They deliberately do NOT go through Supabase Storage: they ship with the
+# app, are identical for every user, and only change when a file is committed.
+#
+# This placeholder keeps the directory in git until the real .webp files land.
