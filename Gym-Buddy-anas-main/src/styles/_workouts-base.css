@@ -63,180 +63,10 @@
   opacity: 0.6;
 }
 
-/* Idle header */
-.wko-header { display: flex; flex-direction: column; }
-.wko-h1 {
-  margin: 6px 0 4px;
-  font-size: var(--text-3xl); font-weight: 900; letter-spacing: -0.03em;
-}
-
-/* Stats strip (idle) */
-.wko-stats-strip {
-  display: flex; align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-}
-.wko-stat { display: flex; flex-direction: column; gap: 2px; }
-.wko-stat-val {
-  font-size: var(--text-2xl); font-weight: 900;
-  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
-}
-.wko-stat-lbl { font-size: var(--text-xs); font-weight: 600; color: var(--text-secondary); }
-.wko-stat-div { width: 1px; height: 34px; background: var(--glass-border); }
-
-/* Big start hero */
-.wko-start {
-  position: relative;
-  padding: var(--space-8) var(--space-6);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--glass-border);
-  background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-highlight), var(--elev-2);
-  --tilt-x: 0deg;
-  --tilt-y: 0deg;
-  transform: perspective(900px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
-  transform-style: preserve-3d;
-  transition: transform 0.18s linear;
-}
-.wko-start-glow {
-  border-radius: 50%;
-  /* Soft glow contained visually by its own radial alpha — no clip needed. */
-}
-/* Icon wrapper — own its own stacking context so rings emanate freely. */
-.wko-start-icon-wrap {
-  position: relative;
-  display: grid; place-items: center;
-  width: 78px; height: 78px;
-  margin-bottom: 4px;
-}
-.wko-start-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 2px solid rgba(var(--accent-rgb), 0.55);
-  pointer-events: none;
-  animation: wkoRingPulse 2.4s var(--ease-out) infinite;
-  will-change: transform, opacity;
-}
-.wko-start-ring-2 { animation-delay: 1.2s; border-color: rgba(var(--accent-rgb), 0.4); }
-@keyframes wkoRingPulse {
-  0%   { transform: scale(1);   opacity: 0.9; }
-  80%  { opacity: 0; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
-.wko-start-glow {
-  position: absolute; inset: -40% -10% auto auto;
-  width: 360px; height: 360px;
-  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.22), transparent 65%);
-  filter: blur(40px);
-  pointer-events: none;
-  animation: wkoGlow 8s ease-in-out infinite alternate;
-}
-@keyframes wkoGlow {
-  from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(-20px, 20px) scale(1.08); }
-}
-.wko-start-body {
-  position: relative;
-  display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
-  text-align: center;
-}
-.wko-start-icon {
-  position: relative;
-  display: grid; place-items: center;
-  width: 78px; height: 78px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #0a0a0a;
-  box-shadow: var(--glow-accent), 0 14px 38px rgba(var(--accent-rgb), 0.55);
-  z-index: 2;
-  animation: wkoIconBreathe 3.4s var(--ease-std) infinite;
-}
-@keyframes wkoIconBreathe {
-  0%, 100% { transform: scale(1);    box-shadow: var(--glow-accent), 0 14px 38px rgba(var(--accent-rgb), 0.45); }
-  50%      { transform: scale(1.07); box-shadow: var(--glow-accent), 0 18px 52px rgba(var(--accent-rgb), 0.65); }
-}
-.wko-start-title {
-  margin: 0;
-  font-size: var(--text-2xl); font-weight: 900; letter-spacing: -0.02em;
-}
-.wko-start-desc {
-  margin: 0 0 var(--space-2);
-  max-width: 460px;
-  font-size: var(--text-sm); color: var(--text-secondary);
-  line-height: 1.55;
-}
-.wko-start-actions { display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: center; }
-.wko-cta-primary { padding: 13px 24px; font-size: var(--text-base); }
-
-/* Recent panel */
-.wko-recent-list { display: flex; flex-direction: column; gap: 2px; }
-.wko-recent-row {
-  display: flex; align-items: center; gap: var(--space-3);
-  padding: 11px 0;
-  border-bottom: 1px solid var(--glass-border);
-  animation: histPanelIn 0.28s var(--ease-spring) both;
-}
-.wko-recent-row:last-child { border-bottom: none; }
-.wko-recent-icon {
-  display: grid; place-items: center;
-  width: 34px; height: 34px; flex-shrink: 0;
-  border-radius: var(--radius-sm);
-  background: rgba(var(--accent-rgb), 0.12);
-  color: var(--accent);
-}
-
-/* Show more / less button */
-.wko-recent-more {
-  display: flex; align-items: center; justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: var(--space-3);
-  padding: 10px 14px;
-  border-radius: var(--radius-pill);
-  background: rgba(var(--accent-rgb), 0.10);
-  border: 1px solid rgba(var(--accent-rgb), 0.28);
-  color: var(--accent);
-  font-family: inherit; font-size: var(--text-sm); font-weight: 700;
-  cursor: pointer;
-  transition: background var(--dur-base) var(--ease-std), transform var(--dur-base) var(--ease-spring);
-}
-.wko-recent-more:hover {
-  background: rgba(var(--accent-rgb), 0.18);
-  transform: translateY(-1px);
-}
-.wko-recent-more-chev {
-  display: grid; place-items: center;
-  width: 18px; height: 18px;
-  transform: rotate(90deg);
-  transition: transform var(--dur-base) var(--ease-spring);
-}
-.wko-recent-more-chev.is-open { transform: rotate(-90deg); }
-.wko-recent-info { flex: 1; min-width: 0; }
-.wko-recent-info h4 {
-  margin: 0;
-  font-size: var(--text-sm); font-weight: 700;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.wko-recent-info p {
-  margin: 2px 0 0;
-  font-size: var(--text-xs); color: var(--text-secondary);
-}
-.wko-empty-mini {
-  display: flex; flex-direction: column; align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-6);
-  text-align: center;
-}
-.wko-empty-mini p { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
-.wko-empty-icon { color: var(--text-secondary); opacity: 0.7; }
+/* The TRAIN (idle) screen now lives in _workouts-idle.css, imported
+   immediately after this sheet. Only the active-session styles below
+   remain here — including the .wko-bg* blobs above, which the idle
+   screen no longer renders but the active view still uses. */
 
 /* ============ ACTIVE STATE ============ */
 
@@ -848,39 +678,23 @@
   .wko-finish-btn { flex: 1; justify-content: center; }
 }
 @media (max-width: 640px) {
-  .wko-recent-row { gap: 10px; padding: 9px 0; }
-  .wko-recent-icon { width: 28px; height: 28px; }
-  .wko-recent-info h4 { font-size: 13px; }
-  .wko-recent-info p { font-size: 11px; }
-  .wko-recent-row .gx-badge { padding: 3px 8px; font-size: 10.5px; }
-
-  /* Compact the idle screen so it sits closer to one viewport height,
-     in line with the other pages. */
+  /* The idle screen needs no phone-specific compaction any more: it is built
+     to one viewport height by construction (see .wko-idle min-height), not
+     shrunk into one afterwards. `.wko { gap }` still applies to the ACTIVE
+     view, which does stack cards. */
   .wko { gap: var(--space-4); }
-  .wko-h1 { font-size: 1.9rem; }
-  .wko-stats-strip { padding: var(--space-3) var(--space-4); }
-  .wko-start { padding: var(--space-5) var(--space-4); }
-  .wko-start-body { gap: var(--space-2); }
-  .wko-start-icon-wrap,
-  .wko-start-icon { width: 62px; height: 62px; }
-  .wko-start-title { font-size: 1.5rem; }
-  .wko-start-desc { font-size: var(--text-xs); }
+  .wko-idle { gap: 0; }
 }
 @media (max-width: 480px) {
   .wko-set-grid { grid-template-columns: 28px 1fr 1fr 38px 24px; gap: 6px; }
   .wko-set-remove { width: 24px; height: 24px; opacity: 0.7; }
-  .wko-stats-strip { flex-wrap: wrap; }
   .wko-summary-grid { grid-template-columns: 1fr 1fr; }
-  .wko-recent-more { padding: 9px 12px; font-size: 13px; }
   .wko-picker-muscle { padding: 5px 9px; font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .wko-start-glow,
   .wko-ex,
   .wko-summary-trophy,
   .wko-bg-blob,
-  .wko-start-ring,
-  .wko-start-icon,
   .wko-livebar-timer-val,
   .wko-ex-now,
   .wko-set-check.is-checked,
@@ -891,7 +705,6 @@
   .wko-set-extras {
     animation: none !important;
   }
-  .wko-start { transform: none !important; }
 }
 
 /* ============================================================
