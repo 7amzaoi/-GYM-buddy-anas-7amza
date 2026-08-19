@@ -95,14 +95,14 @@
   padding: 22px 36px;
   max-width: 1280px;
   margin: 0 auto;
-  gap: 16px;
+  gap: var(--space-4);
 }
 .download-page .dl-back {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   min-height: 44px;
-  padding: 10px 16px;
+  padding: 10px var(--space-4);
   background: var(--dl-glass);
   border: 1px solid var(--dl-glass-border);
   border-radius: var(--radius-pill);
@@ -201,14 +201,14 @@
 .download-page .dl-store-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 4px;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
 }
 .download-page .dl-store-btn {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 22px 12px 18px;
+  gap: var(--space-3);
+  padding: var(--space-3) 22px var(--space-3) 18px;
   min-width: 188px;
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -280,7 +280,7 @@
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  padding: 8px 16px 8px 8px;
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid var(--dl-glass-border);
   border-radius: var(--radius-pill);
@@ -538,7 +538,7 @@
 .download-page .dl-phone-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 .download-page .dl-phone-row-between { justify-content: space-between; }
 .download-page .dl-phone-label,
@@ -552,7 +552,7 @@
 .download-page .dl-phone-accent { color: var(--dl-accent); font-weight: 700; }
 .download-page .dl-phone-title { font-size: var(--text-base); font-weight: 800; margin-top: 2px; }
 .download-page .dl-phone-pill {
-  padding: 4px 10px;
+  padding: var(--space-1) 10px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--radius-pill);
@@ -587,7 +587,7 @@
 .download-page .dl-phone-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.06);
-  margin: 4px 0;
+  margin: var(--space-1) 0;
 }
 .download-page .dl-phone-set { font-weight: 700; font-size: var(--text-sm); }
 .download-page .dl-phone-chart {
@@ -656,7 +656,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--dl-accent);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 .download-page .dl-h2 {
   margin: 0;
@@ -671,7 +671,7 @@
 .download-page .dl-features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: var(--space-5);
 }
 /* Outer card = reveal wrapper only (data-reveal owns translateY/opacity).
    3D perspective for the inner tilt lives here. */
@@ -758,7 +758,7 @@
   box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.2);
 }
 .download-page .dl-feature-title {
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2);
   font-size: var(--text-lg);
   font-weight: 800;
   color: var(--dl-fg);
@@ -778,8 +778,8 @@
   --dl-my: 50%;
   position: relative;
   z-index: 2;
-  margin: 20px 0 80px;
-  padding: 64px 36px;
+  margin: var(--space-5) 0 80px;
+  padding: var(--space-16) 36px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -852,7 +852,7 @@
   grid-template-columns: repeat(3, 1fr);
   max-width: 1100px;
   margin: 0 auto;
-  gap: 24px;
+  gap: var(--space-6);
   text-align: center;
 }
 .download-page .dl-stat {
@@ -861,7 +861,7 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  padding: 18px 12px;
+  padding: 18px var(--space-3);
   border-radius: var(--radius);
   cursor: pointer;
   transition:
@@ -980,7 +980,7 @@
     0 30px 80px rgba(0, 0, 0, 0.4);
 }
 .download-page .dl-sub-center {
-  margin: 14px auto 32px;
+  margin: 14px auto var(--space-8);
   max-width: 560px;
 }
 .download-page .dl-final-grid {
@@ -995,7 +995,7 @@
 .download-page .dl-final-stores {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .download-page .dl-final-stores .dl-store-btn { min-width: 220px; }
 
@@ -1005,7 +1005,7 @@
   flex-direction: column;
   align-items: center;
   gap: 14px;
-  padding: 20px;
+  padding: var(--space-5);
   background: linear-gradient(180deg, #111114 0%, #0a0a0c 100%);
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--radius-lg);
@@ -1017,7 +1017,7 @@
 .download-page .dl-qr-frame {
   width: 168px;
   height: 168px;
-  padding: 8px;
+  padding: var(--space-2);
   background: #0b0b0b;
   border: 1px solid rgba(var(--accent-rgb), 0.22);
   border-radius: var(--radius);
@@ -1034,7 +1034,7 @@
 .download-page .dl-qr-caption {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--dl-muted);
@@ -1124,7 +1124,7 @@
   color: var(--dl-accent);
 }
 .download-page .dl-step-title {
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2);
   font-size: var(--text-lg);
   font-weight: 800;
   color: var(--dl-fg);
@@ -1149,7 +1149,7 @@
 .download-page .dl-testi-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: var(--space-5);
 }
 .download-page .dl-testi-card {
   position: relative;
@@ -1162,7 +1162,7 @@
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
   transition:
     transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     border-color 0.35s ease,
@@ -1199,7 +1199,7 @@
 .download-page .dl-testi-author {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   margin-top: auto;
   padding-top: 6px;
 }
@@ -1232,7 +1232,7 @@
 .download-page .dl-faq-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
   margin-top: 36px;
 }
 .download-page .dl-faq-item {
@@ -1251,8 +1251,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
+  gap: var(--space-4);
+  padding: 18px var(--space-5);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1287,7 +1287,7 @@
 }
 .download-page .dl-faq-a {
   margin: 0;
-  padding: 0 20px 20px;
+  padding: 0 var(--space-5) var(--space-5);
   font-size: var(--text-sm);
   line-height: 1.6;
   color: var(--dl-muted);
@@ -1301,7 +1301,7 @@
   right: 12px;
   bottom: 12px;
   z-index: 50;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 10px;
   background: rgba(10, 10, 10, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1376,7 +1376,7 @@
   .download-page .dl-hero {
     grid-template-columns: 1fr;
     gap: 60px;
-    padding: 40px 24px 80px;
+    padding: var(--space-10) var(--space-6) 80px;
     text-align: center;
   }
   .download-page .dl-hero-content { align-items: center; }
@@ -1399,7 +1399,7 @@
   /* Steps stack vertically; connecting line becomes vertical */
   .download-page .dl-steps {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: var(--space-8);
     max-width: 420px;
     margin-inline: auto;
   }
@@ -1426,16 +1426,16 @@
 
 @media (max-width: 720px) {
   .download-page { padding-bottom: 140px; }
-  .download-page .dl-nav { padding: 16px 18px; }
-  .download-page .dl-hero { padding: 24px 18px 60px; }
+  .download-page .dl-nav { padding: var(--space-4) 18px; }
+  .download-page .dl-hero { padding: var(--space-6) 18px 60px; }
   .download-page .dl-features-section { padding: 56px 18px; }
-  .download-page .dl-steps-section { padding: 56px 18px 20px; }
+  .download-page .dl-steps-section { padding: 56px 18px var(--space-5); }
   .download-page .dl-testimonials { padding: 60px 18px; }
-  .download-page .dl-faq-section { padding: 20px 18px 60px; }
+  .download-page .dl-faq-section { padding: var(--space-5) 18px 60px; }
   .download-page .dl-final-cta { padding: 0 18px 60px; }
-  .download-page .dl-final-card { padding: 40px 22px; }
-  .download-page .dl-stats-banner { padding: 40px 18px; }
-  .download-page .dl-stats-inner { gap: 12px; }
+  .download-page .dl-final-card { padding: var(--space-10) 22px; }
+  .download-page .dl-stats-banner { padding: var(--space-10) 18px; }
+  .download-page .dl-stats-inner { gap: var(--space-3); }
   .download-page .dl-phone-stack { transform: scale(0.85); }
   .download-page .dl-mobile-sticky { display: flex; }
 }
@@ -1443,7 +1443,7 @@
 @media (max-width: 420px) {
   .download-page .dl-store-row { flex-direction: column; width: 100%; }
   .download-page .dl-store-row .dl-store-btn { width: 100%; }
-  .download-page .dl-stats-inner { grid-template-columns: 1fr; gap: 24px; }
+  .download-page .dl-stats-inner { grid-template-columns: 1fr; gap: var(--space-6); }
 }
 
 @media (prefers-reduced-motion: reduce) {

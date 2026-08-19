@@ -53,12 +53,12 @@
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  padding: 8px 14px 8px 8px;
+  padding: var(--space-2) 14px var(--space-2) var(--space-2);
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px) saturate(140%);
-  margin: 4px auto 0;
+  margin: var(--space-1) auto 0;
 }
 .landing-v2 .hero-avatars {
   display: inline-flex;
@@ -106,7 +106,7 @@
 @media (max-width: 560px) {
   .landing-v2 .hero-social {
     gap: 10px;
-    padding: 6px 12px 6px 6px;
+    padding: 6px var(--space-3) 6px 6px;
   }
   .landing-v2 .hero-avatars img { width: 30px; height: 30px; }
   .landing-v2 .hero-social-text { font-size: var(--text-xs); }
