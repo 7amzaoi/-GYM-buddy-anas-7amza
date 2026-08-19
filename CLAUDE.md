@@ -3,21 +3,45 @@
 Read this before touching anything. It encodes conventions that are easy to
 break silently and expensive to find afterwards.
 
-## Repo layout — read this first
+## Repo layout
 
-The git root is **one level above** the app. All commands run from the nested folder:
+The app lives at the repo root. Run every command from there:
 
 ```
-<repo root>/                     ← git root, this file
+<repo root>/                     ← git root, this file, package.json
 ├── .claude/settings.local.json  ← tracked (permission allowlist)
-└── Gym-Buddy-anas-main/         ← THE PROJECT. package.json lives here.
-    ├── src/  public/  scripts/  supabase/
-    └── .artifacts/              ← generated screenshots + design artifacts
+├── src/  public/  scripts/  supabase/
+└── .artifacts/                  ← generated screenshots + design artifacts
 ```
 
 ```bash
-cd Gym-Buddy-anas-main && npm install
+npm install
 ```
+
+> **Changed 2026-08-19.** Until then the app sat one level down, in a folder
+> called `Gym-Buddy-anas-main/`, and this section told you to `cd` into it.
+> That nesting was never a decision — it was an accident, and it cost real
+> time before anyone questioned it.
+>
+> What happened: someone cloned the repo into `Gym-Buddy-anas-main/`, then ran
+> `git init` in the **parent** directory and committed from there. Git skipped
+> the inner `.git/` but tracked all 186 files beneath it as ordinary paths.
+>
+> That one action caused everything that looked mysterious afterwards:
+> - **`main` and this branch had no common ancestor** — `git init` starts a new
+>   history; a clone would have shared one. `git merge` refused outright.
+> - **The two branches shared zero paths** — every file here sat one level
+>   deeper than its counterpart on `main`.
+> - **A live clone of `main@c19ac7d` was sitting at `Gym-Buddy-anas-main/.git`**,
+>   reporting 114 phantom modifications to anything that walked up into it.
+>
+> Evidence, if you ever need to re-check the reasoning: this branch's root
+> commit `ef8add3` is byte-identical to `main@992db87` in 62 of 63 files, one
+> directory down; both are dated 2026-05-17 and both are titled "7amza edits".
+>
+> The flatten was a pure `git mv`, so `git log --follow <file>` traces any file
+> straight through it. **Do not re-nest.** No tooling ever required it — there
+> is no deploy config in this repo at all.
 
 ## Stack
 
@@ -191,7 +215,7 @@ These are **load-time decisions, not feature removals.** Nothing here is deleted
 Not in the repo — create it per machine:
 
 ```bash
-cp Gym-Buddy-anas-main/.env.example Gym-Buddy-anas-main/.env.local
+cp .env.example .env.local
 ```
 
 `VITE_SUPABASE_URL` · `VITE_SUPABASE_ANON_KEY`
