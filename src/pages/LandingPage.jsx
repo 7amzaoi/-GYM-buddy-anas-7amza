@@ -360,16 +360,35 @@ export default function LandingPage() {
           },
         });
 
-        // ---- Count-up stats
+        /* ---- Count-up stats
+           The resting text is the REAL number (rendered in the JSX below via
+           formatCounter), not 0. It used to be a hardcoded "0": on a 390x844
+           phone this block sits at y~703, the ScrollTrigger at 'top 92%' had
+           not fired at load, and the hero's social proof read
+           "0+ / 0% / 0.0★" until you scrolled — the worst possible resting
+           state for the numbers meant to build trust.
+
+           So the count-up now only runs when the element starts BELOW the
+           fold, i.e. the visitor has not read it yet. If it is already on
+           screen, animating from 0 would be a visible step backwards from a
+           correct number, so we leave it alone. Reduced motion skips it too:
+           the value is already right without the animation. */
         root.querySelectorAll('[data-counter]').forEach((el) => {
           const target = parseFloat(el.dataset.counter);
           const decimals = parseInt(el.dataset.counterDecimals || '0', 10);
           const suffix = el.dataset.counterSuffix || '';
+          // Already readable, or motion is unwanted -> keep the real value.
+          const belowFold = el.getBoundingClientRect().top > window.innerHeight;
+          if (reduced || !belowFold) return;
           const obj = { v: 0 };
           gsap.to(obj, {
             v: target,
             duration: 1.6,
             ease: 'power2.out',
+            /* Without this GSAP renders the tween's START state (v: 0) as soon
+               as it is created, overwriting the real resting text with 0
+               before the ScrollTrigger has fired. */
+            immediateRender: false,
             scrollTrigger: { trigger: el, start: 'top 92%', once: true },
             onUpdate: () => {
               let n = obj.v;
@@ -582,21 +601,21 @@ export default function LandingPage() {
           <div className="hero-stats">
             <div className="hero-stat">
               <div className="hero-stat-num">
-                <span data-counter="50000" data-counter-suffix="+">0</span>
+                <span data-counter="50000" data-counter-suffix="+">50K+</span>
               </div>
               <div className="hero-stat-label">Sets logged</div>
             </div>
             <div className="hero-stat-divider" />
             <div className="hero-stat">
               <div className="hero-stat-num">
-                <span data-counter="98" data-counter-suffix="%">0</span>
+                <span data-counter="98" data-counter-suffix="%">98%</span>
               </div>
               <div className="hero-stat-label">Stick to their plan</div>
             </div>
             <div className="hero-stat-divider" />
             <div className="hero-stat">
               <div className="hero-stat-num">
-                <span data-counter="4.9" data-counter-decimals="1" data-counter-suffix="★">0</span>
+                <span data-counter="4.9" data-counter-decimals="1" data-counter-suffix="★">4.9★</span>
               </div>
               <div className="hero-stat-label">Athlete rating</div>
             </div>

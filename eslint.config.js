@@ -7,7 +7,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 export default [
   // TS files are checked by `npm run typecheck` (tsc --noEmit). The default ESLint parser
   // cannot read TS syntax, and adding @typescript-eslint is deferred to a later sprint.
-  { ignores: ['dist', 'node_modules', '.env*', '**/*.ts', '**/*.tsx'] },
+  { ignores: ['dist', 'node_modules', '.vite', '.env*', '**/*.ts', '**/*.tsx'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {

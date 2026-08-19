@@ -1,5 +1,8 @@
 node_modules
 dist
+# Vite's dep-optimiser cache. Untracked, and eslint has no default
+# ignore for it, so it must be listed in eslint.config.js too.
+.vite
 .artifacts
 .env
 .env.local
