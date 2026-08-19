@@ -1,6 +1,6 @@
 import { icon } from '../../icons.jsx';
 import ProgressRing from './ProgressRing.jsx';
-import { calc1RM, getOverloadSuggestion } from './helpers.js';
+import { getOverloadSuggestion } from './helpers.js';
 
 /** A single exercise card with its sets, overload hint, plate tool, and remove button. */
 export default function ExerciseCard({
@@ -41,6 +41,7 @@ export default function ExerciseCard({
           </div>
         </div>
         <div className="wko-ex-tools">
+          <span className="m1-setcount">{sets.length} set{sets.length === 1 ? '' : 's'}</span>
           <button
             type="button"
             className="wko-ex-tool"
@@ -65,7 +66,6 @@ export default function ExerciseCard({
         <span>Set</span><span>Weight (kg)</span><span>Reps</span><span>Done</span><span aria-hidden />
       </div>
       {sets.map((ls, si) => {
-        const oneRm = ls.done ? calc1RM(ls.weight, ls.reps) : null;
         return (
           <div key={si} className="wko-set-wrap">
             <div className={`wko-set-grid wko-set-row ${ls.done ? 'is-done' : ''}`}>
@@ -106,29 +106,6 @@ export default function ExerciseCard({
                 {icon('x', 13)}
               </button>
             </div>
-            {ls.done && (
-              <div className="wko-set-extras">
-                {oneRm ? (
-                  <span className="wko-set-1rm" title="Estimated 1-rep max (Epley)">
-                    {icon('zap', 11)} ~{oneRm} kg 1RM
-                  </span>
-                ) : null}
-                <div className="wko-set-rpe" role="group" aria-label={`RPE for set ${si + 1}`}>
-                  <span className="wko-set-rpe-label">RPE</span>
-                  {[6, 7, 8, 9, 10].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      className={`wko-set-rpe-btn ${ls.rpe === n ? 'is-active' : ''}`}
-                      onClick={() => onUpdateSet(ei, si, 'rpe', ls.rpe === n ? null : n)}
-                      aria-pressed={ls.rpe === n}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         );
       })}

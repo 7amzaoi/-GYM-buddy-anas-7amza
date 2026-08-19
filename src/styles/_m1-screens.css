@@ -1,0 +1,862 @@
+/* ============================================================
+   M1 — screens 2..6 (Active Workout, Progress, Records, Plans, Profile).
+
+   These are RESTYLES, not rewrites: the existing feature markup
+   (`.wko-*`, `.prog-*`, `.rec-*`, `.plan-*`, `.prof-*`) keeps working, and the
+   rules here re-dress it in the athletic-editorial language. Anything the
+   reference mock doesn't show (RPE, 1RM, plate calculator, overload hints,
+   rest timer) is preserved and simply restyled to match.
+
+   Depends on tokens from _m1.css.
+   ============================================================ */
+
+/* ============================================================
+   Shared page header for screens 2..6
+   ============================================================ */
+.m1-page {
+  --m1-gutter: var(--space-5);
+  margin: calc(var(--space-5) * -1) calc(var(--space-4) * -1) 0;
+  padding: var(--space-5) var(--m1-gutter) var(--space-6);
+}
+.m1-pagehead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.m1-pagehead h1 { color: var(--text-primary); }
+
+/* Segmented control (Volume / Calories / Duration, Records filters). */
+.m1-seg {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--m1-surface);
+  border: 1px solid var(--m1-hairline);
+}
+.m1-seg button {
+  flex: 1 1 0;
+  min-height: 40px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast) var(--ease-std), color var(--dur-fast) var(--ease-std);
+}
+.m1-seg button.is-active {
+  background: var(--m1-surface-2);
+  color: var(--text-primary);
+  box-shadow: var(--elev-1);
+}
+
+/* ============================================================
+   SCREEN 2 — Active workout
+   ============================================================ */
+.m1-wkhead {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  margin: calc(var(--space-5) * -1) calc(var(--m1-gutter) * -1) var(--space-4);
+  padding: var(--space-4) var(--m1-gutter) var(--space-3);
+  background: linear-gradient(180deg, rgba(11, 11, 11, 0.97), rgba(11, 11, 11, 0.88));
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--m1-hairline);
+}
+.m1-wkhead-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.m1-wkhead-title { margin: 0 0 var(--space-2); color: var(--text-primary); }
+
+.m1-wkhead-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+/* The timer is the loudest thing on the screen — you read it across the gym. */
+.m1-timer {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 2.5rem;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.m1-timer.is-paused { color: var(--text-secondary); }
+.m1-wkhead-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: 3px;
+}
+
+/* Thin accent completion bar under the header. */
+.m1-progress {
+  height: 4px;
+  margin-top: var(--space-3);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+}
+.m1-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+/* ---------- Rest timer, pinned in the sticky header ----------
+   Was a floating card fixed to the bottom, where the tab bar and the raised FAB
+   sat on top of it. Living inside .m1-wkhead it pins to the top of the screen
+   for free — no z-index or offset maths — and it inherits the accent instead of
+   the old hardcoded blue. Compact 3-row grid so the header stays shallow:
+     REST ................ Skip
+     00:59  [====progress====]
+     −15s   Default 60s −+   +15s                                            */
+.m1-wkhead .wko-rest {
+  position: static;
+  transform: none;
+  width: auto;
+  /* Bleed to the header edges and sit flush against its bottom border. */
+  margin: var(--space-3) calc(var(--m1-gutter) * -1) calc(var(--space-3) * -1);
+  padding: var(--space-2) var(--m1-gutter) var(--space-3);
+  border: 0;
+  border-top: 1px solid rgba(var(--accent-rgb), 0.22);
+  border-radius: 0;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(var(--accent-rgb), 0.03));
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: m1RestDrop 0.32s var(--ease-out) both;
+}
+@keyframes m1RestDrop {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.m1-wkhead .wko-rest-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: 6px;
+}
+.m1-wkhead .wko-rest-head { grid-column: 1 / -1; }
+.m1-wkhead .wko-rest-time {
+  grid-column: 1;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.m1-wkhead .wko-rest-bar { grid-column: 2; background: rgba(255, 255, 255, 0.10); }
+.m1-wkhead .wko-rest-bar-fill { background: var(--accent); }
+.m1-wkhead .wko-rest-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-stretch: var(--display-stretch);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.m1-wkhead .wko-rest-controls { grid-column: 1 / -1; gap: var(--space-2); }
+/* 44px targets on every rest control. */
+.m1-wkhead .wko-rest-skip,
+.m1-wkhead .wko-rest-bump {
+  min-height: 44px;
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-pill);
+}
+.m1-wkhead .wko-rest-bump {
+  background: rgba(var(--accent-rgb), 0.14);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  color: var(--accent);
+}
+.m1-wkhead .wko-rest-bump:hover { background: rgba(var(--accent-rgb), 0.24); }
+.m1-wkhead .wko-rest-duration { gap: 4px; font-size: 0.72rem; }
+.m1-wkhead .wko-rest-duration button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+
+/* This identity gets its atmosphere from photography, not ambient glow — the
+   decorative blobs behind the logging screen fight the flat-black key. */
+.wko-active .wko-bg { display: none; }
+
+/* Live stats: four compact readouts on one row, matching the Today stat cards
+   rather than the old 2x2 glass tiles. */
+.wko-active .wko-live-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+.wko-active .wko-live-stat {
+  min-width: 0;
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--m1-radius-sm);
+  border: 1px solid var(--m1-hairline);
+  background: var(--m1-surface);
+  text-align: left;
+}
+.wko-active .wko-live-stat::before { display: none; } /* drop the hover sheen */
+.wko-active .wko-live-stat-val {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.25rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.wko-active .wko-live-stat-lbl {
+  margin-top: 5px;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* -- Exercise cards -- */
+.wko-active .wko-ex {
+  background: var(--m1-surface);
+  border: 1px solid var(--m1-hairline);
+  border-radius: var(--m1-radius);
+  box-shadow: none;
+}
+.wko-active .wko-ex.is-focus {
+  border-color: rgba(var(--accent-rgb), 0.45);
+}
+.wko-active .wko-ex-head h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.12rem;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+.wko-active .wko-ex-now {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* Set-count badge, right of the exercise name (reference composition). */
+.m1-setcount {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Set rows: heavier numerals, rounder inputs, unmistakable check. */
+.wko-active .wko-set-input {
+  border-radius: var(--m1-radius-sm);
+  background: #0E0E10;
+  border-color: var(--m1-hairline);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.wko-active .wko-set-check {
+  border-radius: 50%;
+  border-width: 2px;
+}
+.wko-active .wko-set-check.is-checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0B0B0B;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+.wko-active .wko-set-idx {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+}
+
+/* -- Completed exercise ring --
+   At 100% the ring fills into a solid accent disc with a dark tick, so it reads
+   the same as the completed DONE checkbox in the set rows below it. Previously
+   it stayed a hollow ring with an accent-on-dark tick, which was both fainter
+   and inconsistent with the row state it summarises. */
+.wko-ring.is-complete::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+  animation: wkoRingPop 0.55s var(--ease-spring);
+}
+.wko-ring.is-complete .wko-ring-label {
+  position: relative;
+  z-index: 1;
+  color: #0B0B0B;
+}
+.wko-ring.is-complete .wko-ring-label svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 3; /* heavier tick — it's the card's completion signal */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wko-ring.is-complete::before { animation: none; }
+}
+
+/* Full-width accent finish, at the end of the list as in the reference. */
+.m1-finish { margin-top: var(--space-5); }
+
+/* -- Touch targets on the logging screen --
+   You tap these mid-set with shaky, chalky hands, so every control clears 44px.
+   The check grows for real (the reference makes it the hero of the row); the
+   utility controls get a 44px box with a small glyph, so the target grows
+   without the row gaining visual weight. */
+.wko-active .wko-set-check {
+  width: 44px;
+  height: 44px;
+}
+.wko-active .wko-set-grid { grid-template-columns: 26px 1fr 1fr 44px 44px; gap: 6px; }
+
+/* Utility controls: 44px BOX, small glyph. The chrome is dropped so the bigger
+   target adds no visual weight — the icon size is what the eye reads. */
+.wko-active .wko-ex-tool,
+.wko-active .wko-ex-remove,
+.wko-active .wko-set-remove {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: 0;
+}
+.wko-active .wko-set-rpe-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+.wko-active .wko-add-set,
+.wko-active .wko-add-ex {
+  min-height: 46px;
+}
+
+/* ============================================================
+   SCREEN 3 — Progress
+   ============================================================ */
+.m1-chartcard {
+  padding: var(--space-4);
+  border-radius: var(--m1-radius);
+  border: 1px solid var(--m1-hairline);
+  background: var(--m1-surface);
+}
+.m1-chartcard-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+.m1-chartcard-val {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Delta cards (+12.4% ↗ / VOLUME / vs. last 4 weeks) */
+.m1-deltas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+.m1-delta {
+  padding: var(--space-4);
+  border-radius: var(--m1-radius-sm);
+  border: 1px solid var(--m1-hairline);
+  background: var(--m1-surface);
+}
+.m1-delta-val {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.5rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.m1-delta-val.is-down { color: var(--text-secondary); }
+.m1-delta-val svg { width: 15px; height: 15px; }
+.m1-delta-lbl {
+  margin-top: 7px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.m1-delta-sub {
+  margin-top: 2px;
+  font-size: 0.66rem;
+  color: var(--text-secondary);
+}
+
+/* Weekly summary row */
+.m1-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--m1-radius-sm);
+  border: 1px solid var(--m1-hairline);
+  background: var(--m1-surface);
+}
+.m1-summary-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.m1-summary-body { flex: 1; min-width: 0; }
+.m1-summary-val {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.m1-summary-val small { color: var(--text-secondary); font-size: 0.8rem; }
+.m1-summary-lbl {
+  margin: 5px 0 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.m1-summary-pct {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+
+/* ============================================================
+   SCREEN 4 — Records
+   ============================================================ */
+.m1-reclist { display: flex; flex-direction: column; gap: var(--space-3); }
+.m1-rec {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--m1-radius-sm);
+  border: 1px solid var(--m1-hairline);
+  background: var(--m1-surface);
+  overflow: hidden;
+}
+.m1-rec-thumb {
+  flex-shrink: 0;
+  width: 62px;
+  height: 62px;
+  border-radius: var(--radius-sm);
+}
+.m1-rec-body { flex: 1; min-width: 0; }
+.m1-rec-name {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m1-rec-val {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.45rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.m1-rec-date {
+  flex-shrink: 0;
+  align-self: flex-end;
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+.m1-rec-pr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 4px 9px;
+  border-bottom-left-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #0B0B0B;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+}
+
+/* ============================================================
+   SCREEN 5 — Plans
+   ============================================================ */
+.m1-planlist { display: flex; flex-direction: column; gap: var(--space-4); }
+.m1-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  min-height: 148px;
+  padding: var(--space-4);
+  border: 0;
+  border-radius: var(--m1-radius);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.m1-plan.is-today { outline: 2px solid var(--accent); outline-offset: -2px; }
+.m1-plan-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.4rem;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.m1-plan-meta { margin-top: 7px; }
+.m1-plan-today {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-4);
+}
+
+/* ============================================================
+   SCREEN 6 — Profile
+   ============================================================ */
+.m1-prof-banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Height follows content (avatar + name + goal + chip + stats). A fixed
+     min-height with justify-content:flex-end pushed the avatar past the top
+     edge, where overflow:hidden clipped it. */
+  justify-content: flex-start;
+  min-height: 0;
+  /* Horizontal bleed cancels .main-content's 16px mobile gutter. */
+  margin: calc(var(--space-5) * -1) calc(var(--space-4) * -1) var(--space-4);
+  padding: var(--space-8) var(--m1-gutter) var(--space-5);
+  text-align: center;
+}
+
+/* It bleeds to the top and both side edges, so only the BOTTOM corners are
+   rounded — a full-bleed box with all four corners rounded leaves the page
+   showing through at the top corners and reads as a cropping mistake.
+   Two-class selector so it outranks the single-class `.prof-hero` radius in
+   _m1-system.css regardless of import order. */
+.prof-hero.m1-prof-banner {
+  border-radius: 0 0 var(--m1-radius) var(--m1-radius);
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+}
+.m1-prof-gear { position: absolute; top: var(--space-3); right: var(--space-3); }
+.m1-prof-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin-bottom: var(--space-4);
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  overflow: hidden;
+  /* Gradient shows only in the initials fallback; a photo covers it. */
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0B0B0B;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-stretch: var(--display-stretch);
+  font-size: 2rem;
+  box-shadow: 0 0 34px var(--accent-glow);
+}
+.m1-prof-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.m1-prof-name {
+  font-size: clamp(1.75rem, 7.8vw, 2.15rem);
+  color: var(--text-primary);
+}
+.m1-prof-goal {
+  margin-top: 7px;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+}
+.m1-prof-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+/* Stat row sits inside the banner, over the photo. */
+.m1-prof-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-5);
+  margin-bottom: 2px;
+}
+.m1-prof-stats .m1-stat {
+  text-align: center;
+  background: rgba(18, 18, 20, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+/* The old left-aligned identity block is replaced by this centred one. */
+.m1-prof-banner .prof-hero-glow,
+.m1-prof-banner .prof-email { display: none; }
+
+/* Settings list */
+.m1-list {
+  border-radius: var(--m1-radius-sm);
+  border: 1px solid var(--m1-hairline);
+  background: var(--m1-surface);
+  overflow: hidden;
+}
+.m1-listrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 54px;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-top: 1px solid var(--m1-hairline);
+  background: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.m1-listrow:first-child { border-top: 0; }
+.m1-listrow:hover { background: var(--glass-bg); }
+.m1-listrow-label { flex: 1; min-width: 0; }
+.m1-listrow-chev { flex-shrink: 0; color: var(--text-secondary); display: inline-flex; }
+
+/* ============================================================
+   ConfirmDialog — replaces window.confirm. Rendered inside BottomSheet, so it
+   is a sheet on mobile and a centred dialog at >=769px.
+   ============================================================ */
+.m1-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-2) 0 var(--space-2);
+}
+/* A confirm already has an explicit Cancel, so the sheet's X is redundant —
+   and because showModal() focuses the first focusable node, leaving it in put a
+   focus ring on a dismiss button rather than on the safe default. Hiding it
+   makes Cancel the initial focus, which is what it should be. */
+.sheet__panel:has(.m1-confirm) .sheet__close { display: none; }
+.sheet__panel:has(.m1-confirm) .sheet__head { padding-block: 0; }
+.m1-confirm-badge {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  margin-bottom: var(--space-4);
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.m1-confirm.tone-danger .m1-confirm-badge {
+  background: rgba(255, 71, 87, 0.14);
+  color: var(--danger);
+  box-shadow: 0 0 32px rgba(255, 71, 87, 0.18);
+}
+.m1-confirm-title {
+  font-size: 1.45rem;
+  line-height: 1.05;
+  color: var(--text-primary);
+}
+/* The exact thing being acted on — name and date. */
+.m1-confirm-subject {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--m1-hairline);
+  background: var(--m1-surface-2);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.m1-confirm-note {
+  margin-top: var(--space-3);
+  max-width: 34ch;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+.m1-confirm-actions {
+  display: grid;
+  /* Cancel gets the wider column so the destructive action is never the
+     accidental tap. */
+  grid-template-columns: 1.15fr 1fr;
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: var(--space-6);
+}
+.m1-confirm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 50px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 0.86rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast) var(--ease-std);
+}
+.m1-confirm-btn:active { transform: scale(0.975); }
+.m1-confirm-btn.is-cancel {
+  border: 1px solid var(--m1-hairline);
+  background: transparent;
+  color: var(--text-primary);
+}
+.m1-confirm-btn.is-cancel:hover { border-color: var(--glass-border-hover); }
+.m1-confirm-btn.is-go {
+  border: 0;
+  background: var(--accent);
+  color: #0B0B0B;
+}
+.m1-confirm.tone-danger .m1-confirm-btn.is-go {
+  background: var(--danger);
+  color: #fff;
+}
+.m1-confirm-btn:focus-visible { outline: 3px solid var(--text-primary); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .m1-confirm-btn { transition: none; }
+}
+
+/* Weekly-goal picker (Profile) */
+.prof-weekgoal {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-2);
+}
+.prof-weekgoal-opt {
+  min-height: 48px;
+  border-radius: var(--m1-radius-sm);
+  border: 1px solid var(--m1-hairline);
+  background: var(--m1-surface-2);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.05rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast) var(--ease-std), color var(--dur-fast) var(--ease-std);
+}
+.prof-weekgoal-opt.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0B0B0B;
+}
+.prof-weekgoal-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Accent swatch row */
+.m1-swatches { display: flex; gap: var(--space-2); flex-shrink: 0; }
+.m1-swatch {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.m1-swatch.is-active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px #0B0B0B inset;
+}
+
+@media (min-width: 769px) {
+  .m1-page { margin-inline: 0; padding-inline: 0; }
+  .m1-wkhead { margin-inline: 0; padding-inline: 0; }
+  .prof-hero.m1-prof-banner {
+    margin-inline: 0;
+    /* Inset on desktop, so all four corners round again. */
+    border-radius: var(--m1-radius);
+    border: 1px solid var(--glass-border);
+  }
+  .m1-deltas { grid-template-columns: repeat(4, 1fr); }
+}

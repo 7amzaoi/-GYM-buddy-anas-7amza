@@ -1,13 +1,21 @@
 import { useContext, useState, useEffect, useRef } from 'react';
 import { Store } from '../store.js';
+import { formatRecordValue, recentRecords } from '../lib/records.js';
 import { icon } from '../icons.jsx';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { Toast } from '../lib/interactions.js';
 import { saveBodyMetricsRemote, upsertProfile } from '../services/profilesApi.js';
 import { refreshUserFromRemote } from '../lib/authBootstrap.js';
 import { revealOnScroll } from '../lib/motion.js';
-import { ACCENTS, applyAccent, getStoredAccentId } from '../lib/personalization.js';
+import { ACCENTS, applyAccent, getStoredAccentId, THEMES, applyTheme, getStoredTheme } from '../lib/personalization.js';
 import { computeXp, levelFromXp, titleForLevel, computeBadges } from '../lib/gamification.js';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import AvatarPicker from '../components/profile/AvatarPicker.jsx';
+import useAvatarUrl from '../hooks/useAvatarUrl.js';
+import * as haptics from '../lib/haptics.js';
+import { photo } from '../lib/imagery.js';
+import XpCard from '../components/XpCard.jsx';
+import BMIBlock from '../components/BMIBlock.jsx';
 
 const GOALS = [
   { id: 'muscle gain', label: 'Muscle Gain', iconKey: 'dumbbell' },
@@ -30,6 +38,30 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState(false);
   const [accentId, setAccentId] = useState(getStoredAccentId());
   const [bmModalOpen, setBmModalOpen] = useState(false);
+  const [weeklyGoal, setWeeklyGoal] = useState(() => Number(Store.get('weeklyGoal')) || 5);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [badgesExpanded, setBadgesExpanded] = useState(false);
+  const [theme, setTheme] = useState(() => getStoredTheme());
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const storedAvatar = user?.avatar_url ?? null;
+  const storedAvatarSource = user?.avatar_source ?? null;
+  /* Shared with the sidebar chip (same hook, same cached signature) so the two
+     can't drift and one signing serves both. */
+  const resolvedAvatar = useAvatarUrl(storedAvatar, storedAvatarSource);
+
+  /** The resolved avatar wins; the bundled photo is the fallback, and null past
+   *  that → the circle shows the user's initials. */
+  const avatarSrc = resolvedAvatar || photo('avatar');
+
+  /** Gear jumps to the settings stack. The app scrolls inside .main-content on
+   *  mobile, not the document, so scroll that container rather than the window. */
+  function jumpToSettings() {
+    const target = rootRef.current?.querySelector('.prof-accents');
+    const scroller = document.querySelector('.main-content');
+    if (!target || !scroller) return;
+    const top = target.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+    scroller.scrollTo({ top: scroller.scrollTop + top - 24, behavior: 'smooth' });
+  }
   const measurements = Store.get('bodyMeasurements') || [];
 
   useEffect(() => {
@@ -56,19 +88,17 @@ export default function ProfilePage() {
   const badges = computeBadges({ history, records, progress, level: lvl.level });
   const unlockedCount = badges.filter((b) => b.unlocked).length;
 
-  const topRecords = [...records]
-    .sort((a, b) => Date.parse(b.recorded_at) - Date.parse(a.recorded_at))
-    .slice(0, 3);
-  const formatRecordBadge = (r) => {
-    if (r.category === 'cardio') {
-      const dist = r.tertiary_value ? ` • ${r.tertiary_value} ${r.tertiary_unit || 'km'}` : '';
-      return `${r.value} sets • ${r.secondary_value || 0} ${r.secondary_unit || 'min'}${dist}`;
-    }
-    if (r.metric_type === 'weight') {
-      return `${r.value} kg${r.secondary_value ? ` x ${r.secondary_value} reps` : ''}`;
-    }
-    return `${r.value} ${r.unit || ''}`.trim();
-  };
+  /* Unlocked first, then locked. The source order is a real progression —
+     grouped by family, bronze to gold within each — but the unlocked ones are
+     scattered through it, so a six-badge preview in that order is almost all
+     grey boxes. Array.sort is stable, so the progression survives inside each
+     group. */
+  const BADGE_PREVIEW = 6;
+  const badgesOrdered = [...badges].sort((a, b) => (b.unlocked ? 1 : 0) - (a.unlocked ? 1 : 0));
+  const badgesVisible = badgesExpanded ? badgesOrdered : badgesOrdered.slice(0, BADGE_PREVIEW);
+  const badgesHidden = Math.max(0, badgesOrdered.length - BADGE_PREVIEW);
+
+  const topRecords = recentRecords(records, 3);
 
   const initials = (user.name || 'G')
     .trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() || '').join('');
@@ -151,36 +181,61 @@ export default function ProfilePage() {
 
   return (
     <div className="prof" ref={rootRef}>
-      {/* ===== Identity hero ===== */}
-      <header className="prof-hero" data-reveal>
-        <div className="prof-hero-glow" aria-hidden="true" />
-        <div className="prof-avatar">{initials}</div>
-        <div className="prof-identity">
-          <h1 className="prof-name">{user.name}</h1>
-          <p className="prof-email">{user.email}</p>
-          <div className="prof-tags">
-            <span className="prof-level-chip" title={`${xp.toLocaleString()} XP — ${tier}`}>
-              {icon('zap', 11)} Lvl {lvl.level} · {tier}
-            </span>
-            <span className="gx-badge is-accent">
-              {icon(GOALS.find((g) => g.id === user.goal)?.iconKey || 'target', 12)}
-              {user.goal ? user.goal.charAt(0).toUpperCase() + user.goal.slice(1) : 'No goal'}
-            </span>
-            {synced && <span className="gx-badge">{icon('check', 11)} Synced</span>}
+      {/* ===== Identity banner — centred over the gym photo (M1 composition) ===== */}
+      <header className="prof-hero m1-prof-banner" data-reveal>
+        <button
+          type="button"
+          className="m1-iconbtn m1-prof-gear"
+          aria-label="Account settings"
+          onClick={jumpToSettings}
+        >
+          {icon('gear', 20)}
+        </button>
+
+        {/* The circle itself keeps overflow:hidden so a photo is clipped to it,
+            which means the edit badge has to hang off this wrapper — inside the
+            circle it would be clipped away. */}
+        <button
+          type="button"
+          className="prof-avatar-btn"
+          onClick={() => setAvatarOpen(true)}
+          aria-label="Change profile photo"
+        >
+          <div className="m1-prof-avatar">
+            {avatarSrc
+              ? <img src={avatarSrc} alt={`${user.name} profile photo`} />
+              : <span aria-hidden="true">{initials}</span>}
           </div>
+          <span className="prof-avatar-badge" aria-hidden="true">{icon('edit', 13)}</span>
+        </button>
+
+        <h1 className="prof-name m1-prof-name m1-display">{user.name}</h1>
+        <p className="m1-prof-goal m1-eyebrow">
+          {user.goal ? user.goal : 'No goal set'}
+        </p>
+        <div className="m1-prof-chips">
+          <span className="prof-level-chip" title={`${xp.toLocaleString()} XP — ${tier}`}>
+            {icon('zap', 11)} Lvl {lvl.level} · {tier}
+          </span>
+          {synced && <span className="gx-badge">{icon('check', 11)} Synced</span>}
         </div>
-        <div className="prof-hero-stats">
-          <div className="prof-mini-stat">
-            <span className="prof-mini-num">{progress.totalWorkouts}</span>
-            <span className="prof-mini-label">Workouts</span>
+
+        <div className="m1-prof-stats">
+          <div className="m1-stat">
+            <span className="m1-stat-val">{progress.totalWorkouts}</span>
+            <span className="m1-stat-lbl">Workouts</span>
           </div>
-          <div className="prof-mini-stat">
-            <span className="prof-mini-num">{progress.streak}</span>
-            <span className="prof-mini-label">Streak</span>
+          <div className="m1-stat">
+            <span className="m1-stat-val">
+              {progress.totalVolume >= 1000
+                ? `${(progress.totalVolume / 1000).toFixed(1).replace(/\.0$/, '')}k`
+                : Math.round(progress.totalVolume || 0)}
+            </span>
+            <span className="m1-stat-lbl">Kg volume</span>
           </div>
-          <div className="prof-mini-stat">
-            <span className="prof-mini-num">{daysSinceJoin}</span>
-            <span className="prof-mini-label">Days</span>
+          <div className="m1-stat is-accent">
+            <span className="m1-stat-val">{progress.streak}</span>
+            <span className="m1-stat-lbl">Day streak</span>
           </div>
         </div>
       </header>
@@ -192,6 +247,22 @@ export default function ProfilePage() {
           <h3 className="gx-title" style={{ fontSize: 'var(--text-lg)' }}>Accent color</h3>
           <p className="gx-subtitle">Recolors the whole app instantly. Saved to this device.</p>
         </div>
+        {/* Theme first: it decides the canvas the accent then sits on. */}
+        <div className="m1-themepick" role="group" aria-label="Appearance mode">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`m1-themeopt ${theme === t.id ? 'is-active' : ''}`}
+              aria-pressed={theme === t.id}
+              onClick={() => { setTheme(applyTheme(t.id)); haptics.tap(); }}
+            >
+              <span className={`m1-themeswatch is-${t.id}`} aria-hidden="true" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         <div className="prof-accents">
           {ACCENTS.map((a) => (
             <button
@@ -275,6 +346,33 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
+
+        {/* Weekly training goal — the denominator of the "x / y" readout on Today. */}
+        <div className="gx-card" data-reveal>
+          <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
+            <span className="gx-eyebrow">{icon('calendar', 13)} Weekly Goal</span>
+            <p className="gx-subtitle">
+              How many sessions a week are you aiming for? Shown on your Today screen.
+            </p>
+          </div>
+          <div className="prof-weekgoal" role="group" aria-label="Sessions per week">
+            {[2, 3, 4, 5, 6, 7].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`prof-weekgoal-opt ${weeklyGoal === n ? 'is-active' : ''}`}
+                aria-pressed={weeklyGoal === n}
+                onClick={() => {
+                  Store.set('weeklyGoal', n);
+                  setWeeklyGoal(n);
+                  Toast.show(`Weekly goal set to ${n} sessions.`, 'success', 1800);
+                }}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* ===== Personal records ===== */}
@@ -299,7 +397,7 @@ export default function ProfilePage() {
                   <h4>{r.exercise_name}</h4>
                   <p>{new Date(r.recorded_at).toLocaleDateString()}</p>
                 </div>
-                <span className="gx-badge is-accent">{formatRecordBadge(r)}</span>
+                <span className="gx-badge is-accent">{formatRecordValue(r)}</span>
               </div>
             ))}
           </div>
@@ -313,7 +411,7 @@ export default function ProfilePage() {
           <span className="gx-badge is-accent">{unlockedCount}/{badges.length} unlocked</span>
         </div>
         <div className="prof-badges">
-          {badges.map((b) => (
+          {badgesVisible.map((b) => (
             <div key={b.id} className={`prof-badge tier-${b.tier} ${b.unlocked ? 'is-unlocked' : ''}`} title={b.desc}>
               <span className="prof-badge-icon">{icon(b.iconKey, 22)}</span>
               <span className="prof-badge-name">{b.name}</span>
@@ -323,6 +421,19 @@ export default function ProfilePage() {
             </div>
           ))}
         </div>
+        {badgesHidden > 0 && (
+          <button
+            type="button"
+            className="prof-badges-more"
+            onClick={() => setBadgesExpanded((v) => !v)}
+            aria-expanded={badgesExpanded}
+          >
+            <span>{badgesExpanded ? 'Show less' : `Show ${badgesHidden} more`}</span>
+            <span className={`prof-badges-more-chev ${badgesExpanded ? 'is-open' : ''}`} aria-hidden="true">
+              {icon('arrow', 13)}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* ===== Body Measurements ===== */}
@@ -435,18 +546,21 @@ export default function ProfilePage() {
       {/* ===== Account ===== */}
       <div className="gx-card prof-account" data-reveal>
         <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
-          <span className="gx-eyebrow" style={{ color: 'var(--danger)' }}>{icon('logout', 13)} Account</span>
+          {/* --status-bad, not --danger: identical in dark mode, but the light
+              theme darkens it so the label clears 4.5:1 on a white card. */}
+          <span className="gx-eyebrow" style={{ color: 'var(--status-bad)' }}>{icon('logout', 13)} Account</span>
         </div>
+        {/* Re-homed from the Dashboard when it became the "Today" screen: the
+            level-progress bar (the header chip only shows the current level)
+            and the BMI estimator. */}
+        <XpCard />
+        <BMIBlock />
+
         <div className="prof-account-actions">
           <button
             type="button"
             className="gx-btn gx-btn-glass"
-            onClick={() => {
-              if (window.confirm('Clear all local data? This cannot be undone.')) {
-                localStorage.clear();
-                window.location.reload();
-              }
-            }}
+            onClick={() => setResetOpen(true)}
           >
             {icon('trash', 14)} Reset all data
           </button>
@@ -459,6 +573,38 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      <AvatarPicker
+        open={avatarOpen}
+        onClose={() => setAvatarOpen(false)}
+        avatarUrl={avatarSrc}
+        avatarSource={storedAvatarSource}
+        selectedPresetPath={storedAvatarSource === 'preset' ? storedAvatar : null}
+        initials={initials}
+        onChange={(next) => {
+          // Reflect the new photo immediately; the row is already written.
+          Store.set('user', { ...Store.get('user'), ...next });
+          Toast.show(
+            next?.avatar_url ? 'Profile photo updated.' : 'Profile photo removed.',
+            'success',
+            2200
+          );
+        }}
+      />
+
+      <ConfirmDialog
+        open={resetOpen}
+        onCancel={() => setResetOpen(false)}
+        onConfirm={() => {
+          localStorage.clear();
+          window.location.reload();
+        }}
+        title="Reset all data?"
+        subject="Every workout, plan and record on this device"
+        note="This wipes your entire local history, saved plans, personal records and settings. It can't be undone."
+        confirmLabel="Reset"
+        tone="danger"
+      />
     </div>
   );
 }

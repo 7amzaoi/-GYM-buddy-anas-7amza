@@ -4,6 +4,31 @@ import { upsertPersonalRecords } from './services/personalRecordsApi.js';
 
 const STATE_VERSION = 2;
 
+/**
+ * State keys that live in memory only — never written to localStorage and
+ * never mirrored to `gymbuddy_app_state`.
+ *
+ * `notifications` is here because the `public.notifications` TABLE is its
+ * source of truth. Mirroring the slice would create a second, always-staler
+ * copy that `applyCloudPatch` would then restore over the fresh one on the
+ * next boot — and `isOpen` would come back as `true`, popping the sheet open
+ * on load. Read it from the table via `refreshNotifications()` instead.
+ *
+ * Imported by sync/cloudMirror.js so both write paths strip the same keys.
+ */
+export const EPHEMERAL_STATE_KEYS = ['notifications'];
+
+/** A copy of `state` safe to persist or upload. */
+export function toPersistableState(state) {
+  const out = { ...(state || {}) };
+  for (const k of EPHEMERAL_STATE_KEYS) delete out[k];
+  return out;
+}
+
+function emptyNotifications() {
+  return { items: [], unreadCount: 0, isOpen: false };
+}
+
 function emptyProgressData() {
   return {
     weight: [],
@@ -138,11 +163,16 @@ export const Store = {
       currentPage: 'landing',
       workoutHistory: [],
       customPlans: [],
+      customSplits: [],
       progressData: emptyProgressData(),
       records: [],
       chatMessages: [],
       activeSession: null,
       bodyMeasurements: [],
+      /** Sessions/week the user is aiming for — the denominator of the
+       *  "x / y" readout on the Today screen. User-editable in Profile. */
+      weeklyGoal: 5,
+      notifications: emptyNotifications(),
       _stateVersion: STATE_VERSION
     };
 
@@ -156,6 +186,10 @@ export const Store = {
     } else {
       this._state = defaults;
     }
+
+    // Always start from a clean slice: it is memory-only, but an older build
+    // may have persisted one before EPHEMERAL_STATE_KEYS existed.
+    this._state.notifications = emptyNotifications();
 
     this._migrateIfNeeded();
     this.recomputeDerivedStats();
@@ -182,7 +216,7 @@ export const Store = {
       weeklyPerformance: { strengthVolume: [0,0,0,0,0,0,0], caloriesBurned: [0,0,0,0,0,0,0], duration: [0,0,0,0,0,0,0] }
     };
     this._state._stateVersion = STATE_VERSION;
-    try { localStorage.setItem('gymbuddy_state', JSON.stringify(this._state)); } catch { /* ignore */ }
+    try { localStorage.setItem('gymbuddy_state', JSON.stringify(toPersistableState(this._state))); } catch { /* ignore */ }
   },
 
   /** Recompute totals/streak/weeklyPerf from real history + records. Call after any history/records change. */
@@ -224,7 +258,9 @@ export const Store = {
   /** Merge server `gymbuddy_app_state.state` (never touches `user`). */
   applyCloudPatch(patch) {
     if (!patch || typeof patch !== 'object') return;
-    const skip = new Set(['user']);
+    // Also skip the memory-only keys: an app_state row written by an older
+    // build may still carry a stale `notifications` blob.
+    const skip = new Set(['user', ...EPHEMERAL_STATE_KEYS]);
     for (const k of Object.keys(patch)) {
       if (skip.has(k)) continue;
       if (k === 'metricsLog') {
@@ -251,12 +287,12 @@ export const Store = {
       this._state[k] = patch[k];
     }
     this.recomputeDerivedStats();
-    try { localStorage.setItem('gymbuddy_state', JSON.stringify(this._state)); } catch { /* ignore */ }
+    try { localStorage.setItem('gymbuddy_state', JSON.stringify(toPersistableState(this._state))); } catch { /* ignore */ }
     this._notify();
   },
 
   _save() {
-    try { localStorage.setItem('gymbuddy_state', JSON.stringify(this._state)); } catch { /* ignore */ }
+    try { localStorage.setItem('gymbuddy_state', JSON.stringify(toPersistableState(this._state))); } catch { /* ignore */ }
     try {
       const u = this._state.user;
       if (isSupabaseConfigured() && u?.id && u.source === 'supabase') {
@@ -379,7 +415,7 @@ export const Store = {
 
   completeSession() {
     const session = this.get('activeSession');
-    if (!session) return;
+    if (!session) return { newPRs: 0 };
 
     // Compute real lifted volume from logged sets so totalVolume and weeklyPerf reflect actual work.
     let sessionVolume = 0;
@@ -421,7 +457,7 @@ export const Store = {
     };
 
     this.update('workoutHistory', h => [entry, ...h]);
-    this.captureAutoRecordsFromSession(session);
+    const newPRs = this.captureAutoRecordsFromSession(session);
 
     this.update('progressData', p => ({
       ...p,
@@ -434,10 +470,55 @@ export const Store = {
     this._notify();
 
     this.set('activeSession', null);
+
+    // Fire-and-forget: streak and PR records are both final by this point.
+    // Never awaited — the finish flow must not wait on the network, and the
+    // engine swallows its own errors.
+    void this._runNotificationSuggestions('session-finish');
+
+    return { newPRs };
+  },
+
+  /** Lazy so the suggestion engine (and its Supabase calls) stay out of the
+   *  boot chunk, and so store.js keeps no static dependency on a module that
+   *  imports it back. */
+  _runNotificationSuggestions(trigger) {
+    if (!isSupabaseConfigured()) return Promise.resolve(0);
+    return import('./services/notificationSuggestions.js')
+      .then((m) => m.runSuggestionChecks({ trigger }))
+      .catch(() => 0);
+  },
+
+  /**
+   * Remove a logged session. `workoutHistory` was previously append-only —
+   * `completeSession` was its single writer and there was no way to delete an
+   * entry, so a session logged by mistake (or legacy seed data, which the v2
+   * migration wiped from weight/calories but NOT from history) was permanent
+   * short of clearing all app data.
+   *
+   * Matches on `id`, falling back to planName+date for pre-id entries.
+   * Derived stats (streak, weekly volume, totals) are recomputed after.
+   */
+  deleteWorkoutFromHistory(idOrKey) {
+    let removed = 0;
+    this.update('workoutHistory', (h) => {
+      const next = (h || []).filter((w) => {
+        const match = w.id ? w.id === idOrKey : `${w.planName}${w.date}` === idOrKey;
+        if (match) removed++;
+        return !match;
+      });
+      return next;
+    });
+    if (removed) {
+      this.recomputeDerivedStats();
+      this._save();
+      this._notify();
+    }
+    return removed;
   },
 
   captureAutoRecordsFromSession(session) {
-    if (!session?.exercises?.length) return;
+    if (!session?.exercises?.length) return 0;
     const nowIso = new Date().toISOString();
     const updates = [];
 
@@ -506,7 +587,7 @@ export const Store = {
       }
     }
 
-    if (updates.length === 0) return;
+    if (updates.length === 0) return 0;
 
     const existingRecords = this.get('records') || [];
 
@@ -574,6 +655,86 @@ export const Store = {
         void upsertPersonalRecords(toUpsert).catch(() => {});
       }
     } catch {}
+
+    // Number of exercises that set a genuinely-better record this session.
+    return toUpsert.length;
+  },
+
+  // ---------------------------------------------------------------- notifications
+  // The `public.notifications` table is the source of truth; this slice is a
+  // memory-only view of it (see EPHEMERAL_STATE_KEYS). Every mutation writes
+  // through to the table first, then updates the slice, so a reload re-reads
+  // the same answer rather than trusting local state.
+  //
+  // `_setNotifications` bypasses `set()` deliberately: `set()` persists, and
+  // this slice must never reach localStorage or the cloud mirror.
+  _setNotifications(fn) {
+    const prev = this._state.notifications || { items: [], unreadCount: 0, isOpen: false };
+    this._state.notifications = { ...prev, ...fn(prev) };
+    this._notify();
+  },
+
+  openNotifications() {
+    this._setNotifications(() => ({ isOpen: true }));
+    // Opening is the natural moment to re-read — the sheet should not show a
+    // list that went stale while the app sat in the background.
+    void this.refreshNotifications();
+  },
+
+  closeNotifications() {
+    this._setNotifications(() => ({ isOpen: false }));
+  },
+
+  /** Re-read the feed + unread count from the table. Safe to call anytime. */
+  async refreshNotifications() {
+    const u = this.get('user');
+    if (!isSupabaseConfigured() || u?.source !== 'supabase') {
+      this._setNotifications(() => ({ items: [], unreadCount: 0 }));
+      return;
+    }
+    try {
+      const api = await import('./services/notificationsApi.js');
+      const [{ notifications, error }, { count }] = await Promise.all([
+        api.list({ limit: 30 }),
+        api.unreadCount(),
+      ]);
+      if (error) return;
+      this._setNotifications(() => ({ items: notifications, unreadCount: count }));
+    } catch { /* offline — keep whatever is on screen */ }
+  },
+
+  async markNotificationRead(id) {
+    if (id == null) return;
+    const before = this._state.notifications?.items || [];
+    if (!before.some((n) => n.id === id && !n.read_at)) return; // already read
+
+    try {
+      const { markRead } = await import('./services/notificationsApi.js');
+      const { error } = await markRead([id]);
+      if (error) return;
+    } catch { return; }
+
+    const readAt = new Date().toISOString();
+    this._setNotifications((p) => ({
+      items: p.items.map((n) => (n.id === id ? { ...n, read_at: n.read_at || readAt } : n)),
+      unreadCount: Math.max(0, p.unreadCount - 1),
+    }));
+  },
+
+  async markAllNotificationsRead() {
+    if ((this._state.notifications?.unreadCount || 0) === 0) return;
+
+    try {
+      const { markAllRead } = await import('./services/notificationsApi.js');
+      const { error } = await markAllRead();
+      if (error) return;
+    } catch { return; }
+
+    const readAt = new Date().toISOString();
+    this._setNotifications((p) => ({
+      items: p.items.map((n) => (n.read_at ? n : { ...n, read_at: readAt })),
+      unreadCount: 0,
+    }));
   },
 
   addCustomPlan(plan) {
@@ -593,5 +754,59 @@ export const Store = {
 
   deleteCustomPlan(id) {
     this.update('customPlans', cp => (cp || []).filter(p => p.id !== id));
+  },
+
+  /* ---- Weekly splits -------------------------------------------------
+     A split is 7 day slots, each either a rest day or a fully denormalized
+     plan snapshot. Days copy their exercises at assignment time rather than
+     referencing a customPlans id: that is what lets a split survive the
+     source plan being edited or deleted, and what makes it shareable as a
+     self-contained object. Same update()/get() calls as the plan actions
+     above — splits ride the existing cloudMirror blob, no new sync path. */
+
+  addCustomSplit(split) {
+    const id = split.id || 'split_' + Date.now();
+    const newSplit = {
+      id,
+      name: split.name,
+      description: split.description || '',
+      days: Array.isArray(split.days) ? split.days : [],
+      createdAt: split.createdAt || Date.now(),
+      // Provenance only. Never used to re-fetch or re-sync — an imported
+      // split is a fully independent copy.
+      sourceSplitId: split.sourceSplitId ?? null,
+    };
+    this.update('customSplits', cs => [...(cs || []), newSplit]);
+    return newSplit;
+  },
+
+  updateCustomSplit(id, patch) {
+    this.update('customSplits', cs => (cs || []).map(sp => (
+      sp.id === id ? { ...sp, ...patch, id: sp.id } : sp
+    )));
+  },
+
+  deleteCustomSplit(id) {
+    this.update('customSplits', cs => (cs || []).filter(sp => sp.id !== id));
+  },
+
+  /**
+   * Rename a plan in place.
+   *
+   * The id is deliberately untouched: history entries reference the plan by
+   * `planId`, so keeping it preserves "last trained" and the completed stamp.
+   * Deleting and recreating — the only way to rename before this existed —
+   * silently broke both.
+   */
+  renameCustomPlan(id, name) {
+    const clean = String(name || '').trim();
+    if (!clean) return false;
+    let changed = false;
+    this.update('customPlans', cp => (cp || []).map(p => {
+      if (p.id !== id || p.name === clean) return p;
+      changed = true;
+      return { ...p, name: clean };
+    }));
+    return changed;
   },
 };

@@ -1,7 +1,11 @@
 /** Weekly performance SVG (legacy string template — tooltips rely on globals). */
+import { currentAccent } from '../lib/personalization.js';
 
 export function renderPerfAreaChart(data, unit) {
   if (!data || data.length === 0) data = [0, 0, 0, 0, 0, 0, 0];
+  // This chart is built as an SVG *string*, so it can't use var(--accent) in
+  // every position — resolve the live accent once per render instead.
+  const ACC = currentAccent();
   // Build day labels relative to today: index 0 = 6 days ago … index 6 = today.
   const dowNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = new Date();
@@ -61,7 +65,7 @@ export function renderPerfAreaChart(data, unit) {
   let hoverTargets = '';
   points.forEach((p, i) => {
     hoverTargets += `
-      <line x1="${p.x}" y1="${padT}" x2="${p.x}" y2="${padT + chartH}" stroke="rgba(212,255,0,0)" stroke-width="1" stroke-dasharray="4 4" class="perf-vline" data-idx="${i}"/>
+      <line x1="${p.x}" y1="${padT}" x2="${p.x}" y2="${padT + chartH}" stroke="rgba(${ACC.rgb},0)" stroke-width="1" stroke-dasharray="4 4" class="perf-vline" data-idx="${i}"/>
       <circle cx="${p.x}" cy="${p.y}" r="5" fill="var(--accent)" stroke="#0B0B0B" stroke-width="2.5" opacity="0" class="perf-dot" data-idx="${i}"/>
       <rect x="${p.x - chartW / (data.length * 2)}" y="${padT}" width="${chartW / data.length}" height="${chartH}" fill="transparent" class="perf-hover-zone"
         onmouseenter="showPerfTooltip(${i},${p.val},'${unit}',${p.x},${p.y})"
@@ -97,7 +101,7 @@ export function renderPerfAreaChart(data, unit) {
     ${hoverTargets}
   </svg>
   <div id="perf-tooltip" style="position:absolute;pointer-events:none;opacity:0;transition:opacity .15s ease;
-    background:rgba(20,20,20,.95);backdrop-filter:blur(12px);border:1px solid rgba(212,255,0,.3);
+    background:rgba(20,20,20,.95);backdrop-filter:blur(12px);border:1px solid rgba(${ACC.rgb},.3);
     border-radius:10px;padding:8px 14px;font-size:.8rem;white-space:nowrap;z-index:10;
     box-shadow:0 4px 20px rgba(0,0,0,.5)"></div>`;
 }
@@ -110,7 +114,7 @@ export function showPerfTooltip(idx, val, unit, x, y) {
   if (!container || !tooltip || !svg) return;
 
   document.querySelectorAll('.perf-dot[data-idx="' + idx + '"]').forEach(d => d.setAttribute('opacity', '1'));
-  document.querySelectorAll('.perf-vline[data-idx="' + idx + '"]').forEach(l => l.setAttribute('stroke', 'rgba(212,255,0,0.25)'));
+  document.querySelectorAll('.perf-vline[data-idx="' + idx + '"]').forEach(l => l.setAttribute('stroke', `rgba(${currentAccent().rgb},0.25)`));
 
   const svgRect = svg.getBoundingClientRect();
   const scaleX = svgRect.width / 700;
@@ -128,7 +132,7 @@ export function hidePerfTooltip(idx) {
   const tooltip = document.getElementById('perf-tooltip');
   if (tooltip) tooltip.style.opacity = '0';
   document.querySelectorAll('.perf-dot[data-idx="' + idx + '"]').forEach(d => d.setAttribute('opacity', '0'));
-  document.querySelectorAll('.perf-vline[data-idx="' + idx + '"]').forEach(l => l.setAttribute('stroke', 'rgba(212,255,0,0)'));
+  document.querySelectorAll('.perf-vline[data-idx="' + idx + '"]').forEach(l => l.setAttribute('stroke', `rgba(${currentAccent().rgb},0)`));
 }
 
 if (typeof window !== 'undefined') {

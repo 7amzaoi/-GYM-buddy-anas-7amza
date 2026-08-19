@@ -1,5 +1,6 @@
 import { icon } from '../../icons.jsx';
 import { getExerciseById } from '../../data.js';
+import BottomSheet from '../BottomSheet.jsx';
 import {
   BAR_OPTIONS, CATEGORY_TABS, MUSCLE_GROUPS,
   calculatePlates, formatTime,
@@ -13,17 +14,9 @@ export function PickerModal({
   query, setQuery, cat, setCat, muscle, setMuscle,
   filteredExercises, muscleCounts, quickPicks, onPick,
 }) {
-  if (!open) return null;
   const hasActiveFilters = cat !== 'all' || muscle || query;
   return (
-    <div className="gx-modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="gx-modal gx-modal-wide" role="dialog" aria-modal="true" aria-label="Pick exercise">
-        <div className="gx-modal-head">
-          <h2>Add Exercise</h2>
-          <button type="button" className="gx-modal-close" onClick={onClose} aria-label="Close">
-            {icon('x', 18)}
-          </button>
-        </div>
+    <BottomSheet open={open} onClose={onClose} title="Add Exercise">
         <div className="wko-picker-search">
           <input
             type="search"
@@ -108,8 +101,7 @@ export function PickerModal({
             </button>
           ))}
         </div>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }
 
@@ -117,17 +109,11 @@ export function PickerModal({
    PlateModal — visual plate breakdown for a barbell weight.
    ============================================================ */
 export function PlateModal({ value, onChange, onClose }) {
-  if (!value) return null;
-  const result = calculatePlates(value.weight, value.bar);
+  const result = value ? calculatePlates(value.weight, value.bar) : null;
   return (
-    <div className="gx-modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="gx-modal gx-modal-sm wko-plate-modal" role="dialog" aria-modal="true" aria-label="Plate calculator">
-        <div className="gx-modal-head">
-          <h2>Plate Calculator</h2>
-          <button type="button" className="gx-modal-close" onClick={onClose} aria-label="Close">
-            {icon('x', 18)}
-          </button>
-        </div>
+    <BottomSheet open={!!value} onClose={onClose} title="Plate Calculator">
+      {value && (
+        <div className="wko-plate-modal">
         <div className="wko-plate-form">
           <label className="prof-field">
             <span>Target weight (kg)</span>
@@ -189,8 +175,9 @@ export function PlateModal({ value, onChange, onClose }) {
             </p>
           )}
         </div>
-      </div>
-    </div>
+        </div>
+      )}
+    </BottomSheet>
   );
 }
 
@@ -198,23 +185,20 @@ export function PlateModal({ value, onChange, onClose }) {
    DiscardModal — confirm before throwing away an active session.
    ============================================================ */
 export function DiscardModal({ open, onClose, onConfirm }) {
-  if (!open) return null;
   return (
-    <div className="gx-modal-overlay" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="gx-modal gx-modal-sm" role="dialog" aria-modal="true" aria-label="Discard workout">
-        <div className="sess-end-icon">{icon('trash', 24)}</div>
-        <h2 className="sess-end-title">Discard this workout?</h2>
-        <p className="sess-end-desc">Your sets and timer will be lost.</p>
-        <div className="sess-end-actions">
-          <button type="button" className="gx-btn gx-btn-ghost" onClick={onClose}>
-            Keep Going
-          </button>
-          <button type="button" className="gx-btn gx-btn-primary wko-discard-btn" onClick={onConfirm}>
-            {icon('trash', 14)} Yes, Discard
-          </button>
-        </div>
+    <BottomSheet open={open} onClose={onClose}>
+      <div className="sess-end-icon">{icon('trash', 24)}</div>
+      <h2 className="sess-end-title">Discard this workout?</h2>
+      <p className="sess-end-desc">Your sets and timer will be lost.</p>
+      <div className="sess-end-actions">
+        <button type="button" className="gx-btn gx-btn-ghost" onClick={onClose}>
+          Keep Going
+        </button>
+        <button type="button" className="gx-btn gx-btn-primary wko-discard-btn" onClick={onConfirm}>
+          {icon('trash', 14)} Yes, Discard
+        </button>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
 

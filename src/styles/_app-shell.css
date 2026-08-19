@@ -1,0 +1,400 @@
+/* ============================================================
+   App shell — mobile bottom tab bar (4 tabs + centre FAB).
+   Written mobile-first: base rules ARE the mobile styles; the bar is
+   hidden on desktop where the sidebar takes over. This is the ONLY
+   definition of .mobile-nav (the old rules in _legacy-pages.css were removed).
+   ============================================================ */
+
+.mobile-nav {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  /* Bottom offset reserves the home-indicator inset (--safe-bottom) + a gap. */
+  bottom: calc(var(--safe-bottom) + var(--space-3));
+  height: var(--tabbar-h);
+  display: flex;
+  align-items: stretch;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgba(24, 24, 26, 0.82), rgba(14, 14, 15, 0.92));
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  z-index: var(--z-nav);
+  /* Own compositor layer so the frosted bar doesn't jitter on scroll.
+     (will-change/contain are intentionally avoided — they make mobile Chrome
+     re-place the layer on navigation, which reads as the bar sliding in.) */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* The bar must never inherit a page entrance animation. */
+  animation: none !important;
+}
+
+/* One shared active indicator that slides horizontally between tab slots.
+   Five equal slots (4 tabs + FAB); slot width = 20%. --active-slot is set by
+   MobileNav; the FAB occupies slot 2 so it never receives the indicator. */
+.mnav-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 20%;
+  border-radius: var(--radius);
+  background: var(--accent-dim);
+  transform: translateX(calc(var(--active-slot, 0) * 100%)) scaleX(0.7);
+  transform-origin: center;
+  transition: transform var(--dur-base) var(--ease-spring), opacity var(--dur-fast) var(--ease-std);
+  pointer-events: none;
+}
+.mobile-nav[data-active='false'] .mnav-indicator {
+  opacity: 0;
+}
+
+/* ---- Tabs ---- */
+.mnav-tab {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  min-width: 44px; /* preserve the 44x44 minimum hit area */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-base) var(--ease-std);
+}
+.mnav-tab svg {
+  width: 22px;
+  height: 22px;
+  transition: transform var(--dur-base) var(--ease-spring), filter var(--dur-base) var(--ease-std);
+}
+.mnav-label {
+  line-height: 1;
+}
+.mnav-tab.is-active {
+  color: var(--accent);
+}
+.mnav-tab.is-active svg {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+.mnav-tab:active svg {
+  transform: scale(0.9);
+}
+.mnav-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+  border-radius: var(--radius);
+}
+
+/* ---- Centre FAB (primary action, not a tab) ---- */
+.mnav-fab {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 0; /* occupies the centre slot; hit area spans the whole slot */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mnav-fab-glyph {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-top: -28px; /* raise the button above the bar */
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg-main); /* dark glyph on accent */
+  border: 4px solid var(--bg-main); /* separates the disc from the frosted bar */
+  box-shadow: var(--glow-accent), var(--elev-2);
+  transition: transform var(--dur-base) var(--ease-spring), box-shadow var(--dur-base) var(--ease-std);
+}
+.mnav-fab:active .mnav-fab-glyph {
+  transform: scale(0.92);
+}
+.mnav-fab:focus-visible {
+  outline: none;
+}
+.mnav-fab:focus-visible .mnav-fab-glyph {
+  outline: 3px solid var(--text-primary);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mnav-indicator,
+  .mnav-tab svg,
+  .mnav-fab-glyph {
+    transition: none;
+  }
+}
+
+/* Desktop: the sidebar handles navigation, so hide the bar. */
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none;
+  }
+}
+
+/* ============================================================
+   Route view transitions.
+   Only the scrolling content region is given a view-transition-name, so it is
+   the ONLY thing that slides. The tab bar, header and sidebar have no name, so
+   they stay in the shared ::view-transition-group(root) — their pixels are
+   identical before/after, so that group's default cross-fade is imperceptible
+   and they read as visually fixed. The slide direction is driven by
+   html[data-nav] (set in App.jsx: 'forward' = new page in from the right,
+   'back' = in from the left).
+   ============================================================ */
+.main-content {
+  view-transition-name: main-content;
+}
+
+/* Fully disabled under reduced motion: no keyframes are defined there, and
+   App.jsx also skips startViewTransition, so navigation is an instant swap. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(main-content),
+  ::view-transition-new(main-content) {
+    animation-duration: var(--dur-base);
+    animation-timing-function: var(--ease-out);
+    /* Only one page is composited at a time — the old fades as it leaves. */
+    mix-blend-mode: normal;
+  }
+
+  html[data-nav='forward']::view-transition-old(main-content) {
+    animation-name: vt-slide-out-left;
+  }
+  html[data-nav='forward']::view-transition-new(main-content) {
+    animation-name: vt-slide-in-right;
+  }
+  html[data-nav='back']::view-transition-old(main-content) {
+    animation-name: vt-slide-out-right;
+  }
+  html[data-nav='back']::view-transition-new(main-content) {
+    animation-name: vt-slide-in-left;
+  }
+}
+
+@keyframes vt-slide-in-right {
+  from { transform: translateX(24px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes vt-slide-out-left {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-24px); opacity: 0; }
+}
+@keyframes vt-slide-in-left {
+  from { transform: translateX(-24px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes vt-slide-out-right {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(24px); opacity: 0; }
+}
+
+/* ============================================================
+   Collapsing large-title header (AppHeader).
+   Mobile-first: the compact bar overlays the hero with ZERO net layout
+   height (margin trick), so pinning it never shifts content below.
+   ============================================================ */
+/* display:contents so the sticky bar's containing block is the tall page root,
+   letting it stay pinned for the whole scroll (not just while the header box is
+   on screen). The element stays in the DOM, so [data-collapsed] selectors and
+   the <header> landmark are unaffected. */
+.app-header {
+  display: contents;
+}
+
+/* Compact sticky bar. height + negative margin = 0 net layout height. */
+.app-header__bar {
+  position: sticky;
+  top: var(--safe-top);
+  z-index: var(--z-sticky);
+  height: 52px;
+  margin-bottom: -52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-10); /* room so a centred title never collides with edges */
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  pointer-events: none; /* transparent at rest — let taps reach the hero */
+  transition: background var(--dur-base) var(--ease-std),
+    border-color var(--dur-base) var(--ease-std),
+    backdrop-filter var(--dur-base) var(--ease-std);
+}
+.app-header[data-collapsed='true'] .app-header__bar {
+  background: linear-gradient(180deg, rgba(14, 14, 15, 0.72), rgba(14, 14, 15, 0.55));
+  border-bottom-color: var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  pointer-events: auto;
+}
+.app-header__bar-title {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--dur-base) var(--ease-std), transform var(--dur-base) var(--ease-spring);
+}
+.app-header[data-collapsed='true'] .app-header__bar-title {
+  opacity: 1;
+  transform: none;
+}
+
+/* Large hero title — normal flow, scrolls away. Matches the old page headers. */
+.app-header__hero {
+  position: relative; /* containing block for the sentinel */
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* Sentinel near the top of the hero. When it leaves the viewport top (~48px of
+   scroll) the IntersectionObserver flips the collapsed state. */
+.app-header__sentinel {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.app-header__hero-text {
+  min-width: 0;
+}
+.app-header__title {
+  margin: 6px 0 4px;
+  font-size: var(--text-3xl);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+.app-header__action {
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-header__bar,
+  .app-header__bar-title {
+    transition: none;
+  }
+}
+
+/* Desktop: render as a plain static header (no sticky bar) — visually
+   identical to the pre-existing page headers. */
+@media (min-width: 769px) {
+  .app-header__bar,
+  .app-header__sentinel {
+    display: none;
+  }
+}
+
+/* ============================================================
+   ACTIVE SESSION BAR — mini-player docked above the tab bar.
+   Only rendered while a session runs and the user is off /workouts.
+   ============================================================ */
+.asb {
+  position: fixed;
+  left: var(--space-3);
+  right: var(--space-3);
+  /* Sits directly on top of the floating tab bar. */
+  bottom: calc(var(--safe-bottom) + var(--space-3) + var(--tabbar-h) + var(--space-2));
+  z-index: var(--z-nav);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* 44px floor for the whole bar — the tap target IS the bar. */
+  min-height: 56px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  color: var(--text-1);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: asbIn var(--dur-base) var(--ease-out) both;
+}
+@keyframes asbIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.asb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Live dot — the only moving thing, signals "still running". */
+.asb-pulse {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.55);
+  animation: asbPulse 2s var(--ease-out) infinite;
+}
+@keyframes asbPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.5); }
+  70%  { box-shadow: 0 0 0 9px rgba(var(--accent-rgb), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0); }
+}
+
+.asb-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.asb-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.asb-sub { font-size: var(--text-xs); color: var(--text-2); }
+.asb-timer {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: var(--text-base);
+  color: var(--accent-ink);
+  font-variant-numeric: tabular-nums;
+}
+.asb-chev { flex: 0 0 auto; display: inline-flex; color: var(--text-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .asb { animation: none; }
+  .asb-pulse { animation: none; }
+}
+
+/* Desktop uses the sidebar; the mini-player is a mobile pattern. */
+@media (min-width: 769px) {
+  .asb { display: none; }
+}

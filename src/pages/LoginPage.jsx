@@ -1,6 +1,6 @@
 import { useContext, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { icon } from '../icons.jsx';
-import { Store } from '../store.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { Toast } from '../lib/interactions.js';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
@@ -24,13 +24,23 @@ async function withTimeout(promise, ms, label) {
 
 export default function LoginPage() {
   const navigateToPage = useContext(NavigateContext);
+  /* Where the visitor was heading before the auth gate bounced them here.
+     Set by AuthenticatedChrome. Used for share links, which are the only
+     deep destination a signed-out person is likely to arrive on. */
+  const location = useLocation();
+  const rrNavigate = useNavigate();
+  const returnTo = location.state?.from || null;
   const [email, setEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
   const submitLock = useRef(false);
+  /* Real accounts only. There used to be a dev-mode fallback here that called
+     Store.login() when Supabase was unconfigured — it accepted ANY email with
+     ANY password, checked nothing and stored nothing, which made the app look
+     signed-in while no account existed. Sign-in now always goes through
+     Supabase Auth (bcrypt-hashed passwords in auth.users). */
   const supabaseMode = !!(isSupabaseConfigured() && supabase);
-  const allowLocalAuthFallback = import.meta.env.DEV === true;
   const emailGlowInvalid =
     supabaseMode &&
     email.trim().length >= 4 &&
@@ -48,31 +58,33 @@ export default function LoginPage() {
       return;
     }
 
-    if (!supabaseMode && !allowLocalAuthFallback) {
-      Toast.show('Sign in is unavailable right now. Please contact support.', 'error', 5000);
+    if (!supabaseMode) {
+      Toast.show(
+        'Accounts are not connected yet. Add VITE_SUPABASE_URL and ' +
+        'VITE_SUPABASE_ANON_KEY to .env.local, then restart the dev server.',
+        'error',
+        8000
+      );
       return;
     }
 
     try {
-      if (isSupabaseConfigured() && supabase) {
-        submitLock.current = true;
-        setBusy(true);
-        const { error, data } = await withTimeout(
-          supabase.auth.signInWithPassword({ email: trimmed, password }),
-          12000,
-          'Sign in'
-        );
-        if (error) {
-          Toast.show(formatSupabaseAuthError(error), 'error', 8000);
-          return;
-        }
-        await loadUserIntoStore(data.user);
-        Toast.show('👋 Welcome back!', 'success');
-      } else {
-        Store.login(trimmed, trimmed.split('@')[0]);
-        Toast.show('👋 Welcome back, ' + trimmed.split('@')[0] + '!', 'success');
+      submitLock.current = true;
+      setBusy(true);
+      const { error, data } = await withTimeout(
+        supabase.auth.signInWithPassword({ email: trimmed, password }),
+        12000,
+        'Sign in'
+      );
+      if (error) {
+        Toast.show(formatSupabaseAuthError(error), 'error', 8000);
+        return;
       }
-      navigateToPage?.('dashboard');
+      await loadUserIntoStore(data.user);
+      Toast.show('👋 Welcome back!', 'success');
+      // Back to the link they came for; the dashboard only if there wasn't one.
+      if (returnTo) rrNavigate(returnTo, { replace: true });
+      else navigateToPage?.('dashboard');
     } catch {
       Toast.show('Sign in failed. Please try again.', 'error');
     } finally {
@@ -106,7 +118,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="page login-v2">
+    <div className="page login-v2 brand-lock">
       {/* Back button — returns to landing */}
       <button
         type="button"
@@ -177,7 +189,7 @@ export default function LoginPage() {
                 id="login-pass"
                 placeholder="••••••••"
                 required
-                minLength={isSupabaseConfigured() ? 6 : 1}
+                minLength={6}
               />
               <button
                 type="button"
@@ -190,9 +202,10 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {!supabaseMode && !allowLocalAuthFallback && (
+          {!supabaseMode && (
             <p className="login-v2-error">
-              Account services are not configured on this deployment.
+              Accounts aren’t connected. Set VITE_SUPABASE_URL and
+              VITE_SUPABASE_ANON_KEY in .env.local, then restart the dev server.
             </p>
           )}
 

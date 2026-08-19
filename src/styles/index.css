@@ -15,15 +15,20 @@
 
 /* ===== 1. Foundation ===== */
 @import './_foundation.css';
+@import './_theme.css';   /* semantic tokens + light theme (must precede all components) */
 
 /* ===== 2. Legacy components still used by some markup ===== */
 @import './_legacy-pages.css';
 
 /* ===== 3. Modern design system ===== */
+@import './_app-shell.css';   /* mobile bottom tab bar (.mobile-nav) */
 @import './_gx-system.css';
 @import './_shared-modal.css';
 @import './_shared-modal-2.css';
 @import './_session-shared.css';  /* sess-end-* modal styles reused by Workouts discard */
+@import './_bottom-sheet.css';    /* BottomSheet primitive (workout modals on mobile) */
+@import './_notifications.css';   /* header bell + notification feed rows */
+@import './_library.css';         /* exercise library page (#/library) */
 
 /* ===== 4. Marketing surfaces ===== */
 @import './_landing-1.css';
@@ -39,16 +44,32 @@
 @import './_profile-1.css';
 @import './_profile-measurements.css';
 @import './_profile-tier.css';
+@import './_avatar-picker.css';   /* profile photo picker: presets + crop */
 @import './_progress-1.css';
 @import './_progress-heatmap.css';
 @import './_progress-history.css';
 @import './_planner.css';
+@import './_split.css';        /* weekly splits: builder, list, shared view */
 @import './_records.css';
 @import './_assistant.css';
 @import './_workouts-base.css';
+@import './_workouts-idle.css';   /* TRAIN idle screen (after base) */
 @import './_workouts-phase-a.css';
 @import './_workouts-overload.css';
 
 /* ===== 6. Cross-cutting ===== */
 @import './_smart-banner.css';
 @import './_error-boundary.css';
+
+/* ===== 7. M1 identity layer =====
+   The athletic-editorial identity re-dresses primitives defined in every
+   section above, so it MUST be imported last — otherwise later sheets
+   (e.g. _smart-banner.css) win on equal specificity and the restyle
+   silently doesn't apply. */
+@import './_m1.css';              /* athletic-editorial identity: tokens, photo slots, Today */
+@import './_m1-screens.css';      /* M1 restyle of Workout / Progress / Records / Plans / Profile */
+@import './_m1-system.css';       /* M1 mapping of the shared gx-* primitives + AppHeader */
+@import './_daily-report.css';    /* Progress → Daily report + category bar */
+@import './_glass.css';           /* glassmorphism system + floating glass tab bar */
+@import './_brand-lock.css';      /* marketing surfaces pinned to the brand accent */
+@import './_theme-light.css';     /* light-mode patch for legacy hardcoded surfaces (last) */

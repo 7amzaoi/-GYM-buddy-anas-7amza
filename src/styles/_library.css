@@ -1,0 +1,526 @@
+/**
+ * Exercise library (#/library) — browsable, searchable catalogue.
+ *
+ * Prefix: `.lib-`.
+ *
+ * Two structural notes:
+ *  - `.lib-tile-thumb` is a fixed 1:1 box that reserves its space whether it
+ *    holds the fallback glyph or a GIF. When the WorkoutX asset provider lands
+ *    the swap costs zero layout shift.
+ *  - `.lib-controls` sticks directly below AppHeader's collapsed bar (52px tall,
+ *    pinned at --safe-top). It spans the full content-box width, so the tiles
+ *    scrolling underneath are fully covered — no bleed margins, which is what
+ *    caused horizontal overflow on this codebase once before.
+ */
+
+:root {
+  /* AppHeader's collapsed bar is 52px at top:var(--safe-top). Defaulted here so
+     the calc below can never resolve to an invalid value in another scope —
+     an undefined custom property invalidates the whole declaration. */
+  --lib-sticky-top: calc(var(--safe-top, 0px) + 52px);
+}
+
+.lib {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ===== Sticky controls: search + category chips ===== */
+
+.lib-controls {
+  position: sticky;
+  top: var(--lib-sticky-top);
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  /* A floating frosted card rather than a full-width band. An edge-to-edge slab
+     can't be drawn without bleed margins that have caused horizontal overflow
+     here before, and inside the gutter its hard corners read as a clipped
+     mistake. Rounded + elevated reads as a deliberate control module. */
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--elev-2);
+}
+
+.lib-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lib-search-icon {
+  position: absolute;
+  left: var(--space-4);
+  display: inline-flex;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.lib-search-input {
+  width: 100%;
+  min-height: 44px;
+  /* Left padding clears the leading glyph. */
+  padding: 0 var(--space-4) 0 var(--space-10);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-family: inherit;
+  /* 1rem exactly — anything smaller makes iOS Safari zoom the page on focus. */
+  font-size: var(--text-base);
+  transition: border-color var(--dur-fast) var(--ease-std);
+}
+
+.lib-search:focus-within .lib-search-icon { color: var(--accent); }
+
+.lib-search-input::placeholder { color: var(--text-3); }
+
+.lib-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.lib-search-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lib-chips {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.lib-chips::-webkit-scrollbar { width: 0; height: 0; }
+
+.lib-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-std),
+    color var(--dur-fast) var(--ease-std),
+    border-color var(--dur-fast) var(--ease-std);
+}
+
+.lib-chip:hover { border-color: var(--hairline-strong); }
+.lib-chip:active { background: var(--surface-2); }
+
+.lib-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lib-chip.is-active {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--on-accent);
+}
+
+.lib-chip-count {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.65;
+}
+
+/* ===== Result count ===== */
+
+.lib-count {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Kept in the a11y tree (it's the live region) but taken off screen. */
+.lib-count.is-quiet {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ===== Category sections (shown only when nothing is filtered) ===== */
+
+.lib-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lib-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-lg);
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+/* Accent tick + trailing rule: gives each group a masthead so a long scroll
+   reads as sections rather than one continuous wall of tiles. */
+.lib-section-title::before {
+  content: '';
+  flex: none;
+  width: 3px;
+  height: 1em;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+.lib-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.lib-section-count {
+  color: var(--text-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Grid ===== */
+
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (min-width: 600px) {
+  .lib-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .lib-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1440px) {
+  .lib-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+/* ===== Tile ===== */
+
+.lib-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lib-tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.lib-tile-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  /* Reserves the GIF's space today, so swapping the <img> in shifts nothing. */
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(var(--accent-rgb), 0.12), transparent 62%),
+    var(--surface-2);
+  /* So the fallback glyph can be sized as a fraction of the tile rather than a
+     fixed px value that looks lost at one breakpoint and cramped at another. */
+  container-type: inline-size;
+  transition: transform var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-std);
+}
+
+.lib-tile:hover .lib-tile-thumb {
+  border-color: var(--hairline-strong);
+  transform: translateY(-2px);
+}
+
+.lib-tile:active .lib-tile-thumb { transform: scale(0.97); }
+
+.lib-tile-glyph {
+  /* 38% of the thumbnail's own width — scales with the tile at every breakpoint.
+     Falls back to the largest type token where container units are unsupported. */
+  font-size: var(--text-4xl);
+  font-size: 38cqw;
+  line-height: 1;
+}
+
+.lib-tile-gif {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lib-tile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--space-1);
+}
+
+.lib-tile-name {
+  color: var(--text-1);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  line-height: 1.3;
+  /* Clamped so one long name can't set the height of every tile in the row. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.lib-tile-muscles {
+  color: var(--text-2);
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Empty state ===== */
+
+.lib-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-10) var(--space-5);
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.lib-empty-title {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.lib-empty-body {
+  max-width: 34ch;
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.lib-empty-btn {
+  min-height: 44px;
+  padding: 0 var(--space-5);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.lib-empty-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ===== Detail sheet ===== */
+
+.lib-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.lib-detail-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.lib-detail-thumb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(var(--accent-rgb), 0.14), transparent 62%),
+    var(--surface-2);
+}
+
+.lib-detail-glyph {
+  font-size: var(--text-4xl);
+  line-height: 1;
+}
+
+.lib-detail-gif {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lib-detail-headings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.lib-detail-name {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-xl);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.lib-detail-muscles {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+}
+
+.lib-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.lib-fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.lib-fact dt {
+  color: var(--text-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.lib-fact dd {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-base);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lib-howto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.lib-howto-title {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.lib-howto-body {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.lib-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-5);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.lib-add:active { transform: scale(0.98); }
+
+.lib-add:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ===== Reduced motion ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .lib-tile-thumb,
+  .lib-search-input,
+  .lib-chip,
+  .lib-add {
+    transition: none;
+  }
+  .lib-tile:active .lib-tile-thumb,
+  .lib-add:active {
+    transform: none;
+  }
+}

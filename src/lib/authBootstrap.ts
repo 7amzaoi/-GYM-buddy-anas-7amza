@@ -11,6 +11,8 @@ interface ProfileRow {
   weight_kg?: number | null;
   age?: number | null;
   body_fat_pct?: number | null;
+  avatar_url?: string | null;
+  avatar_source?: 'preset' | 'upload' | null;
   [key: string]: unknown;
 }
 
@@ -40,6 +42,8 @@ function buildUser(profile: ProfileRow | null | undefined, authUser: SupabaseAut
     weight_kg: profile?.weight_kg ?? null,
     age: profile?.age ?? null,
     body_fat_pct: profile?.body_fat_pct ?? null,
+    avatar_url: profile?.avatar_url ?? null,
+    avatar_source: profile?.avatar_source ?? null,
   };
 }
 

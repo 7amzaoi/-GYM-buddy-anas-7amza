@@ -1,0 +1,133 @@
+/* ============================================================
+   THEME LAYER — semantic tokens.
+
+   Everything visual should read from these, never from a raw hex. Dark is the
+   default; `<html data-theme="light">` re-points the same names, so a component
+   written against tokens themes itself with zero extra CSS.
+
+   Naming:
+     --surface-0  page background        --text-1  primary copy
+     --surface-1  card                   --text-2  secondary copy
+     --surface-2  raised / control       --text-3  muted / meta
+     --surface-3  inset (inputs, wells)  --hairline / --hairline-strong
+     --on-accent  ink ON an accent fill  --accent-ink  accent used AS text
+     --scrim-*    photo legibility stops
+
+   `--accent-ink` exists because the accents are neon: #22E0D6 as text on white
+   is ~1.8:1 and unreadable. In light mode it swaps to a deepened variant of the
+   same hue (set by applyAccent in lib/personalization).
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  --surface-0: #0B0B0B;
+  --surface-1: #141416;
+  --surface-2: #1B1B1F;
+  --surface-3: #0E0E10;
+
+  --text-1: #FFFFFF;
+  --text-2: #BFBFBF;
+  --text-3: #8A8A8F;
+
+  --hairline: rgba(255, 255, 255, 0.09);
+  --hairline-strong: rgba(255, 255, 255, 0.16);
+
+  /* Dark ink on a neon fill reads best in both themes. */
+  --on-accent: #0B0B0B;
+  --accent-ink: var(--accent);
+  /* Ink for text sitting ON photography — always light, both themes. */
+  --on-photo: #FFFFFF;
+  --on-photo-dim: rgba(255, 255, 255, 0.78);
+
+  /* Status colours, for meaning-carrying text (BMI bands and the like).
+     Bright enough to read on the dark surfaces; the light theme overrides them
+     with darker mixes, because these exact values sit around 1.9:1 on white. */
+  --status-ok: #2ED573;
+  --status-warn: #FFA502;
+  --status-bad: #FF4757;
+
+  /* Scrim stops used over photography. */
+  --scrim-0: rgba(11, 11, 11, 0.10);
+  --scrim-1: rgba(11, 11, 11, 0.42);
+  --scrim-2: rgba(11, 11, 11, 0.72);
+  --scrim-3: rgba(11, 11, 11, 0.95);
+
+  /* Glass. Tuned per theme: a dark UI lightens the pane, a light UI whitens it. */
+  --glass-bg: rgba(255, 255, 255, 0.055);
+  --glass-bg-strong: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-hover: rgba(var(--accent-rgb), 0.35);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --glass-blur: blur(18px) saturate(150%);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.42);
+}
+
+/* ---------------------------------------------------------------
+   LIGHT — "white focus with simple black".
+   Not an inversion: surfaces go white, ink goes near-black, and every
+   white-alpha effect flips to black-alpha so depth still reads.
+   --------------------------------------------------------------- */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --surface-0: #F1F2F5;
+  --surface-1: #FFFFFF;
+  --surface-2: #FFFFFF;
+  --surface-3: #F0F1F4;
+
+  --text-1: #0B0B0B;
+  --text-2: #55565B;
+  --text-3: #86878D;
+
+  --hairline: rgba(0, 0, 0, 0.10);
+  --hairline-strong: rgba(0, 0, 0, 0.18);
+
+  --on-accent: #0B0B0B;
+  /* Deepened accent so accent-coloured TEXT stays legible on white. */
+  --accent-ink: var(--accent-deep);
+
+  /* Darkened so the band still reads as green/amber/red but clears 4.5:1 on
+     white: measured 5.4, 5.9 and 6.7 respectively. */
+  --status-ok: #1B7A3E;
+  --status-warn: #8A5A00;
+  --status-bad: #B3202C;
+
+  /* Scrims deliberately NOT flipped: they sit over dark photography, so the
+     overlay stays a dark-on-image context in both themes (see --on-photo). */
+
+  --glass-bg: rgba(255, 255, 255, 0.58);
+  --glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-border-hover: rgba(var(--accent-rgb), 0.55);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --glass-blur: blur(20px) saturate(180%);
+  --glass-shadow: 0 8px 30px rgba(16, 18, 28, 0.10);
+}
+
+/* ---------------------------------------------------------------
+   Bridge the ORIGINAL palette names onto the semantic ones so every
+   pre-existing rule (and the whole legacy stylesheet set) themes itself
+   without being rewritten selector-by-selector.
+   --------------------------------------------------------------- */
+:root {
+  --bg-main: var(--surface-0);
+  --bg-card: var(--surface-1);
+  --card: var(--surface-2);
+  --text-primary: var(--text-1);
+  --text-secondary: var(--text-2);
+  --border: var(--hairline);
+}
+
+/* Theme transition — colour only, so layout never animates. Skipped for
+   reduced-motion and while the page is still booting (see .theme-booting). */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not(.theme-booting) body,
+  :root:not(.theme-booting) .gx-card,
+  :root:not(.theme-booting) .m1-stat,
+  :root:not(.theme-booting) .mobile-nav {
+    transition: background-color var(--dur-base) var(--ease-std),
+      color var(--dur-base) var(--ease-std),
+      border-color var(--dur-base) var(--ease-std);
+  }
+}

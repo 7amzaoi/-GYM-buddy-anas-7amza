@@ -36,6 +36,38 @@
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: 0 0 32px rgba(var(--accent-rgb), 0.4);
 }
+/* Avatar as a control. The circle itself (.prof-avatar / .m1-prof-avatar) keeps
+   overflow:hidden so a photo is clipped to it — so the edit badge hangs off
+   this wrapper instead, where it isn't clipped. The circle's own shape is
+   untouched. */
+.prof-avatar-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+.prof-avatar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.prof-avatar-badge {
+  position: absolute;
+  right: 0;
+  /* .m1-prof-avatar carries margin-bottom: var(--space-4); offsetting by it
+     lands the badge on the circle's edge rather than below the whole wrapper. */
+  bottom: var(--space-4);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--elev-2);
+  pointer-events: none;
+}
+
 .prof-identity { position: relative; z-index: 1; flex: 1; min-width: 180px; }
 .prof-name { margin: 0; font-size: var(--text-2xl); font-weight: 900; letter-spacing: -0.02em; }
 .prof-email { margin: 2px 0 10px; font-size: var(--text-sm); color: var(--text-secondary); }
@@ -80,6 +112,7 @@
   letter-spacing: 0.04em; color: var(--text-secondary);
 }
 .prof-field input {
+  min-height: 44px;
   padding: 11px 13px;
   border-radius: var(--radius-sm);
   background: var(--glass-bg);
@@ -112,7 +145,7 @@
 }
 .prof-stat-row:last-child { border-bottom: none; }
 .prof-stat-row strong { color: var(--text-primary); font-weight: 700; }
-.prof-accent-text { color: var(--accent) !important; }
+.prof-accent-text { color: var(--accent-ink) !important; }
 
 /* Goal list */
 .prof-goal-list { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -140,6 +173,41 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
+}
+/* Collapse toggle — same affordance as the recent-sessions list on Workouts,
+   so the two read as one pattern rather than two inventions. */
+.prof-badges-more {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-3);
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accent-rgb), 0.10);
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
+  color: var(--accent-ink);
+  font-family: inherit; font-size: var(--text-sm); font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-base) var(--ease-std), transform var(--dur-base) var(--ease-spring);
+}
+.prof-badges-more:hover {
+  background: rgba(var(--accent-rgb), 0.18);
+  transform: translateY(-1px);
+}
+.prof-badges-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.prof-badges-more-chev {
+  display: inline-flex;
+  transform: rotate(90deg);
+  transition: transform var(--dur-base) var(--ease-std);
+}
+.prof-badges-more-chev.is-open { transform: rotate(-90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .prof-badges-more,
+  .prof-badges-more-chev { transition: none; }
+  .prof-badges-more:hover { transform: none; }
 }
 .prof-badge {
   display: flex; flex-direction: column; align-items: center; gap: 6px;

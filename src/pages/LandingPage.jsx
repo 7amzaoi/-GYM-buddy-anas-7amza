@@ -5,6 +5,24 @@ import { NavigateContext } from '../context/NavigateContext.jsx';
 
 // Heavy R3F + Rapier deps — only loads when the user reaches the landing page.
 const MembershipCard = lazy(() => import('../components/MembershipCard.jsx'));
+const StaticMembershipCard = lazy(() => import('../components/StaticMembershipCard.jsx'));
+
+/**
+ * Should this device get the WebGL card at all?
+ *
+ * The 3D card is ~2.4 MB and runs a rope physics sim every frame. Phones, users
+ * who asked for reduced motion, and low-core machines get the static card
+ * instead — same artwork, transform-only tilt, no WebGL and no download.
+ */
+function prefersStaticCard() {
+  if (typeof window === 'undefined') return true;
+  const mq = (q) => typeof matchMedia !== 'undefined' && matchMedia(q).matches;
+  if (mq('(max-width: 768px)')) return true;
+  if (mq('(prefers-reduced-motion: reduce)')) return true;
+  const cores = navigator.hardwareConcurrency;
+  if (typeof cores === 'number' && cores <= 4) return true;
+  return false;
+}
 
 /**
  * Holds the 2 MB three.js bundle off the initial render. The card only mounts
@@ -14,6 +32,8 @@ const MembershipCard = lazy(() => import('../components/MembershipCard.jsx'));
 function DeferredMembershipCard() {
   const ref = useRef(null);
   const [shouldMount, setShouldMount] = useState(false);
+  // Decided once on mount — this must not change mid-session and re-mount WebGL.
+  const [useStatic] = useState(prefersStaticCard);
   useEffect(() => {
     if (shouldMount) return undefined;
     const el = ref.current;
@@ -44,7 +64,9 @@ function DeferredMembershipCard() {
   return (
     <div ref={ref} className="lanyard-deferred">
       {shouldMount ? (
-        <Suspense fallback={skeleton}><MembershipCard /></Suspense>
+        <Suspense fallback={skeleton}>
+          {useStatic ? <StaticMembershipCard /> : <MembershipCard />}
+        </Suspense>
       ) : skeleton}
     </div>
   );
@@ -468,7 +490,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="page landing landing-v2" ref={rootRef}>
+    <div className="page landing landing-v2 brand-lock" ref={rootRef}>
       <div className="scroll-progress" aria-hidden="true" />
       <div className="landing-ambient" aria-hidden="true">
         <div className="ambient-glow ambient-glow-1" />

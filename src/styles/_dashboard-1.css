@@ -281,6 +281,7 @@
   letter-spacing: 0.04em; color: var(--text-secondary);
 }
 .dash-field input {
+  min-height: 44px;
   padding: 11px 13px;
   border-radius: var(--radius-sm);
   background: var(--glass-bg);

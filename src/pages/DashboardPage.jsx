@@ -1,373 +1,367 @@
-import { useMemo, useState, useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
-import { getRandomQuote } from '../data.js';
+import { getExerciseById } from '../data.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
-import { setWater } from '../lib/interactions.js';
-import { renderPerfAreaChart } from './dashboardCharts.js';
 import { revealOnScroll } from '../lib/motion.js';
-import SmartBanner from '../components/SmartBanner.jsx';
-import { computeXp, levelFromXp, titleForLevel, computeFreezes, consumeFreeze } from '../lib/gamification.js';
-import { Toast } from '../lib/interactions.js';
+import PhotoFrame from '../components/PhotoFrame.jsx';
+import { photo } from '../lib/imagery.js';
+import { formatRecordValue, recentRecords, recordIconKey } from '../lib/records.js';
+import * as haptics from '../lib/haptics.js';
+import NotificationBell from '../components/notifications/NotificationBell.jsx';
+import NotificationSheet from '../components/notifications/NotificationSheet.jsx';
 
-const perfLabels = {
-  strengthVolume: 'Strength Volume',
-  caloriesBurned: 'Calories Burned',
-  duration: 'Duration (min)',
+/**
+ * TODAY — the athletic-editorial home screen.
+ *
+ * One job: answer "what do I do right now" above the fold. A full-bleed hero
+ * carries today's session and the single primary action; everything below it is
+ * glanceable proof you're on track.
+ *
+ * All figures come from the store: streak / workoutsThisWeek / weekly
+ * strengthVolume / workoutHistory / customPlans, and the user's own weeklyGoal
+ * (set in Profile) as the "x / y" denominator.
+ */
+
+/** Photo slots the recent-session rail cycles through, so consecutive tiles
+ *  never repeat the same image. */
+const RAIL_SLOTS = ['record-tile', 'plan-strength', 'plan-custom', 'plan-cardio'];
+
+/** Plan categories are stored as camelCase keys; these are the display names.
+ *  Same labels the Planner screen uses, so a plan reads identically in both. */
+const CATEGORY_LABELS = {
+  strength: 'Strength',
+  cardio: 'Cardio',
+  fatLoss: 'Fat Loss',
+  muscleGain: 'Muscle Gain',
 };
-const perfUnits = { strengthVolume: 'kg', caloriesBurned: 'cal', duration: 'min' };
 
-/** Local-only BMI estimate — not persisted. */
-function BMIBlock() {
-  const [heightCm, setHeightCm] = useState(175);
-  const [weightKg, setWeightKg] = useState(80);
-  const [age, setAge] = useState(25);
+/** Candidate photos per plan category, best fit first. See planSlot(). */
+const PLAN_SLOT_POOL = {
+  strength: ['plan-strength', 'plan-strength-2', 'plan-strength-3'],
+  cardio: ['plan-cardio', 'plan-cardio-2'],
+  fatLoss: ['plan-fatloss', 'plan-cardio-2', 'plan-cardio'],
+  muscleGain: ['plan-muscle', 'plan-strength-2', 'plan-custom'],
+  default: ['plan-custom', 'plan-custom-2'],
+};
 
-  const bmiRaw = weightKg / Math.pow(heightCm / 100, 2);
-  const bmiNum = Number.isFinite(bmiRaw) ? Number(bmiRaw.toFixed(1)) : NaN;
-  const bmi = Number.isFinite(bmiNum) ? String(bmiNum) : '--';
-  let category = '—';
-  let color = 'var(--text-secondary)';
-  if (Number.isFinite(bmiNum)) {
-    if (bmiNum < 18.5) { category = 'Underweight'; color = '#FFA502'; }
-    else if (bmiNum < 25) { category = 'Normal'; color = '#2ED573'; }
-    else if (bmiNum < 30) { category = 'Overweight'; color = '#FFA502'; }
-    else { category = 'Obese'; color = '#FF4757'; }
-  }
-  const pct = Number.isFinite(bmiNum) ? Math.min(Math.max(((bmiNum - 15) / 25) * 100, 0), 100) : 0;
-
-  return (
-    <div className="gx-card dash-bmi" data-reveal>
-      <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
-        <span className="gx-eyebrow">{icon('activity', 13)} Body Index</span>
-        <h3 className="gx-title" style={{ fontSize: 'var(--text-xl)' }}>BMI Calculator</h3>
-        <p className="gx-subtitle">Quick estimate only — nothing here is saved.</p>
-      </div>
-      <div className="dash-bmi-fields">
-        {[
-          { label: 'Height (cm)', value: heightCm, set: setHeightCm, min: 80, max: 250 },
-          { label: 'Weight (kg)', value: weightKg, set: setWeightKg, min: 20, max: 400 },
-          { label: 'Age', value: age, set: (v) => setAge(v), min: 10, max: 120 },
-        ].map((f) => (
-          <label key={f.label} className="dash-field">
-            <span>{f.label}</span>
-            <input
-              type="number"
-              min={f.min}
-              max={f.max}
-              value={f.value}
-              onChange={(e) => f.set(Math.max(0, parseFloat(e.target.value) || 0))}
-            />
-          </label>
-        ))}
-      </div>
-      <div className="dash-bmi-readout">
-        <div className="dash-bmi-num" style={{ color }}>{bmi}</div>
-        <div className="dash-bmi-cat" style={{ color }}>{category}</div>
-      </div>
-      <div className="dash-bmi-track">
-        <div className="dash-bmi-marker" style={{ left: `${pct}%` }} />
-      </div>
-      <div className="dash-bmi-scale">
-        <span>Under</span><span>Normal</span><span>Over</span><span>Obese</span>
-      </div>
-    </div>
-  );
-}
-
-function WaterCard() {
-  const water = Store.get('waterIntake') || 0;
-  const goal = 8;
-  const pct = Math.min((water / goal) * 100, 100);
-  return (
-    <div className="gx-card" data-reveal>
-      <div className="dash-card-head">
-        <span className="gx-eyebrow">{icon('activity', 13)} Hydration</span>
-        <span className={`gx-badge ${water >= goal ? 'is-accent' : ''}`}>{water}/{goal} glasses</span>
-      </div>
-      <div className="dash-water-row">
-        {Array.from({ length: goal }, (_, i) => (
-          <button
-            key={i}
-            type="button"
-            className={`dash-water-cell ${i < water ? 'is-filled' : ''}`}
-            onClick={() => setWater(i + 1)}
-            aria-label={`Set water to ${i + 1}`}
-          >
-            {i < water ? icon('check', 13) : i + 1}
-          </button>
-        ))}
-      </div>
-      <div className="dash-progress-track">
-        <div className="dash-progress-fill dash-progress-water" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
+/** 18_420 -> "18.4k" so a long number never breaks the 3-across stat row. */
+function compact(n) {
+  const v = Number(n) || 0;
+  if (v >= 1000) return `${(v / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+  return String(Math.round(v));
 }
 
 export default function DashboardPage() {
   const navigateToPage = useContext(NavigateContext);
   const rootRef = useRef(null);
-  const [perfMetric, setPerfMetric] = useState('strengthVolume');
-  const [quote] = useState(() => getRandomQuote());
+  /* Plans and records share one section rather than stacking two: both answer
+     "what have I got", and records lived on Profile, three taps from here. */
+  const [libTab, setLibTab] = useState('plans');
 
   const user = Store.get('user');
   const progress = Store.get('progressData');
-  const history = Store.get('workoutHistory');
-  const records = Store.get('records') || [];
-  const metricsLog = Store.get('metricsLog') || [];
+  const history = Store.get('workoutHistory') || [];
+  const plans = Store.get('customPlans') || [];
 
-  // Gamification — derived from existing data, no new persistent state.
-  const xp = computeXp({ history, records, streak: progress.streak || 0 });
-  const lvl = levelFromXp(xp);
-  const tier = titleForLevel(lvl.level);
-  const freezes = computeFreezes();
-
-  function handleUseFreeze() {
-    const res = consumeFreeze();
-    if (res.ok) Toast.show('Streak freeze used — your streak is safe!', 'success', 2500);
-    else Toast.show('No freezes available yet.', 'warning');
-  }
-  Store.get('waterIntake');
-
-  const currentWeight = Number.isFinite(Number(user?.weight_kg))
-    ? Number(user.weight_kg)
-    : (metricsLog.at(-1)?.weight ?? progress.weight.at(-1)?.value ?? null);
-
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const today = new Date().getDay();
   const firstName = (user?.name || 'Athlete').trim().split(/\s+/)[0];
+  const streak = progress.streak || 0;
+  const thisWeek = progress.workoutsThisWeek || 0;
+  const weeklyGoal = Number(Store.get('weeklyGoal')) || 5;
+  const weekVol = (progress?.weeklyPerformance?.strengthVolume || []).reduce((a, b) => a + b, 0);
 
-  const perf = progress?.weeklyPerformance || {
-    strengthVolume: [0, 0, 0, 0, 0, 0, 0],
-    caloriesBurned: [0, 0, 0, 0, 0, 0, 0],
-    duration: [0, 0, 0, 0, 0, 0, 0],
-  };
-  const chartMarkup = useMemo(
-    () => renderPerfAreaChart(perf[perfMetric], perfUnits[perfMetric]),
-    [perfMetric, perf]
-  );
+  // The hero has three states, in priority order: a session already running,
+  // a plan ready to start, or nothing planned yet.
+  const session = Store.get('activeSession');
+  const plan = plans[0] || null;
+  const planExercises = plan ? (plan.exercises || []).filter((id) => getExerciseById(id)).length : 0;
 
-  // Personalized weekly summary line
-  const weekVol = (perf.strengthVolume || []).reduce((a, b) => a + b, 0);
-  const summary =
-    progress.workoutsThisWeek >= 4
-      ? 'Strong week — you are ahead of most athletes. Keep the streak alive.'
-      : progress.workoutsThisWeek >= 1
-        ? 'Solid start this week. One more session pushes you into the top tier.'
-        : 'Fresh week, clean slate. Log a session to get the momentum going.';
+  let heroState = 'empty';
+  if (session) heroState = 'resume';
+  else if (plan) heroState = 'plan';
 
-  const stats = [
-    { icon: 'fire', value: progress.calories.at(-1)?.value || 0, suffix: ' cal', label: 'Calories Today' },
-    { icon: 'activity', value: progress.workoutsThisWeek, suffix: '', label: 'Workouts This Week' },
-    { icon: 'target', value: progress.totalWorkouts, suffix: '', label: 'Total Workouts' },
-  ];
+  const recent = history.slice(0, 3);
+  const today = new Date();
+  const topRecords = recentRecords(Store.get('records') || [], 3);
 
-  useEffect(() => {
-    const cleanup = revealOnScroll(rootRef.current, '[data-reveal]', { y: 28, stagger: 0.06 });
-    return cleanup;
-  }, []);
+  /* The hero title is the weekday, and only ever the weekday.
+   *
+   * It used to be the plan's name, which made the largest element on the screen
+   * mean something different per user: a plan name, a fallback prompt for
+   * anyone who never made a plan, or "Freestyle Workout" mid-session. The day
+   * is true for everybody, every day, whether or not they plan anything — so
+   * the plan moves down into the meta line, where it varies without the screen
+   * changing shape. */
+  const heroTitle = today.toLocaleDateString(undefined, { weekday: 'long' });
+
+  let heroEyebrow;
+  let heroMeta;
+  let ctaLabel;
+  let ctaIcon;
+  const dayDate = today.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  if (heroState === 'resume') {
+    const sets = (session.exercises || []).flatMap((e) => e.sets || []);
+    const doneSets = sets.filter((x) => x.done).length;
+    heroEyebrow = 'Pick up where you left off';
+    heroMeta = [session.planName || 'Freestyle Workout', `${doneSets}/${sets.length} sets done`]
+      .join(' · ');
+    ctaLabel = 'Resume workout';
+    ctaIcon = 'play';
+  } else if (heroState === 'plan') {
+    heroEyebrow = `Today · ${dayDate}`;
+    heroMeta = [plan.name, `${planExercises} exercise${planExercises === 1 ? '' : 's'}`, plan.duration]
+      .filter(Boolean).join(' · ');
+    ctaLabel = 'Start workout';
+    ctaIcon = 'play';
+  } else {
+    heroEyebrow = `Today · ${dayDate}`;
+    heroMeta = 'Nothing planned yet — build one and it shows up here';
+    ctaLabel = 'Browse plans';
+    ctaIcon = 'dumbbell';
+  }
+
+  /* Plans ordered by when they were last trained. `workoutHistory` is
+   * newest-first and every completed session carries the `planId` it ran, so
+   * the first time an id appears is that plan's last use. Freestyle sessions
+   * have no planId and are skipped; ids whose plan has since been deleted drop
+   * out. Plans never trained yet fill the remaining slots, newest first, so the
+   * section is still useful before any history exists. */
+  const lastUsedAt = new Map();
+  for (const w of history) {
+    if (w.planId && !lastUsedAt.has(w.planId)) lastUsedAt.set(w.planId, w.date);
+  }
+  const trained = [...lastUsedAt.keys()]
+    .map((id) => plans.find((p) => p.id === id))
+    .filter(Boolean)
+    .map((p) => ({ ...p, lastUsed: lastUsedAt.get(p.id) }));
+  const untrained = plans
+    .filter((p) => !lastUsedAt.has(p.id))
+    .slice()
+    .reverse()
+    .map((p) => ({ ...p, lastUsed: null }));
+  /* Two, not three: the cards are full-width posters, so a third pushes the
+     section past a screenful and "All plans" is right there for the rest. */
+  const recentPlans = [...trained, ...untrained].slice(0, 2);
+
+  /** The three facts worth carrying on a plan card, in priority order. */
+  function planFacts(p) {
+    const count = (p.exercises || []).filter((id) => getExerciseById(id)).length;
+    const facts = [`${count} exercise${count === 1 ? '' : 's'}`];
+    if (p.duration) facts.push(p.duration);
+    facts.push(
+      p.lastUsed
+        ? `Last ${new Date(p.lastUsed).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`
+        : 'Not trained yet'
+    );
+    return facts;
+  }
+
+  /* Art stays in the plan's own category so a cardio plan never gets a squat
+   * rack, but each category has a pool: with one photo per category, two
+   * strength plans on the same screen showed the identical picture. The choice
+   * is keyed off the plan id, so a given plan always keeps the same photo
+   * instead of reshuffling on every render. Slots without a file yet are
+   * filtered out, so the pool grows on its own as images are added. */
+  function planSlot(p) {
+    const pool = (PLAN_SLOT_POOL[p.category] || PLAN_SLOT_POOL.default).filter((s) => photo(s));
+    if (pool.length === 0) return 'plan-custom';
+    let h = 0;
+    for (const ch of String(p.id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return pool[h % pool.length];
+  }
+
+  useEffect(() => revealOnScroll(rootRef.current, '[data-reveal]', { y: 24, stagger: 0.05 }), []);
+
+  function onHeroAction() {
+    haptics.tap();
+    // A running session is resumed, never replaced — starting a new one here
+    // used to silently discard the sets already logged.
+    if (heroState === 'resume') {
+      navigateToPage?.('workouts');
+      return;
+    }
+    if (heroState === 'plan') {
+      Store.startSession(plan.id);
+      navigateToPage?.('workouts');
+      return;
+    }
+    navigateToPage?.('planner');
+  }
 
   return (
-    <div className="dash" ref={rootRef}>
-      {/* ===== Hero header ===== */}
-      <header className="dash-hero" data-reveal>
-        <div className="dash-hero-glow" aria-hidden="true" />
-        <div className="dash-hero-main">
-          <span className="gx-eyebrow">{greeting}</span>
-          <h1 className="dash-hero-title">
-            Hey <span className="dash-accent">{firstName}</span>
+    <div className="m1-today" ref={rootRef}>
+      {/* ===== Top bar ===== */}
+      <div className="m1-topbar">
+        <span className="m1-wordmark">GymBuddy</span>
+        {/* Temporary slot: the bell moves to AppHeader once that gains a
+            global action slot, so it is reachable from every route. */}
+        <NotificationBell />
+      </div>
+      <NotificationSheet />
+
+      {/* ===== Hero: today's session over a full-bleed photo ===== */}
+      <PhotoFrame slot="hero-today" ghost="dumbbell" className="m1-hero">
+        <div className="m1-hero-body">
+          <span className="m1-eyebrow">{heroEyebrow}</span>
+          <h1 className="m1-display m1-h1 m1-hero-title">
+            <time dateTime={today.toISOString().slice(0, 10)}>{heroTitle}</time>
           </h1>
-          <p className="dash-hero-quote">{quote}</p>
+          <span className="m1-meta">{heroMeta}</span>
+          <button type="button" className="m1-cta" onClick={onHeroAction}>
+            {icon(ctaIcon, 16)} {ctaLabel}
+          </button>
         </div>
-        <div className="dash-streak-chip" title="Current streak">
-          <span className="dash-streak-icon">{icon('fire', 22)}</span>
-          <span className="dash-streak-num">{progress.streak}</span>
-          <span className="dash-streak-label">day streak</span>
-        </div>
-      </header>
+      </PhotoFrame>
 
-      {/* ===== Smart notification ===== */}
-      <SmartBanner />
+      <div className="m1-body">
+        {/* ===== Stat row ===== */}
+        <div className="m1-stats" data-reveal role="list">
+          <div role="listitem" className="m1-stat is-accent">
+            <span className="m1-stat-val">{streak}</span>
+            <span className="m1-stat-lbl">Day streak</span>
+          </div>
+          <div role="listitem" className="m1-stat">
+            <span className="m1-stat-val">{thisWeek}<span className="u">/{weeklyGoal}</span></span>
+            <span className="m1-stat-lbl">This week</span>
+          </div>
+          <div role="listitem" className="m1-stat">
+            <span className="m1-stat-val">{compact(weekVol)}</span>
+            <span className="m1-stat-lbl">Kg volume</span>
+          </div>
+        </div>
 
-      {/* ===== Weekly summary banner ===== */}
-      <div className="dash-summary" data-reveal>
-        <span className="dash-summary-icon">{icon('zap', 18)}</span>
-        <p>{summary}</p>
-        <button type="button" className="gx-btn gx-btn-primary dash-summary-cta" onClick={() => navigateToPage?.('planner')}>
-          {icon('dumbbell', 16)} Start a Workout
-        </button>
-      </div>
-
-      {/* ===== XP / Level card ===== */}
-      <div className="gx-card dash-xp" data-reveal>
-        <div className="dash-xp-head">
-          <div className="dash-xp-left">
-            <span className="dash-xp-tier">{tier}</span>
-            <h3 className="dash-xp-level">
-              Level <span className="dash-xp-level-num">{lvl.level}</span>
-            </h3>
-          </div>
-          <div className="dash-xp-right">
-            <span className="dash-xp-current" data-counter={xp}>{xp.toLocaleString()}</span>
-            <span className="dash-xp-suffix">XP</span>
-          </div>
-        </div>
-        <div className="dash-xp-track">
-          <div className="dash-xp-fill" style={{ width: `${lvl.pct}%` }} />
-        </div>
-        <div className="dash-xp-foot">
-          <span>{lvl.currentInLevel.toLocaleString()} / {lvl.neededForLevel.toLocaleString()} XP this level</span>
-          <span className="dash-xp-next">{(lvl.neededForLevel - lvl.currentInLevel).toLocaleString()} to Level {lvl.level + 1}</span>
-        </div>
-      </div>
-
-      {/* ===== Stat bento ===== */}
-      <div className="dash-stats">
-        {stats.map((s) => (
-          <div key={s.label} className="gx-card dash-stat-card" data-reveal>
-            <span className="dash-stat-icon">{icon(s.icon, 20)}</span>
-            <div className="gx-stat-value" data-counter={s.value} data-suffix={s.suffix}>0</div>
-            <div className="gx-stat-label">{s.label}</div>
-          </div>
-        ))}
-        <div className="gx-card dash-stat-card" data-reveal>
-          <span className="dash-stat-icon">{icon('chart', 20)}</span>
-          <div className="gx-stat-value">
-            {currentWeight ?? '--'}<span className="dash-stat-unit"> kg</span>
-          </div>
-          <div className="gx-stat-label">Current Weight</div>
-        </div>
-      </div>
-
-      {/* ===== Weekly performance chart ===== */}
-      <div className="gx-card dash-chart-card" data-reveal id="perf-chart-card">
-        <div className="dash-card-head">
-          <div>
-            <span className="gx-eyebrow">{icon('chart', 13)} This Week</span>
-            <h3 className="gx-title dash-chart-title">{perfLabels[perfMetric]}</h3>
-          </div>
-          <div className="dash-tabs">
-            {[
-              ['strengthVolume', 'Volume'],
-              ['caloriesBurned', 'Calories'],
-              ['duration', 'Duration'],
-            ].map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                className={`dash-tab ${perfMetric === key ? 'is-active' : ''}`}
-                onClick={() => setPerfMetric(key)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div
-          id="perf-chart-container"
-          className="dash-chart-area"
-          dangerouslySetInnerHTML={{ __html: chartMarkup }}
-        />
-        <div className="dash-chart-foot">
-          Total volume this week: <strong>{weekVol.toLocaleString()} kg</strong>
-        </div>
-      </div>
-
-      {/* ===== Streak + Water ===== */}
-      <div className="dash-grid-2">
-        <div className="gx-card" data-reveal>
-          <div className="dash-card-head">
-            <span className="gx-eyebrow">{icon('fire', 13)} Activity Streak</span>
-            <span className="gx-badge is-accent">{icon('trophy', 11)} Keep going</span>
-          </div>
-          <div className="dash-freeze">
-            <span className="dash-freeze-pill">
-              {icon('star', 11)} {freezes.available} freeze{freezes.available === 1 ? '' : 's'}
-            </span>
-            <span className="dash-freeze-note">
-              {freezes.untilNext === 0
-                ? 'New freeze ready!'
-                : `+1 in ${freezes.untilNext} workout${freezes.untilNext === 1 ? '' : 's'}`}
-            </span>
-            {freezes.available > 0 && (
-              <button type="button" className="dash-freeze-use" onClick={handleUseFreeze}>
-                Use
-              </button>
-            )}
-          </div>
-          <div className="dash-streak-week">
-            {days.map((d, i) => {
-              const isDone = i <= today && i >= today - progress.streak + 1;
-              const isToday = i === today;
-              return (
-                <div
-                  key={d}
-                  className={`dash-day ${isDone ? 'is-done' : ''} ${isToday && !isDone ? 'is-today' : ''}`}
-                >
-                  {d}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <WaterCard />
-      </div>
-
-      {/* ===== Recent workouts + PRs ===== */}
-      <div className="dash-grid-2">
-        <div className="gx-card" data-reveal>
-          <div className="dash-card-head">
-            <span className="gx-eyebrow">{icon('clock', 13)} Recent Workouts</span>
-            <button type="button" className="dash-link" onClick={() => navigateToPage?.('progress')}>
-              View all {icon('arrow', 12)}
+        {/* ===== Recent sessions rail ===== */}
+        <section data-reveal>
+          <div className="m1-sechead">
+            <span className="m1-eyebrow is-muted">Recent sessions</span>
+            <button type="button" className="m1-seclink" onClick={() => navigateToPage?.('records')}>
+              See all
             </button>
           </div>
-          {history.length === 0 ? (
-            <div className="dash-empty">
-              <span className="dash-empty-icon">{icon('dumbbell', 26)}</span>
-              <p>No workouts yet — your first session starts the streak.</p>
-            </div>
-          ) : (
-            <div className="dash-list">
-              {history.slice(0, 3).map((w) => (
-                <div key={w.id || w.planName + w.date} className="dash-workout-row">
-                  <span className="dash-workout-icon">{icon('dumbbell', 16)}</span>
-                  <div className="dash-workout-info">
-                    <h4>{w.planName}</h4>
-                    <p>{w.duration || '?'} min · {w.calories} cal</p>
-                  </div>
-                  <span className="gx-badge is-accent">{icon('check', 11)} Done</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="gx-card" data-reveal>
-          <div className="dash-card-head">
-            <span className="gx-eyebrow">{icon('trophy', 13)} Personal Records</span>
-          </div>
-          {Object.keys(progress.personalRecords || {}).length === 0 ? (
-            <div className="dash-empty">
-              <span className="dash-empty-icon">{icon('trophy', 26)}</span>
-              <p>No PRs logged yet. They appear here automatically.</p>
-            </div>
-          ) : (
-            <div className="dash-list">
-              {Object.entries(progress.personalRecords || {}).map(([name, val]) => (
-                <div key={name} className="dash-pr-row">
-                  <span>{name}</span>
-                  <span className="dash-pr-val">{val}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
-      <BMIBlock />
+          {recent.length === 0 ? (
+            <p className="m1-empty">
+              No sessions yet, {firstName}. Your first one starts the streak.
+            </p>
+          ) : (
+            <div className="m1-rail">
+              {recent.map((w, i) => (
+                <PhotoFrame
+                  key={w.id || `${w.planName}-${w.date}`}
+                  /* Cycle the art so a run of same-named sessions (e.g. several
+                     freestyle ones) doesn't read as a repeated-image glitch. */
+                  slot={RAIL_SLOTS[i % RAIL_SLOTS.length]}
+                  ghost="activity"
+                  as="button"
+                  type="button"
+                  className="m1-railcard"
+                  onClick={() => navigateToPage?.('progress')}
+                >
+                  <span className="m1-railcard-name">
+                    {(w.planName && w.planName.trim()) || 'Freestyle'}
+                  </span>
+                  <span className="m1-railcard-date">
+                    {new Date(w.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                  </span>
+                </PhotoFrame>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ===== Library: plans / records =====
+            Hidden entirely when the user has neither: the hero is already the
+            "pick your first plan" empty state, and a second empty box under it
+            would just repeat the same prompt. When only one of the two has
+            content the tabs still show, so the other is discoverable. */}
+        {(recentPlans.length > 0 || topRecords.length > 0) && (
+          <section data-reveal>
+            <div className="m1-sechead m1-sechead-tabs">
+              <div className="m1-sectabs" role="tablist" aria-label="Plans and records">
+                {[['plans', 'Plans'], ['records', 'Records']].map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={libTab === id}
+                    className={`m1-chip ${libTab === id ? 'is-active' : ''}`}
+                    onClick={() => { haptics.tap(); setLibTab(id); }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="m1-seclink"
+                onClick={() => { haptics.tap(); navigateToPage?.(libTab === 'plans' ? 'planner' : 'records'); }}
+              >
+                {libTab === 'plans' ? 'All plans' : 'All records'} {icon('arrow', 12)}
+              </button>
+            </div>
+
+            {libTab === 'records' ? (
+              topRecords.length === 0 ? (
+                <p className="m1-empty">
+                  No records yet. Finish a session and your best lifts land here.
+                </p>
+              ) : (
+                <div className="m1-reclist">
+                  {topRecords.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      className="m1-rec"
+                      onClick={() => { haptics.tap(); navigateToPage?.('records'); }}
+                    >
+                      <span className="m1-rec-mark" aria-hidden="true">{icon(recordIconKey(r), 19)}</span>
+                      <span className="m1-rec-body">
+                        <span className="m1-rec-name">{r.exercise_name}</span>
+                        <span className="m1-rec-val">{formatRecordValue(r)}</span>
+                      </span>
+                      <span className="m1-rec-date">
+                        {new Date(r.recorded_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )
+            ) : recentPlans.length === 0 ? (
+              <p className="m1-empty">
+                No plans yet. Build one and it shows up here.
+              </p>
+            ) : (
+            <div className="m1-plangrid">
+              {recentPlans.map((p) => (
+                <PhotoFrame
+                  key={p.id}
+                  slot={planSlot(p)}
+                  ghost="dumbbell"
+                  as="button"
+                  type="button"
+                  className="m1-plancard"
+                  onClick={() => { haptics.tap(); navigateToPage?.('planner'); }}
+                >
+                  <span className="m1-plancard-tag">
+                    {icon(p.category === 'cardio' ? 'activity' : 'dumbbell', 12)}
+                    {CATEGORY_LABELS[p.category] || 'Custom'}
+                  </span>
+                  <span className="m1-plancard-foot">
+                    <span className="m1-plancard-text">
+                      <span className="m1-plancard-name">{p.name}</span>
+                      <span className="m1-plancard-meta">
+                        {planFacts(p).map((f) => <span key={f}>{f}</span>)}
+                      </span>
+                    </span>
+                    <span className="m1-plancard-go" aria-hidden="true">{icon('arrow', 17)}</span>
+                  </span>
+                </PhotoFrame>
+              ))}
+            </div>
+            )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }

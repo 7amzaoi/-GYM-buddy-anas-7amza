@@ -1,6 +1,5 @@
 import { useContext, useRef, useState } from 'react';
 import { icon } from '../icons.jsx';
-import { Store } from '../store.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { Toast, launchConfetti } from '../lib/interactions.js';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
@@ -24,8 +23,11 @@ export default function RegisterPage() {
   const [goal, setGoal] = useState('muscle gain');
   const [busy, setBusy] = useState(false);
   const submitLock = useRef(false);
+  /* Real accounts only. There used to be a dev-mode fallback here that called
+     Store.register() when Supabase was unconfigured — it created a fake local
+     user and never stored a password, so no real account existed. Sign-up now
+     always goes through Supabase Auth. */
   const supabaseMode = !!(isSupabaseConfigured() && supabase);
-  const allowLocalAuthFallback = import.meta.env.DEV === true;
   const emailGlowInvalid =
     supabaseMode &&
     email.trim().length >= 4 &&
@@ -44,40 +46,38 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!supabaseMode && !allowLocalAuthFallback) {
-      Toast.show('Sign up is unavailable right now. Please contact support.', 'error', 5000);
+    if (!supabaseMode) {
+      Toast.show(
+        'Accounts are not connected yet. Add VITE_SUPABASE_URL and ' +
+        'VITE_SUPABASE_ANON_KEY to .env.local, then restart the dev server.',
+        'error',
+        8000
+      );
       return;
     }
 
     try {
-      if (isSupabaseConfigured() && supabase) {
-        submitLock.current = true;
-        setBusy(true);
-        const { error, data } = await supabase.auth.signUp({
-          email: trimmedEmail,
-          password,
-          options: { data: { name, display_name: name, goal } }
-        });
-        if (error) {
-          Toast.show(formatSupabaseAuthError(error), 'error', 8000);
-          return;
-        }
-        if (data.session?.user) {
-          await loadUserIntoStore(data.session.user);
-          Toast.show("🎉 Welcome to GymBuddy, " + name + '! Your account is ready.', 'success', 4000);
-          launchConfetti(2000);
-          navigateToPage?.('dashboard');
-          return;
-        }
-        Toast.show('✉️ Check your email and confirm your account, then sign in.', 'info', 5000);
-        navigateToPage?.('login');
+      submitLock.current = true;
+      setBusy(true);
+      const { error, data } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+        options: { data: { name, display_name: name, goal } }
+      });
+      if (error) {
+        Toast.show(formatSupabaseAuthError(error), 'error', 8000);
         return;
       }
-
-      Store.register(name, trimmedEmail, goal);
-      Toast.show("🎉 Welcome to GymBuddy, " + name + "! Let's crush some goals!", 'success', 4000);
-      launchConfetti(2000);
-      navigateToPage?.('dashboard');
+      if (data.session?.user) {
+        await loadUserIntoStore(data.session.user);
+        Toast.show("🎉 Welcome to GymBuddy, " + name + '! Your account is ready.', 'success', 4000);
+        launchConfetti(2000);
+        navigateToPage?.('dashboard');
+        return;
+      }
+      // No session back = the project requires email confirmation first.
+      Toast.show('✉️ Check your email and confirm your account, then sign in.', 'info', 5000);
+      navigateToPage?.('login');
     } catch {
       Toast.show('Registration failed', 'error');
     } finally {
@@ -87,7 +87,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="page login-v2 register-v2">
+    <div className="page login-v2 register-v2 brand-lock">
 
       <button
         type="button"
@@ -158,9 +158,9 @@ export default function RegisterPage() {
                 className="login-v2-input"
                 type={showPassword ? 'text' : 'password'}
                 id="reg-pass"
-                placeholder={isSupabaseConfigured() ? 'Min 6 characters' : 'Any (offline mode)'}
+                placeholder="Min 6 characters"
                 required
-                minLength={isSupabaseConfigured() ? 6 : 1}
+                minLength={6}
               />
               <button
                 type="button"
@@ -192,9 +192,10 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {!supabaseMode && !allowLocalAuthFallback && (
+          {!supabaseMode && (
             <p className="login-v2-error">
-              Account services are not configured on this deployment.
+              Accounts aren’t connected. Set VITE_SUPABASE_URL and
+              VITE_SUPABASE_ANON_KEY in .env.local, then restart the dev server.
             </p>
           )}
 

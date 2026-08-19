@@ -3,20 +3,17 @@ import { Store } from '../store.js';
 import { icon } from '../icons.jsx';
 import { getAllExercises } from '../data.js';
 import { Toast } from '../lib/interactions.js';
-import { upsertPersonalRecords } from '../services/personalRecordsApi.js';
+import { upsertPersonalRecords, deletePersonalRecord } from '../services/personalRecordsApi.js';
+import { recordIconKey } from '../lib/records.js';
 import { revealOnScroll } from '../lib/motion.js';
+import AppHeader from '../components/AppHeader.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 
 const categoryLabels = {
   all: 'All',
   strength: 'Strength',
   fitness: 'Fitness',
   cardio: 'Cardio',
-};
-
-const categoryIcon = {
-  strength: 'dumbbell',
-  fitness: 'zap',
-  cardio: 'activity',
 };
 
 function categoryForExerciseId(id) {
@@ -31,6 +28,8 @@ export default function RecordsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [formCategory, setFormCategory] = useState('');
   const [editingRecord, setEditingRecord] = useState(null);
+  /** Record queued for deletion — drives the ConfirmDialog. */
+  const [pendingDelete, setPendingDelete] = useState(null);
   const records = Store.get('records') || [];
   const exercises = getAllExercises();
 
@@ -261,19 +260,40 @@ export default function RecordsPage() {
     Toast.show('Record updated.', 'success');
   }
 
+  function handleConfirmDelete() {
+    const record = pendingDelete;
+    if (!record) return;
+
+    // Dropping it from `records` is enough for the Progress page's PR list too:
+    // Store.update recomputes progressData.personalRecords from `records`.
+    Store.update('records', (cur) => (cur || []).filter((r) => String(r.id) !== String(record.id)));
+
+    const user = Store.get('user');
+    if (user?.source === 'supabase' && user?.id) {
+      void deletePersonalRecord(record).then(({ error }) => {
+        if (error) Toast.show('Removed here. Could not update your account now.', 'warning', 4500);
+      }).catch(() => {
+        Toast.show('Removed here. Could not update your account now.', 'warning', 4500);
+      });
+    }
+
+    setPendingDelete(null);
+    Toast.show('Record deleted.', 'info', 1800);
+  }
+
   return (
     <div className="rec" ref={rootRef}>
       {/* ===== Header ===== */}
-      <header className="rec-header" data-reveal>
-        <div>
-          <span className="gx-eyebrow">{icon('trophy', 13)} Achievements</span>
-          <h1 className="rec-h1">Personal Records</h1>
-          <p className="gx-subtitle">Your best lifts, reps, cardio, and fitness milestones.</p>
-        </div>
-        <button type="button" className="gx-btn gx-btn-primary" onClick={() => setShowAdd(true)}>
-          {icon('plus', 15)} Add Record
-        </button>
-      </header>
+      <AppHeader
+        eyebrow={<>{icon('trophy', 13)} Achievements</>}
+        title="Personal Records"
+        subtitle="Your best lifts, reps, cardio, and fitness milestones."
+        action={
+          <button type="button" className="gx-btn gx-btn-primary" onClick={() => setShowAdd(true)}>
+            {icon('plus', 15)} Add Record
+          </button>
+        }
+      />
 
       {/* ===== Summary ===== */}
       <div className="rec-summary" data-reveal>
@@ -335,16 +355,26 @@ export default function RecordsPage() {
             <article key={r.id} className="gx-card rec-card" data-reveal>
               <div className="rec-card-top">
                 <span className={`rec-card-cat cat-${r.category}`}>
-                  {icon(categoryIcon[r.category] || 'trophy', 13)} {categoryLabels[r.category] || 'Training'}
+                  {icon(recordIconKey(r), 13)} {categoryLabels[r.category] || 'Training'}
                 </span>
-                <button
-                  type="button"
-                  className="rec-card-edit"
-                  onClick={() => handleStartEdit(r)}
-                  aria-label={`Edit ${r.exercise_name}`}
-                >
-                  {icon('edit', 14)}
-                </button>
+                <div className="rec-card-acts">
+                  <button
+                    type="button"
+                    className="rec-card-edit"
+                    onClick={() => handleStartEdit(r)}
+                    aria-label={`Edit ${r.exercise_name}`}
+                  >
+                    {icon('edit', 15)}
+                  </button>
+                  <button
+                    type="button"
+                    className="rec-card-del"
+                    onClick={() => setPendingDelete(r)}
+                    aria-label={`Delete ${r.exercise_name} record`}
+                  >
+                    {icon('trash', 15)}
+                  </button>
+                </div>
               </div>
               <h3 className="rec-card-name">{r.exercise_name}</h3>
               <div className="rec-card-badge">{icon('trophy', 14)} {formatRecordBadge(r)}</div>
@@ -508,6 +538,17 @@ export default function RecordsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete this record?"
+        subject={pendingDelete ? `${pendingDelete.exercise_name} · ${formatRecordBadge(pendingDelete)}` : ''}
+        note="The PR disappears from your records and from your Progress summary. Your logged sessions stay untouched. This can't be undone."
+        confirmLabel="Delete"
+        tone="danger"
+      />
     </div>
   );
 }

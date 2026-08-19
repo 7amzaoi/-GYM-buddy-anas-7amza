@@ -1,0 +1,539 @@
+/* ============================================================
+   TRAIN (idle) — top bar, hero plan, program rail, recent, actions
+
+   Loaded AFTER _workouts-base.css. Only the idle screen lives here; the
+   active-session styles (including the .wko-bg* blobs, which this screen does
+   not render but the active view still uses) stay in the base sheet.
+
+   Tokens only. Type scale 11 / 12 / 13 / 15 / 22 / 28.
+   Tier-3 grey (--text-3) is reserved for always-dark surfaces where the tokens
+   are re-scoped; on the page background it is #86878D in light mode (3.2:1),
+   below AA for the small text here — so everything uses --text-2. Accent AS
+   TEXT uses --accent-ink, which is the neon hue in dark and the deepened one
+   in light, so none of this needs an entry in _theme-light.css.
+   ============================================================ */
+.wko-idle { gap: 0; }
+
+/* --- top bar --- */
+.wko-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-1);
+}
+.wko-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+}
+
+/* --- shared bits --- */
+.wko-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.wko-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+.wko-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg);
+  border: 1px solid var(--hairline);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: capitalize;
+}
+.wko-tag.is-accent {
+  background: rgba(var(--accent-rgb), 0.14);
+  border-color: rgba(var(--accent-rgb), 0.32);
+  color: var(--accent-ink);
+}
+.wko-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.wko-meta span { display: inline-flex; align-items: center; gap: 5px; }
+
+/* --- hero --- */
+.wko-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), var(--glass-bg));
+  border: 1px solid rgba(var(--accent-rgb), 0.30);
+  box-shadow: var(--glass-highlight);
+}
+.wko-hero-head { display: flex; align-items: flex-start; gap: var(--space-3); }
+.wko-hero-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wko-hero-name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  text-wrap: pretty;
+}
+.wko-hero-reason {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+.wko-hero-ring {
+  flex: none;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid rgba(var(--accent-rgb), 0.35);
+  background: var(--glass-bg);
+}
+.wko-hero-ring b {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+.wko-hero-ring span { font-size: 10px; color: var(--text-2); margin-top: 2px; }
+
+/* Primary control — 56px, full width, at the foot of the hero block. */
+.wko-go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.28);
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    box-shadow var(--dur-base) var(--ease-std);
+}
+.wko-go:hover { box-shadow: 0 12px 30px rgba(var(--accent-rgb), 0.38); }
+.wko-go:active { transform: scale(0.985); }
+.wko-go:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wko-go:disabled { opacity: 0.6; cursor: default; }
+.wko-go:disabled:active { transform: none; }
+
+.wko-hero-alt {
+  width: 100%;
+  min-height: 44px;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-base) var(--ease-std);
+}
+.wko-hero-alt:hover { color: var(--text-1); }
+.wko-hero-alt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+.wko-hero-alt:disabled { opacity: 0.6; cursor: default; }
+
+/* --- sections --- */
+.wko-sec { margin-top: var(--space-4); }
+.wko-sec-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.wko-sec-title {
+  margin: 0 0 var(--space-2);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+.wko-sec-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 2px;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.wko-sec-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* --- program rail: two cards, swipeable --- */
+.wko-rail {
+  display: grid;
+  grid-auto-flow: column;
+  /* NOT minmax(0, 78%): a min of 0 lets the two cards compress to fit the
+     container, so the rail never overflows and never scrolls. A fixed track
+     keeps them at 78% each — together 156% + gap — which is what makes the
+     second card peek and the rail scroll. */
+  grid-auto-columns: 78%;
+  gap: var(--space-3);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  /* Deliberately NOT bled to the screen edge with negative margins: the page
+     gutter is set by .main-content (16px on phones), so a hardcoded bleed
+     over/under-shoots it and spills the whole PAGE into horizontal scroll —
+     measured at 4px. The 78% track already gives the peek affordance. */
+  padding-bottom: var(--space-2);
+  scrollbar-width: none;
+}
+.wko-rail::-webkit-scrollbar { width: 0; height: 0; }
+.wko-pcard {
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px var(--space-3);
+  border-radius: var(--radius);
+  background: var(--glass-bg);
+  border: 1px solid var(--hairline);
+}
+.wko-pcard-sug {
+  border-style: dashed;
+  border-color: rgba(var(--accent-rgb), 0.32);
+}
+.wko-pcard-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wko-pcard-reason {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+  text-wrap: pretty;
+  /* Hard cap: the rail is a grid, so the taller card sets BOTH card heights.
+     An unclamped reason silently grew the whole section. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.wko-pcard-list {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wko-pcard-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: auto 0 0;
+  padding-top: 4px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+.wko-pcard-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 2px;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.wko-pcard-go:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+.wko-pcard-go:disabled { opacity: 0.6; cursor: default; }
+
+/* Weekly analysis — 7 columns, one per day, index 6 = today.
+   Bar height is minutes trained that day; a filled bar is a day you showed up.
+   Replaces the single goal bar: same vertical budget, far more information. */
+.wko-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.wko-week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.wko-week-track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 18px;
+}
+.wko-week-bar {
+  width: 100%;
+  border-radius: 2px;
+  /* Rest days stay visible as a faint stub, so the gaps in the week read as
+     gaps rather than as missing data. */
+  background: var(--hairline-strong);
+}
+.wko-week-day.is-on .wko-week-bar { background: var(--accent); }
+.wko-week-lbl {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-2);
+}
+/* Today gets a marker that survives greyscale — never colour alone. */
+.wko-week-day.is-today .wko-week-lbl {
+  color: var(--text-1);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wko-pcard-sub {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-2);
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wko-pcard-strong { color: var(--text-1); font-weight: 700; }
+
+/* --- recent rows --- */
+.wko-rlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wko-rrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 44px;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--hairline);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--dur-base) var(--ease-std);
+}
+.wko-rrow:hover { border-color: var(--hairline-strong); }
+.wko-rrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wko-rthumb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  background: var(--glass-bg);
+  color: var(--text-2);
+}
+.wko-rthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wko-rtext {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.wko-rtext b {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wko-rtext > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+.wko-rmeta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 11px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.wko-log-empty {
+  margin: 0;
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--hairline);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.wko-log-more {
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-2);
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-base) var(--ease-std);
+}
+.wko-log-more:hover { color: var(--text-1); }
+.wko-log-more:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* --- quick actions --- */
+/* One scrollable line. Wrapping put these on two rows, which alone cost ~52px
+   of height and pushed the section below the fold. */
+.wko-chips {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.wko-chips::-webkit-scrollbar { width: 0; height: 0; }
+.wko-chip { flex: none; }
+.wko-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg);
+  border: 1px solid var(--hairline);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-1);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--dur-base) var(--ease-std),
+    background var(--dur-base) var(--ease-std);
+}
+.wko-chip:hover { border-color: var(--hairline-strong); background: var(--glass-bg-strong); }
+.wko-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Short viewports (iPhone SE, 667px — 177px less than an iPhone 14).
+   Everything below is a rhythm cut, not a size cut: the 52px primary control
+   and every 44px target keep their dimensions. Even fully compressed a 667px
+   screen cannot show all five blocks at once, so the last one still scrolls
+   slightly — the goal here is to make that as small as possible. */
+@media (max-height: 740px) {
+  .wko-title { font-size: 20px; }
+  .wko-hero {
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+  }
+  .wko-hero-name { font-size: 18px; }
+  .wko-hero-ring { width: 46px; height: 46px; }
+  .wko-hero-ring b { font-size: 16px; }
+  .wko-hero-ring span { font-size: 9px; }
+  .wko-go { min-height: 48px; }
+
+  .wko-sec { margin-top: var(--space-3); }
+  .wko-sec-title { font-size: 14px; margin-bottom: 6px; }
+
+  .wko-pcard { padding: 8px 10px; }
+  .wko-rthumb { width: 40px; height: 40px; }
+  .wko-rrow { padding: 5px; }
+
+  /* One recent row instead of two. Progressive disclosure by viewport: the
+     section head's "View all" still reaches the full history, so nothing is
+     unreachable — it is 64px of fold bought back on the screens that need it. */
+  .wko-rlist li:nth-child(n + 2) { display: none; }
+  .wko-week-track { height: 15px; }
+  .wko-week-lbl { font-size: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wko-go,
+  .wko-hero-alt,
+  .wko-chip,
+  .wko-rrow,
+  .wko-log-more { transition: none; }
+  .wko-go:active { transform: none; }
+  .wko-rail { scroll-behavior: auto; }
+}

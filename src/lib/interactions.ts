@@ -1,6 +1,7 @@
 // ========== GYMBUDDY INTERACTIONS LAYER (legacy behavior, React-safe) ==========
 import { Store } from '../store.js';
 import { closestElement } from './domTargets.js';
+import { currentAccent } from './personalization.js';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -32,7 +33,7 @@ export const Toast: ToastApi = {
     const colors: Record<ToastType, string> = {
       success: '#2ED573',
       error: '#FF4757',
-      info: '#D4FF00',
+      info: currentAccent().hex,
       warning: '#FFA502',
     };
     const icons: Record<ToastType, string> = {
@@ -153,7 +154,7 @@ export function launchConfetti(duration = 2500): void {
     canvas.remove();
     return;
   }
-  const colors = ['#D4FF00', '#2ED573', '#FF4757', '#FFA502', '#FFFFFF', '#7B61FF'];
+  const colors = [currentAccent().hex, '#2ED573', '#FF4757', '#FFA502', '#FFFFFF', '#7B61FF'];
   const particles: ConfettiParticle[] = Array.from({ length: 120 }, () => ({
     x: Math.random() * canvas.width,
     y: -20 - Math.random() * 100,
@@ -220,23 +221,45 @@ function initTooltips(): void {
   );
 }
 
+/**
+ * Ambient background dots.
+ *
+ * The animation lives in CSS (`.particle-dot` in _foundation.css), not in the
+ * inline style. That matters: this used to write `animation:float …s infinite`
+ * straight into style.cssText, and an inline animation is unreachable by
+ * `@media (prefers-reduced-motion)` — so 20 dots kept looping on every page for
+ * users who had explicitly asked for less motion. Per-dot timing is passed as
+ * custom properties instead, which CSS can still override.
+ *
+ * Belt and braces: when reduced motion is on we don't even set the timing, so
+ * nothing animates even if the stylesheet is missing.
+ */
 export function initParticles(): void {
   if (document.getElementById('particles-bg')) return;
+
+  const reduced =
+    typeof matchMedia !== 'undefined' &&
+    matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const container = document.createElement('div');
   container.id = 'particles-bg';
   container.style.cssText =
     'position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden';
+
   for (let i = 0; i < 20; i++) {
     const dot = document.createElement('div');
     const size = 2 + Math.random() * 4;
+    dot.className = 'particle-dot';
     dot.style.cssText = `
       position:absolute;border-radius:50%;
       width:${size}px;height:${size}px;
-      background:rgba(212,255,0,${0.05 + Math.random() * 0.1});
+      background:rgba(var(--accent-rgb),${0.05 + Math.random() * 0.1});
       left:${Math.random() * 100}%;top:${Math.random() * 100}%;
-      animation:float ${5 + Math.random() * 10}s ease-in-out infinite;
-      animation-delay:${Math.random() * 5}s;
     `;
+    if (!reduced) {
+      dot.style.setProperty('--dot-duration', `${5 + Math.random() * 10}s`);
+      dot.style.setProperty('--dot-delay', `${Math.random() * 5}s`);
+    }
     container.appendChild(dot);
   }
   document.body.appendChild(container);

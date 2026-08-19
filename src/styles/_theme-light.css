@@ -1,0 +1,209 @@
+/* ============================================================
+   LIGHT-MODE PATCH — loads LAST.
+
+   The token bridge in _theme.css re-themes anything that reads a token. This
+   file handles what it can't: rules across the legacy sheets that bake a dark
+   hex or a white-alpha directly into the declaration, which no token flip can
+   reach. Scoped entirely under [data-theme='light'], so dark is untouched.
+   ============================================================ */
+
+:root[data-theme='light'] body {
+  background: var(--surface-0);
+  color: var(--text-1);
+}
+
+/* ---- Surfaces that hardcode a dark hex ---- */
+/* Photo surfaces keep their dark base in light mode — the images are dark and
+   the scrim over them is what makes overlaid type readable. */
+:root[data-theme='light'] .wko-active .wko-set-input,
+:root[data-theme='light'] .input,
+:root[data-theme='light'] .prof-field input,
+:root[data-theme='light'] .dash-field input {
+  background: var(--surface-3);
+  border-color: var(--hairline);
+  color: var(--text-1);
+}
+
+/* ---- Sticky/blurred chrome ---- */
+:root[data-theme='light'] .m1-wkhead {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.80));
+  border-bottom-color: var(--hairline);
+}
+:root[data-theme='light'] .app-header[data-collapsed='true'] .app-header__bar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.72));
+  border-bottom-color: var(--hairline);
+}
+:root[data-theme='light'] .sidebar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 249, 251, 0.97));
+  border-right-color: var(--hairline);
+}
+:root[data-theme='light'] .mobile-nav {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 249, 251, 0.94));
+  border-color: var(--hairline);
+  box-shadow: 0 8px 30px rgba(16, 18, 28, 0.12);
+}
+
+/* ---- Accent used AS TEXT: neon on white is ~1.4:1, swap to the deep hue.
+        Photo contexts re-scope --accent-ink back to neon themselves. ---- */
+:root[data-theme='light'] .m1-eyebrow:not(.m1-photo *),
+:root[data-theme='light'] .gx-eyebrow:not(.m1-photo *),
+:root[data-theme='light'] .m1-seclink:hover:not(.m1-photo *),
+:root[data-theme='light'] .m1-timer:not(.m1-photo *),
+:root[data-theme='light'] .m1-stat.is-accent .m1-stat-val:not(.m1-photo *),
+:root[data-theme='light'] .m1-delta-val:not(.m1-photo *),
+:root[data-theme='light'] .m1-summary-pct:not(.m1-photo *),
+:root[data-theme='light'] .wko-rest-label:not(.m1-photo *),
+:root[data-theme='light'] .m1-wkhead .wko-rest-time:not(.m1-photo *),
+:root[data-theme='light'] .mnav-tab.is-active:not(.m1-photo *),
+:root[data-theme='light'] .nav-item.active:not(.m1-photo *),
+:root[data-theme='light'] .dash-link:not(.m1-photo *),
+:root[data-theme='light'] .prof-goal.is-active:not(.m1-photo *),
+:root[data-theme='light'] .prof-goal.is-active span:not(.m1-photo *),
+:root[data-theme='light'] .prof-accent.is-selected:not(.m1-photo *),
+:root[data-theme='light'] .wko-recent-more:not(.m1-photo *),
+:root[data-theme='light'] .m1-themeopt.is-active:not(.m1-photo *),
+:root[data-theme='light'] .dash-accent:not(.m1-photo *),
+/* Found by a contrast sweep of every screen in light mode: these all set
+   `color: var(--accent)` directly, which is a neon hue whatever the user
+   picked — the brand cyan is about 1.8:1 on a white card, i.e. invisible.
+   Same fix as the rest of this block. */
+:root[data-theme='light'] .plan-accent:not(.m1-photo *),
+:root[data-theme='light'] .plan-card-cat:not(.m1-photo *),
+:root[data-theme='light'] .plan-card-last:not(.m1-photo *),
+:root[data-theme='light'] .plan-card-toggle:not(.m1-photo *),
+:root[data-theme='light'] .plan-summary-val.plan-accent:not(.m1-photo *),
+:root[data-theme='light'] .rec-accent:not(.m1-photo *),
+:root[data-theme='light'] .rec-summary-latest-name:not(.m1-photo *),
+:root[data-theme='light'] .rec-card-cat:not(.m1-photo *),
+:root[data-theme='light'] .rec-card-badge:not(.m1-photo *),
+:root[data-theme='light'] .prof-accent-text:not(.m1-photo *),
+:root[data-theme='light'] .prof-badge-state:not(.m1-photo *),
+:root[data-theme='light'] .dash-xp-tier:not(.m1-photo *),
+:root[data-theme='light'] .dash-xp-current:not(.m1-photo *),
+:root[data-theme='light'] .dash-xp-next:not(.m1-photo *),
+:root[data-theme='light'] .dash-bmi-num:not(.m1-photo *),
+:root[data-theme='light'] .dash-bmi-cat:not(.m1-photo *),
+:root[data-theme='light'] .gx-eyebrow:not(.m1-photo *),
+:root[data-theme='light'] .wko-accent {
+  color: var(--accent-ink);
+}
+/* The chip count sits on an accent pill, so it needs the ink treatment too. */
+:root[data-theme='light'] .rec-chip:not(.is-active) .rec-chip-count {
+  background: rgba(0, 0, 0, 0.10);
+  color: var(--accent-ink);
+}
+/* Accent-tinted fills need a stronger tint to register on white. */
+:root[data-theme='light'] .gx-badge.is-accent,
+:root[data-theme='light'] .prof-level-chip,
+:root[data-theme='light'] .m1-summary-icon {
+  background: rgba(var(--accent-rgb), 0.20);
+  color: var(--accent-ink);
+}
+/* Glows read as smudges on white. */
+:root[data-theme='light'] .mnav-fab-glyph,
+:root[data-theme='light'] .m1-prof-avatar,
+:root[data-theme='light'] .wko-ring.is-complete::before,
+:root[data-theme='light'] .wko-active .wko-set-check.is-checked {
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.35);
+}
+:root[data-theme='light'] .mnav-tab.is-active svg,
+:root[data-theme='light'] .nav-item.active .nav-item-icon {
+  filter: none;
+}
+:root[data-theme='light'] .m1-cta,
+:root[data-theme='light'] .gx-btn-primary {
+  color: var(--on-accent);
+}
+
+/* ---- Decorative dark washes ---- */
+:root[data-theme='light'] .dash-hero-glow,
+:root[data-theme='light'] .wko-start-glow,
+:root[data-theme='light'] .m1-photo-ghost {
+  opacity: 0.35;
+}
+
+/* ---- Sheets & dialogs ---- */
+:root[data-theme='light'] .sheet__panel {
+  background-color: rgba(255, 255, 255, 0.92);
+  background-image: none;
+  border-color: var(--hairline);
+}
+:root[data-theme='light'] dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.35); }
+:root[data-theme='light'] .sheet__handle { background: var(--hairline-strong); }
+
+/* ============================================================
+   Theme picker (Profile)
+   ============================================================ */
+.m1-themepick {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.m1-themeopt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline);
+  background: var(--glass-bg);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--dur-fast) var(--ease-std), color var(--dur-fast) var(--ease-std);
+}
+.m1-themeopt.is-active {
+  border-color: var(--accent);
+  color: var(--text-1);
+  background: rgba(var(--accent-rgb), 0.12);
+}
+.m1-themeopt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.m1-themeswatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline-strong);
+  flex-shrink: 0;
+}
+.m1-themeswatch.is-dark { background: linear-gradient(135deg, #1B1B1F, #0B0B0B); }
+.m1-themeswatch.is-light { background: linear-gradient(135deg, #FFFFFF, #DDE1E7); }
+
+/* Muted/secondary chrome that leaned on white-alpha for contrast. */
+:root[data-theme='light'] .gx-subtitle,
+:root[data-theme='light'] .gx-stat-label,
+:root[data-theme='light'] .m1-stat-lbl,
+:root[data-theme='light'] .m1-meta,
+:root[data-theme='light'] .m1-eyebrow.is-muted { color: var(--text-2); }
+:root[data-theme='light'] .prof-signout { color: #B3261E; }
+
+/* ---- Always-dark marketing surfaces ----
+   Landing, auth and download bake their own near-black background (measured
+   #050505 / #0A0A0A) and keep it in both themes — they are a brand surface, not
+   a themed app screen. But they still read the ink tokens, so in light mode
+   headings resolved to #0B0B0B on #050505: black on black. Section titles and
+   card titles vanished while descriptions survived, because those happened to
+   use a hardcoded white-alpha.
+
+   Same fix as the photo contexts in _m1.css: rather than chase individual
+   selectors, RE-SCOPE the tokens on the page roots. Anything inside that reads
+   a token gets light ink automatically, now and for anything added later. */
+:root[data-theme='light'] .landing,
+:root[data-theme='light'] .login-v2,
+:root[data-theme='light'] .download-page {
+  --text-1: #FFFFFF;
+  --text-2: rgba(255, 255, 255, 0.72);
+  --text-3: rgba(255, 255, 255, 0.55);
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.72);
+  --hairline: rgba(255, 255, 255, 0.10);
+  --hairline-strong: rgba(255, 255, 255, 0.18);
+  --border: rgba(255, 255, 255, 0.10);
+  /* The accent sits on dark here, so it stays neon rather than going deep. */
+  --accent-ink: var(--accent);
+  color: var(--text-1);
+}

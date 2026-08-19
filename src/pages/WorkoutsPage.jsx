@@ -5,6 +5,7 @@ import { getAllExercises, getExerciseById, EXERCISES } from '../data.js';
 import { NavigateContext } from '../context/NavigateContext.jsx';
 import { Toast, launchConfetti } from '../lib/interactions.js';
 import { revealOnScroll } from '../lib/motion.js';
+import * as haptics from '../lib/haptics.js';
 
 import {
   computeLiveStats, formatTime, playBeep,
@@ -14,6 +15,8 @@ import IdleScreen from '../components/workouts/IdleScreen.jsx';
 import ExerciseCard from '../components/workouts/ExerciseCard.jsx';
 import RestBanner from '../components/workouts/RestBanner.jsx';
 import { PickerModal, PlateModal, DiscardModal, SummaryModal } from '../components/workouts/Modals.jsx';
+import useSessionTimer from '../hooks/useSessionTimer.js';
+import useWakeLock from '../hooks/useWakeLock.js';
 
 /** Curated quick-pick exercise IDs shown at the top of the picker modal. */
 const QUICK_PICK_IDS = ['s1', 's2', 's3', 's5', 's6'];
@@ -26,7 +29,6 @@ export default function WorkoutsPage() {
   const [, forceRender] = useReducer((x) => x + 1, 0);
 
   // ===== State =====
-  const [elapsedSec, setElapsedSec] = useState(0);
   const [paused, setPaused] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
@@ -57,14 +59,17 @@ export default function WorkoutsPage() {
   );
   const sessionKey = session ? `${session.startTime}` : '';
 
+  // Shared with ActiveSessionBar — one source of truth for the clock.
+  const elapsedSec = useSessionTimer(session, paused);
+  // Keep the screen awake while logging (no-op where unsupported).
+  useWakeLock(!!session);
+
   // ===== Effects =====
 
-  // Live elapsed-time tick + backfill default sets when starting from a plan.
+  // Backfill default sets when starting from a plan. (The elapsed clock itself
+  // now comes from useSessionTimer, shared with ActiveSessionBar.)
   useEffect(() => {
-    if (!session) {
-      setElapsedSec(0);
-      return undefined;
-    }
+    if (!session) return;
     Store.update('activeSession', (s) => {
       if (!s) return s;
       s.exercises = (s.exercises || []).map((ex) => {
@@ -75,14 +80,11 @@ export default function WorkoutsPage() {
       });
       return s;
     });
-    setElapsedSec(Math.max(0, Math.floor((Date.now() - session.startTime) / 1000)));
-    const id = window.setInterval(() => {
-      if (pausedRef.current) return;
-      setElapsedSec(Math.max(0, Math.floor((Date.now() - session.startTime) / 1000)));
-    }, 1000);
-    return () => window.clearInterval(id);
   }, [sessionKey]);
 
+  /* Full-screen focus mode: session running AND a mobile viewport. The class
+     lives on <html> so the tab bar (rendered in AuthenticatedChrome, outside
+     this tree) can be translated off-screen without unmounting it. */
   // Reveal-on-scroll for idle state.
   useEffect(() => revealOnScroll(rootRef.current, '[data-reveal]'), [!!session]);
 
@@ -109,6 +111,7 @@ export default function WorkoutsPage() {
 
   // ===== Derived =====
   const liveStats = computeLiveStats(session);
+
   const recentAll = useMemo(() => history.slice(0, 10), [history]);
   const RECENT_PREVIEW = 3;
   const recentVisible = recentExpanded ? recentAll : recentAll.slice(0, RECENT_PREVIEW);
@@ -168,6 +171,7 @@ export default function WorkoutsPage() {
       return s;
     });
     if (startedDone) {
+      haptics.success(); // set completed
       setRestRemaining(restDuration);
       setRestActive(true);
     }
@@ -230,8 +234,12 @@ export default function WorkoutsPage() {
     setSaveAsTemplate(false);
     setTemplateName('');
     launchConfetti();
+    haptics.success(); // session finished
     Toast.show('Workout saved!', 'success', 2500);
-    window.setTimeout(() => Store.completeSession(), 200);
+    window.setTimeout(() => {
+      const { newPRs = 0 } = Store.completeSession() || {};
+      if (newPRs > 0) haptics.success(); // new personal record(s)
+    }, 200);
   }
 
   function confirmDiscard() {
@@ -289,30 +297,53 @@ export default function WorkoutsPage() {
         <span className="wko-bg-grid" />
       </div>
 
-      {/* Sticky live bar */}
-      <div className="wko-livebar">
-        <div className="wko-livebar-left">
-          <button type="button" className="wko-livebar-btn" onClick={() => setDiscardConfirm(true)} aria-label="Discard workout">
-            {icon('x', 17)}
+
+      {/* Sticky live header — eyebrow, plan name, oversized timer, completion bar. */}
+      <header className="m1-wkhead">
+        <div className="m1-wkhead-top">
+          <span className="m1-eyebrow is-muted">Active workout</span>
+          <button
+            type="button"
+            className="m1-iconbtn"
+            onClick={() => setDiscardConfirm(true)}
+            aria-label="Discard workout"
+          >
+            {icon('x', 19)}
           </button>
-          <div className="wko-livebar-title">
-            <h1>{session.planName}</h1>
-            <span>{liveStats.doneSets}/{liveStats.totalSets} sets · {session.exercises.length} exercises</span>
+        </div>
+        <h1 className="m1-display m1-h2 m1-wkhead-title">{session.planName}</h1>
+        <div className="m1-wkhead-row">
+          <span className={`m1-timer ${paused ? 'is-paused' : ''}`}>{formatTime(elapsedSec)}</span>
+          <div className="m1-wkhead-right">
+            <span className="m1-meta">
+              {liveStats.doneSets}/{liveStats.totalSets} sets · {session.exercises.length} ex
+            </span>
+            <button
+              type="button"
+              className="m1-iconbtn"
+              onClick={togglePause}
+              aria-label={paused ? 'Resume' : 'Pause'}
+            >
+              {paused ? icon('play', 17) : icon('pause', 17)}
+            </button>
           </div>
         </div>
-        <div className="wko-livebar-timer">
-          <span className="wko-livebar-timer-label">Duration</span>
-          <span className={`wko-livebar-timer-val ${paused ? 'is-paused' : ''}`}>{formatTime(elapsedSec)}</span>
+        <div className="m1-progress">
+          <span style={{ width: `${liveStats.totalSets ? (liveStats.doneSets / liveStats.totalSets) * 100 : 0}%` }} />
         </div>
-        <div className="wko-livebar-actions">
-          <button type="button" className="wko-livebar-btn" onClick={togglePause} aria-label={paused ? 'Resume' : 'Pause'}>
-            {paused ? icon('play', 15) : icon('pause', 15)}
-          </button>
-          <button type="button" className="gx-btn gx-btn-primary wko-finish-btn" onClick={tryFinish}>
-            {icon('check', 15)} Finish
-          </button>
-        </div>
-      </div>
+
+        {/* Rest timer lives inside the sticky header, so it pins to the top of
+            the screen while you rest instead of floating at the bottom where the
+            tab bar and FAB overlapped it. Renders nothing when inactive. */}
+        <RestBanner
+          active={restActive}
+          remaining={restRemaining}
+          duration={restDuration}
+          onSkip={skipRest}
+          onBump={bumpRest}
+          onChangeDuration={setRestDuration}
+        />
+      </header>
 
       {/* Live stats strip */}
       <div className="wko-live-stats">
@@ -357,6 +388,10 @@ export default function WorkoutsPage() {
           <button type="button" className="wko-add-ex" onClick={openPicker}>
             {icon('plus', 18)} Add Another Exercise
           </button>
+
+          <button type="button" className="m1-cta m1-finish" onClick={tryFinish}>
+            {icon('check', 17)} Finish
+          </button>
         </>
       )}
 
@@ -371,15 +406,6 @@ export default function WorkoutsPage() {
         muscleCounts={muscleCounts}
         quickPicks={quickPicks}
         onPick={pickExercise}
-      />
-
-      <RestBanner
-        active={restActive}
-        remaining={restRemaining}
-        duration={restDuration}
-        onSkip={skipRest}
-        onBump={bumpRest}
-        onChangeDuration={setRestDuration}
       />
 
       <PlateModal

@@ -171,3 +171,38 @@
   .gx-btn { transition: none; }
 }
 
+
+/* ============================================================
+   PAGE SKELETON — Suspense fallback for route chunks.
+   ============================================================ */
+.pskel { display: flex; flex-direction: column; gap: var(--space-4); }
+.pskel-hero,
+.pskel-stat,
+.pskel-card {
+  border-radius: var(--m1-radius, 20px);
+  background: linear-gradient(
+    100deg,
+    var(--glass-bg) 30%,
+    var(--glass-bg-strong) 50%,
+    var(--glass-bg) 70%
+  );
+  background-size: 220% 100%;
+  animation: pskelShimmer 1.35s var(--ease-std) infinite;
+}
+.pskel-hero { height: 300px; }
+.pskel-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.pskel-stat { height: 76px; border-radius: var(--radius-sm); }
+.pskel-card { height: 150px; }
+.pskel-card-sm { height: 92px; }
+@keyframes pskelShimmer {
+  from { background-position: 180% 0; }
+  to   { background-position: -80% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pskel-hero, .pskel-stat, .pskel-card { animation: none; }
+}
+.gx-sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

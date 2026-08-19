@@ -50,16 +50,55 @@ CREATE TABLE IF NOT EXISTS public.personal_records (
 CREATE INDEX IF NOT EXISTS idx_personal_records_user_recorded_at
   ON public.personal_records (user_id, recorded_at DESC);
 
+-- In-app notifications. Rows are created client-side today (see
+-- services/notificationSuggestions.js); the shape is deliberately transport
+-- agnostic so a future Web Push sender can consume the same rows without a
+-- migration:
+--   * `kind` + `data` carry everything a push payload would need.
+--   * `scheduled_for` NULL = deliver immediately; a future timestamp is a
+--     user-set reminder that a sender/cron would pick up. Readers must filter
+--     it out until it is due — there is no UI to set one yet.
+--   * `priority` maps onto push importance channels (1 normal .. 3 critical).
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT,
+  data JSONB,
+  action_url TEXT,
+  read_at TIMESTAMPTZ,
+  scheduled_for TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  priority SMALLINT NOT NULL DEFAULT 1,
+  CONSTRAINT notifications_kind_check
+    CHECK (kind IN ('pr_broken', 'reminder', 'streak', 'system')),
+  CONSTRAINT notifications_priority_check
+    CHECK (priority BETWEEN 1 AND 3)
+);
+
+-- Feed order: newest first for a given user.
+CREATE INDEX IF NOT EXISTS idx_notifications_user_created_at
+  ON public.notifications (user_id, created_at DESC);
+
+-- Unread badge. Partial index so it only carries the rows the bell counts.
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread
+  ON public.notifications (user_id, read_at)
+  WHERE read_at IS NULL;
+
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gymbuddy_app_state ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.body_metrics_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.personal_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "profiles_own" ON public.profiles FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "app_state_own" ON public.gymbuddy_app_state FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "body_metrics_logs_own" ON public.body_metrics_logs FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "personal_records_own" ON public.personal_records FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "notifications_own" ON public.notifications FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 DO $$
 BEGIN

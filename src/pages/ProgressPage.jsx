@@ -8,6 +8,9 @@ import { logBodyMetricsRemote } from '../services/profilesApi.js';
 import { refreshUserFromRemote } from '../lib/authBootstrap.js';
 import { revealOnScroll } from '../lib/motion.js';
 import { getExerciseById } from '../data.js';
+import AppHeader from '../components/AppHeader.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import DailyReport from '../components/progress/DailyReport.jsx';
 
 /** Group raw muscle names into 6 major bands for the volume chart. */
 const MUSCLE_BANDS = [
@@ -103,6 +106,11 @@ export default function ProgressPage() {
   const [logOpen, setLogOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [expandedHistoryId, setExpandedHistoryId] = useState(null);
+  /** Session queued for deletion — drives the ConfirmDialog. */
+  const [pendingDelete, setPendingDelete] = useState(null);
+  /* Progress carried ~750 lines in one column. Categories keep each view to
+     roughly a screen or two instead of one very long scroll. */
+  const [cat, setCat] = useState('daily');
   const [, forceRender] = useReducer((x) => x + 1, 0);
 
   useEffect(() => Store.subscribe(() => forceRender()), []);
@@ -229,17 +237,35 @@ export default function ProgressPage() {
   return (
     <div className="prog" ref={rootRef}>
       {/* ===== Header ===== */}
-      <header className="prog-header" data-reveal>
-        <div>
-          <span className="gx-eyebrow">{icon('chart', 13)} Analytics</span>
-          <h1 className="prog-h1">Progress Analytics</h1>
-          <p className="gx-subtitle">Visualize your transformation and strength gains.</p>
-        </div>
-        <button type="button" className="gx-btn gx-btn-primary" onClick={showLogMetrics}>
-          {icon('plus', 15)} Log Metrics
-        </button>
-      </header>
+      <AppHeader
+        eyebrow={<>{icon('chart', 13)} Analytics</>}
+        title="Progress Analytics"
+        subtitle="Visualize your transformation and strength gains."
+        action={
+          <button type="button" className="gx-btn gx-btn-primary" onClick={showLogMetrics}>
+            {icon('plus', 15)} Log Metrics
+          </button>
+        }
+      />
 
+      <nav className="m1-chiprow prog-cats" role="tablist" aria-label="Progress sections">
+        {[['daily','Daily'],['body','Body'],['strength','Strength'],['history','History']].map(([id,label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={cat === id}
+            className={`m1-chip ${cat === id ? 'is-active' : ''}`}
+            onClick={() => setCat(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {cat === 'daily' && <DailyReport />}
+
+      {cat === 'body' && (<>
       {/* ===== 3 hero metrics ===== */}
       <div className="prog-hero-grid">
         <div className="gx-card" data-reveal>
@@ -324,6 +350,9 @@ export default function ProgressPage() {
         ))}
       </div>
 
+      </>)}
+
+      {cat === 'strength' && (<>
       {/* ===== Charts row ===== */}
       <div className="prog-grid-2">
         <div className="gx-card" data-reveal>
@@ -442,6 +471,9 @@ export default function ProgressPage() {
         })()}
       </div>
 
+      </>)}
+
+      {cat === 'body' && (<>
       {/* ===== Body comp + PRs ===== */}
       <div className="prog-grid-2">
         <div className="gx-card" data-reveal>
@@ -520,6 +552,9 @@ export default function ProgressPage() {
         </div>
       </div>
 
+      </>)}
+
+      {cat === 'strength' && (<>
       {/* ===== Weekly calories + summary ===== */}
       <div className="prog-grid-2">
         <div className="gx-card" data-reveal>
@@ -545,6 +580,9 @@ export default function ProgressPage() {
         </div>
       </div>
 
+      </>)}
+
+      {cat === 'history' && (<>
       {/* ===== History ===== */}
       <div className="gx-card hist-card" data-reveal>
         <button
@@ -608,6 +646,19 @@ export default function ProgressPage() {
                     <span className={`hist-row-chev ${isOpen ? 'is-open' : ''}`} aria-hidden="true">
                       {icon('arrow', 14)}
                     </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="hist-row-del"
+                    aria-label={`Delete ${name} logged ${date.toLocaleDateString()}`}
+                    onClick={() => setPendingDelete({
+                      key: w.id || key,
+                      name,
+                      date: date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }),
+                    })}
+                  >
+                    {icon('trash', 15)}
                   </button>
 
                   {isOpen && (
@@ -675,6 +726,8 @@ export default function ProgressPage() {
         )}
       </div>
 
+      </>)}
+
       {/* ===== Log Metrics modal ===== */}
       {logOpen && (
         <div
@@ -709,6 +762,23 @@ export default function ProgressPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (Store.deleteWorkoutFromHistory(pendingDelete.key)) {
+            setExpandedHistoryId(null);
+            Toast.show('Session deleted.', 'info', 1800);
+          }
+          setPendingDelete(null);
+        }}
+        title="Delete this session?"
+        subject={pendingDelete ? `${pendingDelete.name} · ${pendingDelete.date}` : ''}
+        note="It will be removed from your history, and your streak, weekly volume and totals will be recalculated. This can't be undone."
+        confirmLabel="Delete"
+        tone="danger"
+      />
     </div>
   );
 }

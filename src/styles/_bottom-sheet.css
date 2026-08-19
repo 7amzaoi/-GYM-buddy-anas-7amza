@@ -1,0 +1,154 @@
+/* ============================================================
+   BottomSheet — native <dialog> based.
+   Mobile-first: a bottom sheet that slides up. At >=769px a pure-CSS switch
+   turns the SAME markup into a centred dialog (no JS breakpoint, no duplicate
+   markup). Drag-to-dismiss and slide are handled in BottomSheet.jsx.
+   ============================================================ */
+
+dialog.sheet {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  inset: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  background: transparent;
+  overflow: visible;
+  color: var(--text-primary);
+}
+dialog.sheet:not([open]) {
+  display: none;
+}
+dialog.sheet[open] {
+  display: flex;
+  align-items: flex-end; /* dock to bottom on mobile */
+  justify-content: center;
+}
+/* Scrim (40–60% black). Opacity tracks the drag distance (--sheet-drag). */
+dialog.sheet::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+  opacity: var(--sheet-drag, 1);
+  transition: opacity var(--dur-base) var(--ease-std);
+}
+
+.sheet__panel {
+  position: relative;
+  width: 100%;
+  max-height: calc(100dvh - var(--safe-top) - var(--space-8));
+  display: flex;
+  flex-direction: column;
+  /* --glass-bg-strong tint over a dark base so content stays legible. */
+  background-color: rgba(18, 18, 20, 0.86);
+  background-image: linear-gradient(var(--glass-bg-strong), var(--glass-bg-strong));
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-bottom: 0;
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  box-shadow: var(--elev-4);
+  padding-bottom: var(--safe-bottom);
+  will-change: transform;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+/* Drag zone: handle + head. touch-action:none so the drag doesn't scroll. */
+.sheet__grabber {
+  flex: 0 0 auto;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.sheet__handle {
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: 8px auto 2px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-border);
+}
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4) var(--space-3);
+}
+.sheet__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.sheet__close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-fast) var(--ease-std), border-color var(--dur-fast) var(--ease-std);
+}
+.sheet__close:hover {
+  color: var(--text-primary);
+  border-color: var(--glass-border-hover);
+}
+.sheet__close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Content scrolls internally. */
+.sheet__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+/* ---- Desktop: centred dialog (same markup) ---- */
+@media (min-width: 769px) {
+  dialog.sheet[open] {
+    align-items: center;
+  }
+  .sheet__panel {
+    width: min(560px, calc(100vw - var(--space-8)));
+    max-height: calc(100dvh - var(--space-16));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding-bottom: 0;
+    transform: none; /* JS skips the bottom-slide on desktop */
+  }
+  .sheet__handle {
+    display: none; /* no drag affordance on desktop */
+  }
+  .sheet__grabber {
+    cursor: default;
+  }
+  .sheet__head {
+    padding-top: var(--space-4);
+  }
+}
+
+/* Inside the sheet the body owns the scroll — drop the picker list's own
+   nested scroll region so it flows as one. */
+.sheet__body .wko-picker-list {
+  max-height: none;
+  overflow: visible;
+}
+
+/* ---- Reduced motion: fade, no slide ---- */
+@media (prefers-reduced-motion: reduce) {
+  .sheet__panel {
+    transition: opacity var(--dur-base) var(--ease-std);
+  }
+}

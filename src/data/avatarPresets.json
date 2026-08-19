@@ -1,0 +1,14 @@
+{
+  "presets": [
+    { "id": "preset-01", "file": "preset-01.webp", "label": "Dumbbell",        "category": "sport" },
+    { "id": "preset-02", "file": "preset-02.webp", "label": "Runner",         "category": "sport" },
+    { "id": "preset-03", "file": "preset-03.webp", "label": "Boxing Glove",   "category": "sport" },
+    { "id": "preset-04", "file": "preset-04.webp", "label": "Lion",          "category": "animal" },
+    { "id": "preset-05", "file": "preset-05.webp", "label": "Wolf",          "category": "animal" },
+    { "id": "preset-06", "file": "preset-06.webp", "label": "Tiger",         "category": "animal" },
+    { "id": "preset-07", "file": "preset-07.webp", "label": "Cyan Hex",      "category": "abstract" },
+    { "id": "preset-08", "file": "preset-08.webp", "label": "Ember Triangle","category": "abstract" },
+    { "id": "preset-09", "file": "preset-09.webp", "label": "Flame",         "category": "icon" },
+    { "id": "preset-10", "file": "preset-10.webp", "label": "Lightning Bolt","category": "icon" }
+  ]
+}

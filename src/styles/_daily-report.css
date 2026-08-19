@@ -1,0 +1,191 @@
+/* ============================================================
+   DAILY REPORT (Progress → Daily) + Progress category bar.
+   Reads only theme tokens, so it works in dark and light untouched.
+   ============================================================ */
+
+.prog-cats { margin-bottom: var(--space-5); }
+
+.dr { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* ---------- Health grade ---------- */
+.dr-grade {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+.dr-grade-text { min-width: 0; }
+.dr-grade-title {
+  margin: 4px 0 6px;
+  font-size: clamp(1.5rem, 6.6vw, 1.9rem);
+  color: var(--text-1);
+}
+.dr-grade-sub {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.dr-ring {
+  position: relative;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+}
+.dr-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.dr-ring-track { fill: none; stroke: var(--hairline-strong); stroke-width: 7; }
+.dr-ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 7;
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--dur-slow) var(--ease-out);
+}
+.dr-ring-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.5rem;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Metric tiles ---------- */
+.dr-heading {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin-top: var(--space-1);
+}
+.dr-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+.dr-metric { padding: var(--space-4); min-width: 0; }
+.dr-metric-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.dr-metric-lbl {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dr-metric-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--radius-xs);
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--accent-ink);
+}
+.dr-metric-val {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: var(--display-stretch);
+  font-size: 1.7rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+.dr-metric-unit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: var(--text-2);
+}
+/* Direction only — no value judgement. Whether a weight drop is "good" depends
+   on the user's goal, so the delta is neutral rather than green/red. */
+.dr-metric-delta {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+/* ---------- Workload chart ---------- */
+.dr-chart { padding: var(--space-4) var(--space-4) var(--space-3); }
+.dr-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.dr-range { flex: 0 0 auto; width: 150px; }
+.dr-range button { min-height: 44px; font-size: 0.72rem; }
+
+.dr-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  height: 168px;
+}
+.dr-bar-col {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.dr-bar {
+  width: 100%;
+  max-width: 34px;
+  border-radius: var(--radius-xs) var(--radius-xs) 2px 2px;
+  background: linear-gradient(180deg, var(--accent), rgba(var(--accent-rgb), 0.42));
+  transition: height var(--dur-slow) var(--ease-out);
+}
+.dr-bar-val {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dr-bar-lbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.dr-empty {
+  padding: var(--space-6) 0;
+  text-align: center;
+  font-size: 0.84rem;
+  color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dr-ring-fill,
+  .dr-bar { transition: none; }
+}
+
+@media (min-width: 769px) {
+  .dr-metrics { grid-template-columns: repeat(4, 1fr); }
+}

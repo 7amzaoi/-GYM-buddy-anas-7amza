@@ -18,3 +18,82 @@
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14);
 }
+
+/* ---- The open option list ----
+   Everything above styles the closed control only. A native <select>'s popup is
+   drawn by the OS in the top layer, so no rule reaches it: on our dark surface
+   it drops a white system menu, and it ignores the light theme just the same.
+   `appearance: base-select` hands the picker back to CSS.
+
+   Chromium 135+ only. Every other engine ignores the value and keeps its native
+   popup — which is the right fallback rather than a gap: on iOS the system
+   wheel is a better control than anything we would rebuild, and it stays
+   keyboard- and screen-reader-correct for free. */
+@supports (appearance: base-select) {
+  .prof-field select,
+  .prof-field select::picker(select) {
+    appearance: base-select;
+  }
+
+  /* base-select drops the OS arrow and makes the control a real box: lay the
+     value out against our own chevron. */
+  .prof-field select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+  .prof-field select::picker-icon {
+    color: var(--text-secondary);
+    transition: transform var(--dur-fast) var(--ease-std);
+  }
+  .prof-field select:open::picker-icon { transform: rotate(180deg); }
+
+  /* The picker sits in the top layer and inherits nothing from the field, so
+     the surface is restated from tokens — which is also what makes it follow
+     the light theme instead of staying a hardcoded dark panel. */
+  .prof-field select::picker(select) {
+    margin-top: 6px;
+    padding: var(--space-1);
+    max-height: 264px;
+    overflow-y: auto;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    box-shadow: var(--elev-2);
+  }
+
+  /* `option` is styled directly: the elements are real DOM children and only
+     render inside the picker, so nothing here reaches the closed control (which
+     shows a ::selectedcontent clone of the option's children, not the option). */
+  .prof-field select option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+  .prof-field select option:hover,
+  .prof-field select option:focus {
+    background: var(--glass-bg-strong);
+    outline: none;
+  }
+  .prof-field select option:checked {
+    background: rgba(var(--accent-rgb), 0.14);
+    color: var(--accent-ink);
+    font-weight: 700;
+  }
+  /* The selected row is already carried by colour and weight; the OS tick mark
+     only adds a second, differently-styled indicator. */
+  .prof-field select option::checkmark { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prof-field select::picker-icon { transition: none; }
+}

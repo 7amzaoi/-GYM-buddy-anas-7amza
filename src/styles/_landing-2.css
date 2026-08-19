@@ -11,11 +11,11 @@
   right: 0;
   height: 3px;
   z-index: 60;
-  background: linear-gradient(90deg, #d4ff00 0%, #84ff8e 60%, transparent 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 60%, transparent 100%);
   transform: scaleX(0);
   transform-origin: 0 50%;
   pointer-events: none;
-  box-shadow: 0 0 12px rgba(212, 255, 0, 0.55);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.55);
 }
 
 /* Kinetic hero title — each word fades up via CSS keyframe so it can
@@ -34,10 +34,10 @@
   animation: heroWordReveal 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .landing-v2 .hero-title .hero-word.accent {
-  background: linear-gradient(135deg, var(--accent) 0%, #B8E600 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  text-shadow: 0 0 60px rgba(212, 255, 0, 0.4);
+  text-shadow: 0 0 60px rgba(var(--accent-rgb), 0.4);
 }
 .landing-v2 .hero-title .hero-word:nth-child(1) { animation-delay: 0.10s; }
 .landing-v2 .hero-title .hero-word:nth-child(2) { animation-delay: 0.18s; }
@@ -54,7 +54,7 @@
   align-items: center;
   gap: 14px;
   padding: 8px 14px 8px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px) saturate(140%);
@@ -88,13 +88,13 @@
   text-align: left;
 }
 .landing-v2 .hero-social-stars {
-  color: #d4ff00;
-  font-size: 0.78rem;
-  letter-spacing: 1px;
-  filter: drop-shadow(0 0 4px rgba(212, 255, 0, 0.4));
+  color: var(--accent);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), 0.4));
 }
 .landing-v2 .hero-social-text {
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   color: rgba(255, 255, 255, 0.78);
   margin-top: 2px;
 }
@@ -109,7 +109,7 @@
     padding: 6px 12px 6px 6px;
   }
   .landing-v2 .hero-avatars img { width: 30px; height: 30px; }
-  .landing-v2 .hero-social-text { font-size: 0.74rem; }
+  .landing-v2 .hero-social-text { font-size: var(--text-xs); }
 }
 
 /* Infinite marquee strip between hero and features */
@@ -121,7 +121,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background:
-    linear-gradient(180deg, rgba(212, 255, 0, 0.03), transparent 60%),
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.03), transparent 60%),
     rgba(0, 0, 0, 0.35);
 }
 .landing-v2 .section-marquee::before,
@@ -159,22 +159,22 @@
   align-items: center;
   gap: 14px;
   font-family: 'Bebas Neue', system-ui, sans-serif;
-  font-size: 1.6rem;
-  letter-spacing: 0.06em;
+  font-size: var(--text-2xl);
+  letter-spacing: 0.04em;
   color: rgba(255, 255, 255, 0.78);
   text-transform: uppercase;
   flex-shrink: 0;
 }
 .landing-v2 .marquee-item:nth-child(odd) {
-  color: #d4ff00;
-  filter: drop-shadow(0 0 8px rgba(212, 255, 0, 0.25));
+  color: var(--accent);
+  filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.25));
 }
 .landing-v2 .marquee-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #d4ff00;
-  box-shadow: 0 0 10px rgba(212, 255, 0, 0.7);
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.7);
   flex-shrink: 0;
 }
 
@@ -188,3 +188,38 @@
   .landing-v2 .hero-title .hero-word { transform: none !important; opacity: 1 !important; }
 }
 
+
+/* ============================================================
+   STATIC MEMBERSHIP CARD — the no-WebGL path.
+   Shown on mobile, under prefers-reduced-motion, and on low-core devices.
+   Same artwork as the 3D card; tilt is transform-only so it never lays out.
+   ============================================================ */
+.smc-wrap { display: grid; place-items: center; }
+.smc {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  perspective: 900px;
+}
+.smc-strap {
+  width: 8px;
+  height: clamp(60px, 12vh, 120px);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, var(--hairline-strong), rgba(var(--accent-rgb), 0.55));
+}
+.smc-card {
+  width: min(300px, 72vw);
+  height: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-3), 0 0 46px rgba(var(--accent-rgb), 0.16);
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transform-style: preserve-3d;
+  transition: transform var(--dur-slow) var(--ease-out);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .smc-card { transition: none; transform: none; }
+}

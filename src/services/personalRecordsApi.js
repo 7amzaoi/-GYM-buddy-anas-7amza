@@ -79,6 +79,27 @@ export async function upsertPersonalRecords(records) {
   return { error: error ?? null };
 }
 
+export async function deletePersonalRecord(record) {
+  if (!supabase) return { error: new Error('Supabase not configured') };
+  if (!record?.exercise_id) return { error: new Error('Missing exercise_id') };
+
+  const { user, error: userErr } = await getAuthedUser();
+  if (userErr || !user?.id) return { error: userErr ?? new Error('Not authenticated') };
+
+  // Matched on the same key `upsertPersonalRecords` conflicts on, not on the
+  // local `id`: records added in-app carry a client-generated `rec_*` id that
+  // is never written to the table, so deleting by id would silently no-op and
+  // the record would reappear on the next sync.
+  const { error } = await supabase
+    .from('personal_records')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('exercise_id', record.exercise_id)
+    .eq('metric_type', record.metric_type || 'weight');
+
+  return { error: error ?? null };
+}
+
 export async function loadPersonalRecords(userId) {
   if (!supabase) return { records: [], error: new Error('Supabase not configured') };
   if (!userId) return { records: [], error: new Error('Missing userId') };
