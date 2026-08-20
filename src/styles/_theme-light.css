@@ -205,5 +205,17 @@
   --border: rgba(255, 255, 255, 0.10);
   /* The accent sits on dark here, so it stays neon rather than going deep. */
   --accent-ink: var(--accent);
+
+  /* Glass, pinned to its DARK values for the same reason as the ink above.
+     These pages hardcode a near-black base (.landing-v2 is #050505) and never
+     follow the theme, so the light-theme glass — rgba(255,255,255,.58/.78/.85)
+     — would render near-opaque white cards on near-black. Pinning here is what
+     makes it safe for marketing CSS to reference --glass-* at all. */
+  --glass-bg: rgba(255, 255, 255, 0.055);
+  --glass-bg-strong: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.42);
+
   color: var(--text-1);
 }
