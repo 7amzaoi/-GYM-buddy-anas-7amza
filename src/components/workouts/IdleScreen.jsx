@@ -16,11 +16,14 @@ import NotificationSheet from '../notifications/NotificationSheet.jsx';
  * deliberately NOT reproduced, because the Store has no such entity and faking
  * them would put invented numbers in front of the user:
  *   - the periodised program (Phase 1 / Week 3 / Day 1 / "7 of 20"). Replaced,
- *     per the agreed decision, by the plan you last trained.
- *   - the hero's "0 of 12" ring. This screen only renders when NO session is
- *     running, so a within-session counter would read 0 forever. The ring now
- *     shows how many times you have completed THIS plan, which is countable
- *     from workoutHistory and grows as you use it.
+ *     per the agreed decision, by the plan you last trained, which lives in the
+ *     Current Program rail.
+ *   - the hero's "0 of 12" ring. It counted completed sessions for the plan the
+ *     hero showed; the hero no longer shows a plan, so the ring went with it.
+ *
+ * The hero is a fixed "Empty Workout" card. It used to be the last-trained
+ * plan, which made the screen's primary action "repeat what you already have" —
+ * and that plan is already in the rail below with its own Continue button.
  */
 
 /** Photo slot per plan category, so the cards aren't flat colour blocks. */
@@ -75,8 +78,6 @@ export default function IdleScreen({
   }
   if (!lastPlan) lastPlan = plans.at(-1) || null;
 
-  /** How many logged sessions used this plan — the hero ring's number. */
-  const timesTrained = lastPlan ? recentAll.filter((h) => h.planId === lastPlan.id).length : 0;
   const lastTrainedOn = lastPlan
     ? (recentAll.find((h) => h.planId === lastPlan.id)?.date ?? null)
     : null;
@@ -147,8 +148,6 @@ export default function IdleScreen({
     }
   }
 
-  const heroPlan = lastPlan;
-
   return (
     <div className="wko wko-idle" ref={rootRef}>
       {/* ===== Top bar — the mock's settings gear is the notification bell ===== */}
@@ -158,129 +157,103 @@ export default function IdleScreen({
       </div>
       <NotificationSheet />
 
-      {/* ===== Hero ===== */}
-      {heroPlan ? (
-        <section className="wko-hero" aria-labelledby="wko-hero-name">
-          <div className="wko-hero-head">
-            <div className="wko-hero-id">
-              <h2 className="wko-hero-name" id="wko-hero-name">{heroPlan.name}</h2>
-              <p className="wko-tags">
-                <span className="wko-tag is-accent">{heroPlan.level || 'Custom'}</span>
-                {heroPlan.category && <span className="wko-tag">{heroPlan.category}</span>}
-              </p>
-            </div>
-            {/* Times completed, not a within-session counter — see file header. */}
-            <div className="wko-hero-ring" aria-hidden="true">
-              <b>{timesTrained}</b>
-              <span>{timesTrained === 1 ? 'time' : 'times'}</span>
-            </div>
+      {/* ===== Hero — always a fresh, empty workout =====
+          Was the last-trained plan, which made this screen's primary action
+          "repeat the plan you already have". That plan is still one tap away in
+          the Current Program rail directly below, with its own Continue button,
+          and the suggestion sits beside it with Build. The hero now carries the
+          one thing neither of those can offer: starting from nothing. */}
+      <section className="wko-hero" aria-labelledby="wko-hero-name">
+        <div className="wko-hero-head">
+          <div className="wko-hero-id">
+            <span className="wko-eyebrow">{icon('plus', 12)} New workout</span>
+            <h2 className="wko-hero-name" id="wko-hero-name">Empty Workout</h2>
+            {/* Deliberately no duration / exercises / calories line: an empty
+                session has none of them yet, and printing a placeholder would
+                put an invented number in front of the user. */}
+            <p className="wko-hero-reason">Start with nothing and add exercises as you go.</p>
           </div>
+        </div>
 
-          <p className="wko-meta">
-            <span>{icon('clock', 13)} {heroPlan.duration || '—'}</span>
-            <span>{icon('dumbbell', 13)} {heroPlan.exercises?.length || 0} exercises</span>
-            <span>{icon('fire', 13)} ~{heroPlan.calories || 300} cal</span>
-          </p>
-
-          <button
-            type="button"
-            className="wko-go"
-            onClick={handleStartPlan}
-            disabled={starting}
-            aria-busy={starting}
-          >
-            {icon('play', 17)} {starting ? 'Starting…' : 'Start Workout'}
-          </button>
-        </section>
-      ) : (
-        /* First run: no plans yet, so the suggestion IS the hero. */
-        <section className="wko-hero wko-hero-first" aria-labelledby="wko-first-name">
-          <span className="wko-eyebrow">{icon('target', 12)} Suggested for you</span>
-          <h2 className="wko-hero-name" id="wko-first-name">{suggestion.title}</h2>
-          <p className="wko-hero-reason">{suggestion.reason}</p>
-          <p className="wko-meta">
-            <span>{icon('clock', 13)} ~{suggestion.duration}</span>
-            <span>{icon('dumbbell', 13)} {suggestion.exerciseIds.length} exercises</span>
-            <span>{icon('fire', 13)} ~{suggestion.calories} cal</span>
-          </p>
-          <button
-            type="button"
-            className="wko-go"
-            onClick={handleBuildSuggestion}
-            disabled={creating}
-            aria-busy={creating}
-          >
-            {icon('plus', 17)} {creating ? 'Building…' : 'Build & Start'}
-          </button>
-        </section>
-      )}
+        <button
+          type="button"
+          className="wko-go"
+          onClick={handleStartEmpty}
+          disabled={starting}
+          aria-busy={starting}
+        >
+          {icon('play', 17)} {starting ? 'Starting…' : 'Start Empty Workout'}
+        </button>
+      </section>
 
       {/* ===== Current Program — last plan + the suggestion, side by side ===== */}
-      {heroPlan && (
-        <section className="wko-sec">
-          <div className="wko-sec-head">
-            <h2 className="wko-sec-title">Current Program</h2>
-          </div>
-          <div className="wko-rail">
-            <article className="wko-pcard">
-              <h3 className="wko-pcard-name">{lastPlan.name}</h3>
-              <p className="wko-pcard-sub">
-                {lastPlan.category || 'Custom'}
-                {lastTrainedOn && <> · last {fmtDate(lastTrainedOn)}</>}
-              </p>
+      <section className="wko-sec">
+        <div className="wko-sec-head">
+          <h2 className="wko-sec-title">Current Program</h2>
+        </div>
+        <div className="wko-rail">
+          {/* Only when a plan exists. The suggestion beside it always shows —
+              on first run it is the only card in the rail. */}
+          {lastPlan && (
+          <article className="wko-pcard">
+            <h3 className="wko-pcard-name">{lastPlan.name}</h3>
+            <p className="wko-pcard-sub">
+              {lastPlan.category || 'Custom'}
+              {lastTrainedOn && <> · last {fmtDate(lastTrainedOn)}</>}
+            </p>
 
-              {/* Last 7 days: bar height = minutes trained that day, filled =
-                  a day you showed up. This is the commitment read — the shape
-                  of your week, not just a count. */}
-              <div
-                className="wko-week"
-                role="img"
-                aria-label={
-                  `Trained ${daysTrained} of the last 7 days, ${weekTotal} minutes total. ` +
-                  `${thisWeek} of ${weeklyGoal} sessions against your weekly goal.`
-                }
-              >
-                {weekMins.map((mins, i) => (
-                  <span
-                    key={dayLetters[i] + i}
-                    className={`wko-week-day${Number(mins) > 0 ? ' is-on' : ''}${i === 6 ? ' is-today' : ''}`}
-                  >
-                    <span className="wko-week-track">
-                      <span
-                        className="wko-week-bar"
-                        style={{ blockSize: `${Math.max(12, (Number(mins) / peakMins) * 100)}%` }}
-                      />
-                    </span>
-                    <span className="wko-week-lbl" aria-hidden="true">{dayLetters[i]}</span>
+            {/* Last 7 days: bar height = minutes trained that day, filled =
+                a day you showed up. This is the commitment read — the shape
+                of your week, not just a count. */}
+            <div
+              className="wko-week"
+              role="img"
+              aria-label={
+                `Trained ${daysTrained} of the last 7 days, ${weekTotal} minutes total. ` +
+                `${thisWeek} of ${weeklyGoal} sessions against your weekly goal.`
+              }
+            >
+              {weekMins.map((mins, i) => (
+                <span
+                  key={dayLetters[i] + i}
+                  className={`wko-week-day${Number(mins) > 0 ? ' is-on' : ''}${i === 6 ? ' is-today' : ''}`}
+                >
+                  <span className="wko-week-track">
+                    <span
+                      className="wko-week-bar"
+                      style={{ blockSize: `${Math.max(12, (Number(mins) / peakMins) * 100)}%` }}
+                    />
                   </span>
-                ))}
-              </div>
-
-              <p className="wko-pcard-foot">
-                <span>
-                  <b className="wko-pcard-strong">{thisWeek}/{weeklyGoal}</b> sessions
-                  {weekTotal > 0 && <> · {weekTotal} min</>}
+                  <span className="wko-week-lbl" aria-hidden="true">{dayLetters[i]}</span>
                 </span>
-                <button type="button" className="wko-pcard-go" onClick={handleStartPlan} disabled={starting}>
-                  Continue {icon('arrow', 13)}
-                </button>
-              </p>
-            </article>
+              ))}
+            </div>
 
-            <article className="wko-pcard wko-pcard-sug">
-              <span className="wko-eyebrow">{icon('target', 12)} Suggested</span>
-              <h3 className="wko-pcard-name">{suggestion.title}</h3>
-              <p className="wko-pcard-reason">{suggestion.reason}</p>
-              <p className="wko-pcard-foot">
-                <span>{suggestion.exerciseIds.length} exercises</span>
-                <button type="button" className="wko-pcard-go" onClick={handleBuildSuggestion} disabled={creating}>
-                  {creating ? 'Building…' : 'Build'} {icon('plus', 13)}
-                </button>
-              </p>
-            </article>
-          </div>
-        </section>
-      )}
+            <p className="wko-pcard-foot">
+              <span>
+                <b className="wko-pcard-strong">{thisWeek}/{weeklyGoal}</b> sessions
+                {weekTotal > 0 && <> · {weekTotal} min</>}
+              </span>
+              <button type="button" className="wko-pcard-go" onClick={handleStartPlan} disabled={starting}>
+                Continue {icon('arrow', 13)}
+              </button>
+            </p>
+          </article>
+          )}
+
+          <article className="wko-pcard wko-pcard-sug">
+            <span className="wko-eyebrow">{icon('target', 12)} Suggested</span>
+            <h3 className="wko-pcard-name">{suggestion.title}</h3>
+            <p className="wko-pcard-reason">{suggestion.reason}</p>
+            <p className="wko-pcard-foot">
+              <span>{suggestion.exerciseIds.length} exercises</span>
+              <button type="button" className="wko-pcard-go" onClick={handleBuildSuggestion} disabled={creating}>
+                {creating ? 'Building…' : 'Build'} {icon('plus', 13)}
+              </button>
+            </p>
+          </article>
+        </div>
+      </section>
 
       {/* ===== Recent ===== */}
       <section className="wko-sec">
@@ -337,11 +310,9 @@ export default function IdleScreen({
       <section className="wko-sec">
         <h2 className="wko-sec-title">Quick Actions</h2>
         <div className="wko-chips">
-          {/* Freestyle lived under the hero as a second line; moved here so the
-              hero is one card with one action, and the option is still one tap. */}
-          <button type="button" className="wko-chip" onClick={handleStartEmpty} disabled={starting}>
-            {icon('plus', 14)} Empty Workout
-          </button>
+          {/* The Empty Workout chip that used to lead this row is gone: the
+              hero is that action now, and two identical primary buttons on
+              one screen is clutter, not a shortcut. */}
           <button type="button" className="wko-chip" onClick={() => navigateToPage?.('planner')}>
             {icon('dumbbell', 14)} Plans
           </button>
