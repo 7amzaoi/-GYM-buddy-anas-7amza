@@ -42,6 +42,16 @@
   border-color: var(--hairline);
   box-shadow: 0 8px 30px rgba(16, 18, 28, 0.12);
 }
+/* The docked rest bar bakes the same near-solid dark base as .mobile-nav, for
+   the same reason (the Finish CTA behind it must not bleed through), so it
+   needs the same light-mode counterpart. */
+:root[data-theme='light'] .wko-active > .wko-rest {
+  background:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.14), rgba(var(--accent-rgb), 0.05)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(248, 249, 251, 0.96));
+  border-color: rgba(var(--accent-rgb), 0.38);
+  box-shadow: 0 8px 30px rgba(16, 18, 28, 0.14);
+}
 
 /* ---- Accent used AS TEXT: neon on white is ~1.4:1, swap to the deep hue.
         Photo contexts re-scope --accent-ink back to neon themselves. ---- */
@@ -53,7 +63,7 @@
 :root[data-theme='light'] .m1-delta-val:not(.m1-photo *),
 :root[data-theme='light'] .m1-summary-pct:not(.m1-photo *),
 :root[data-theme='light'] .wko-rest-label:not(.m1-photo *),
-:root[data-theme='light'] .m1-wkhead .wko-rest-time:not(.m1-photo *),
+:root[data-theme='light'] .wko-active > .wko-rest .wko-rest-time:not(.m1-photo *),
 :root[data-theme='light'] .mnav-tab.is-active:not(.m1-photo *),
 :root[data-theme='light'] .nav-item.active:not(.m1-photo *),
 :root[data-theme='light'] .dash-link:not(.m1-photo *),

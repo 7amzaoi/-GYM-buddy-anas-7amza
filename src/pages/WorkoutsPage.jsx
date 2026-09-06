@@ -290,7 +290,7 @@ export default function WorkoutsPage() {
   const quickPicks = QUICK_PICK_IDS.map((id) => getExerciseById(id)).filter(Boolean);
 
   return (
-    <div className="wko wko-active">
+    <div className="wko wko-active" data-resting={restActive ? 'true' : 'false'}>
       <div className="wko-bg" aria-hidden="true">
         <span className="wko-bg-blob wko-bg-blob-1" />
         <span className="wko-bg-blob wko-bg-blob-2" />
@@ -332,18 +332,21 @@ export default function WorkoutsPage() {
           <span style={{ width: `${liveStats.totalSets ? (liveStats.doneSets / liveStats.totalSets) * 100 : 0}%` }} />
         </div>
 
-        {/* Rest timer lives inside the sticky header, so it pins to the top of
-            the screen while you rest instead of floating at the bottom where the
-            tab bar and FAB overlapped it. Renders nothing when inactive. */}
-        <RestBanner
-          active={restActive}
-          remaining={restRemaining}
-          duration={restDuration}
-          onSkip={skipRest}
-          onBump={bumpRest}
-          onChangeDuration={setRestDuration}
-        />
       </header>
+
+      {/* Rest timer is a SIBLING of the header on purpose. It docks itself just
+          above the tab bar with position:fixed, and .m1-wkhead sets
+          backdrop-filter -- which makes that header a containing block for any
+          fixed descendant. Nested inside it, the bar would anchor to the header
+          instead of the viewport. Renders nothing when inactive. */}
+      <RestBanner
+        active={restActive}
+        remaining={restRemaining}
+        duration={restDuration}
+        onSkip={skipRest}
+        onBump={bumpRest}
+        onChangeDuration={setRestDuration}
+      />
 
       {/* Live stats strip */}
       <div className="wko-live-stats">

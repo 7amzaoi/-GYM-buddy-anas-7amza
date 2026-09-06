@@ -121,55 +121,97 @@
   transition: width var(--dur-slow) var(--ease-out);
 }
 
-/* ---------- Rest timer, pinned in the sticky header ----------
-   Was a floating card fixed to the bottom, where the tab bar and the raised FAB
-   sat on top of it. Living inside .m1-wkhead it pins to the top of the screen
-   for free — no z-index or offset maths — and it inherits the accent instead of
-   the old hardcoded blue. Compact 3-row grid so the header stays shallow:
-     REST ................ Skip
-     00:59  [====progress====]
-     −15s   Default 60s −+   +15s                                            */
-.m1-wkhead .wko-rest {
-  position: static;
-  transform: none;
+/* ---------- Rest timer, docked above the tab bar ----------
+   Written down so nobody moves this a third time.
+
+   v1 was a floating card fixed to the bottom -- but the tab bar and the raised
+   centre FAB sat on top of it. v2 "fixed" that by moving it inside .m1-wkhead,
+   which pinned it to the top of the screen for free. That solved the overlap
+   and created a new problem: a cramped strip glued under the workout title.
+
+   v3 puts it back at the bottom and actually solves the overlap:
+     - it shares the exact anchor maths .asb uses, so the session bar and the
+       rest bar can never disagree about where "above the tab bar" is;
+     - it lifts a further --wko-rest-fab-clear so the raised FAB, which rides
+       28px above the bar, cannot punch through it.
+
+   It is a SIBLING of .m1-wkhead in WorkoutsPage.jsx, never a child: the header
+   sets backdrop-filter, and that makes it a containing block for every fixed
+   descendant -- nested inside, this bar would anchor to the header, not the
+   viewport, and the offsets below would silently mean nothing. */
+.wko-active > .wko-rest {
+  /* FAB glyph is 56px riding -28px above a 64px bar; this clears its cap and
+     leaves a breathing gap. */
+  --wko-rest-fab-clear: var(--space-8);
+
+  position: fixed;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: calc(
+    var(--safe-bottom) + var(--space-3) + var(--tabbar-h) + var(--wko-rest-fab-clear)
+  );
+  z-index: var(--z-nav);
   width: auto;
-  /* Bleed to the header edges and sit flush against its bottom border. */
-  margin: var(--space-3) calc(var(--m1-gutter) * -1) calc(var(--space-3) * -1);
-  padding: var(--space-2) var(--m1-gutter) var(--space-3);
-  border: 0;
-  border-top: 1px solid rgba(var(--accent-rgb), 0.22);
-  border-radius: 0;
-  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(var(--accent-rgb), 0.03));
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  animation: m1RestDrop 0.32s var(--ease-out) both;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgba(var(--accent-rgb), 0.30);
+  border-radius: var(--radius-xl);
+  /* Opaque enough to read over anything, tinted enough to say "live state".
+     A --glass-bg-strong base (0.10 alpha) was tried first and failed: the
+     bright Finish CTA sits directly behind this bar at the bottom of the page
+     and bled straight through the blur, washing out the countdown. Same
+     recipe as .mobile-nav instead -- a near-solid dark base under the accent
+     wash -- with the light-theme counterpart in _theme-light.css. */
+  background:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.16), rgba(var(--accent-rgb), 0.05)),
+    linear-gradient(180deg, rgba(24, 24, 26, 0.93), rgba(14, 14, 15, 0.96));
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--elev-3), 0 0 32px rgba(var(--accent-rgb), 0.16), var(--glass-highlight);
+  animation: wkoRestDock var(--dur-base) var(--ease-spring) both;
 }
-@keyframes m1RestDrop {
-  from { opacity: 0; transform: translateY(-10px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* Enters from the direction it lives in -- up from behind the tab bar -- and
+   materialises (scale + fade together) rather than plain-fading in, so it
+   reads as a surface arriving instead of a label appearing. */
+@keyframes wkoRestDock {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-.m1-wkhead .wko-rest-body {
+/* Focus mode draws its own rest banner in .wko-focus-foot. Under v2 this one
+   was hidden for free, because it lived in a header that focus mode slides off
+   the top; now that it is fixed to the viewport it has to be hidden by hand,
+   or both banners show at once. */
+html.wko-focus .wko-active > .wko-rest { display: none; }
+
+/* While the bar is up it covers the foot of the page -- including the Finish
+   CTA. Reserve the room it occupies so the content can still be scrolled
+   clear of it. Driven by data-resting on the page root, set in WorkoutsPage. */
+.wko-active[data-resting='true'] { padding-bottom: 180px; }
+
+.wko-active > .wko-rest .wko-rest-body {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
   column-gap: var(--space-3);
-  row-gap: 6px;
+  row-gap: var(--space-2);
 }
-.m1-wkhead .wko-rest-head { grid-column: 1 / -1; }
-.m1-wkhead .wko-rest-time {
+.wko-active > .wko-rest .wko-rest-head { grid-column: 1 / -1; }
+.wko-active > .wko-rest .wko-rest-time {
   grid-column: 1;
   font-family: var(--font-display);
   font-weight: 800;
   font-stretch: var(--display-stretch);
   font-size: 1.7rem;
   line-height: 1;
+  /* Tighter tracking as the numerals grow, and tabular figures so the countdown
+     does not shuffle its own width every second. */
+  letter-spacing: -0.01em;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
-.m1-wkhead .wko-rest-bar { grid-column: 2; background: rgba(255, 255, 255, 0.10); }
-.m1-wkhead .wko-rest-bar-fill { background: var(--accent); }
-.m1-wkhead .wko-rest-label {
+.wko-active > .wko-rest .wko-rest-bar { grid-column: 2; background: rgba(255, 255, 255, 0.10); }
+.wko-active > .wko-rest .wko-rest-bar-fill { background: var(--accent); }
+.wko-active > .wko-rest .wko-rest-label {
   font-family: var(--font-display);
   font-weight: 700;
   font-stretch: var(--display-stretch);
@@ -177,22 +219,22 @@
   text-transform: uppercase;
   color: var(--accent);
 }
-.m1-wkhead .wko-rest-controls { grid-column: 1 / -1; gap: var(--space-2); }
+.wko-active > .wko-rest .wko-rest-controls { grid-column: 1 / -1; gap: var(--space-2); }
 /* 44px targets on every rest control. */
-.m1-wkhead .wko-rest-skip,
-.m1-wkhead .wko-rest-bump {
+.wko-active > .wko-rest .wko-rest-skip,
+.wko-active > .wko-rest .wko-rest-bump {
   min-height: 44px;
   padding-inline: var(--space-3);
   border-radius: var(--radius-pill);
 }
-.m1-wkhead .wko-rest-bump {
+.wko-active > .wko-rest .wko-rest-bump {
   background: rgba(var(--accent-rgb), 0.14);
   border: 1px solid rgba(var(--accent-rgb), 0.3);
   color: var(--accent);
 }
-.m1-wkhead .wko-rest-bump:hover { background: rgba(var(--accent-rgb), 0.24); }
-.m1-wkhead .wko-rest-duration { gap: 4px; font-size: 0.72rem; }
-.m1-wkhead .wko-rest-duration button {
+.wko-active > .wko-rest .wko-rest-bump:hover { background: rgba(var(--accent-rgb), 0.24); }
+.wko-active > .wko-rest .wko-rest-duration { gap: 4px; font-size: 0.72rem; }
+.wko-active > .wko-rest .wko-rest-duration button {
   min-width: 44px;
   min-height: 44px;
   padding: 0;
