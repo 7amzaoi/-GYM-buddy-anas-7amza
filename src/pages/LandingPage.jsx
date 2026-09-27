@@ -25,6 +25,28 @@ function prefersStaticCard() {
 }
 
 /**
+ * Should this device get the looping hero video at all?
+ *
+ * public/hero-loop.mp4 is 4.0 MB. Measured on a 390x844 phone against the
+ * production build, it was 4,069 kB of a 4,640 kB page — 88% of everything the
+ * landing page downloads, against 211 kB of JavaScript. On mobile data that is
+ * the whole first impression spent on a background texture.
+ *
+ * Same gate as prefersStaticCard below, for the same reason, plus Save-Data and
+ * 2g. The still is public/img/hero.jpeg at ~100 kB: a 40x saving that keeps the
+ * photograph rather than dropping to the bare gradient.
+ */
+function prefersStillHero() {
+  if (typeof window === 'undefined') return true;
+  const mq = (q) => typeof matchMedia !== 'undefined' && matchMedia(q).matches;
+  if (mq('(max-width: 768px)')) return true;
+  if (mq('(prefers-reduced-motion: reduce)')) return true;
+  const conn = navigator.connection;
+  if (conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ''))) return true;
+  return false;
+}
+
+/**
  * Holds the 2 MB three.js bundle off the initial render. The card only mounts
  * once its container is in (or near) the viewport — so users who never scroll
  * to that section never download it.
@@ -224,6 +246,9 @@ export default function LandingPage() {
   const videoRef = useRef(null);
   const navRef = useRef(null);
   const [videoFailed, setVideoFailed] = useState(false);
+  /* Decided once on mount — this must not flip mid-session and swap the
+     hero out from under a scroll-linked animation. */
+  const [stillHero] = useState(prefersStillHero);
 
   // Hero parallax: video subtly follows mouse on desktop only
   useEffect(() => {
@@ -539,24 +564,38 @@ export default function LandingPage() {
       {/* ================= HERO ================= */}
       <section className="hero hero-v2" ref={heroRef}>
         <div className={`hero-media ${videoFailed ? 'video-failed' : ''}`} ref={videoLayerRef} aria-hidden="true">
-          <video
-            ref={videoRef}
-            className="hero-video"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            onError={() => setVideoFailed(true)}
-          >
-            {HERO_VIDEO_SOURCES.map((src) => (
-              <source
-                key={src}
-                src={src}
-                type={src.endsWith('.webm') ? 'video/webm' : 'video/mp4'}
-              />
-            ))}
-          </video>
+          {stillHero ? (
+            /* Phones, reduced motion, Save-Data and 2g get the still. The video
+               element is not rendered at all — a hidden <video autoplay> still
+               downloads. */
+            <img
+              className="hero-still"
+              src="/img/hero.jpeg"
+              alt=""
+              decoding="async"
+              fetchPriority="high"
+              onError={() => setVideoFailed(true)}
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              className="hero-video"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              onError={() => setVideoFailed(true)}
+            >
+              {HERO_VIDEO_SOURCES.map((src) => (
+                <source
+                  key={src}
+                  src={src}
+                  type={src.endsWith('.webm') ? 'video/webm' : 'video/mp4'}
+                />
+              ))}
+            </video>
+          )}
           <div className="hero-fallback" />
         </div>
         <div className="hero-overlay" aria-hidden="true" />

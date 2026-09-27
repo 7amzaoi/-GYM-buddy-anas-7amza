@@ -145,14 +145,17 @@
   transform: translate3d(0, 0, 0) scale(1.08);
   transition: transform .6s ease;
 }
-.hero-video {
+/* .hero-still is the phone/Save-Data stand-in for .hero-video — same box. */
+.hero-video,
+.hero-still {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
   filter: saturate(.85) contrast(1.05);
   background: transparent;
 }
-.hero-media.video-failed .hero-video { display: none; }
+.hero-media.video-failed .hero-video,
+.hero-media.video-failed .hero-still { display: none; }
 /* CSS-only fallback that lives behind the video. If video fails to load,
    the user sees a polished animated mesh-gradient instead of a black void. */
 .hero-fallback {
