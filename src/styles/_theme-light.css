@@ -25,8 +25,10 @@
 }
 
 /* ---- Sticky/blurred chrome ---- */
+/* Background is no longer patched here: .m1-wkhead now paints var(--surface-0),
+   which is already light in this theme. The old white gradient bottomed out at
+   0.80 alpha and let the set rows read through the header. */
 :root[data-theme='light'] .m1-wkhead {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.80));
   border-bottom-color: var(--hairline);
 }
 :root[data-theme='light'] .app-header[data-collapsed='true'] .app-header__bar {

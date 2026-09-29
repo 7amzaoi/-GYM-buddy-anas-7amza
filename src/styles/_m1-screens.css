@@ -63,13 +63,23 @@
    ============================================================ */
 .m1-wkhead {
   position: sticky;
-  top: 0;
+  /* -20px, not 0. The scroll container is main.main-content, which carries
+     20px of top padding, and the list scrolls visibly through that strip: with
+     top:0 the header pinned at y=20 and a set row was painted above it.
+     Pinning 20px higher lands it at y=0 and covers the strip. */
+  top: calc(var(--space-5) * -1);
   z-index: var(--z-sticky);
   margin: calc(var(--space-5) * -1) calc(var(--m1-gutter) * -1) var(--space-4);
   padding: var(--space-4) var(--m1-gutter) var(--space-3);
-  background: linear-gradient(180deg, rgba(11, 11, 11, 0.97), rgba(11, 11, 11, 0.88));
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  /* Opaque, and no backdrop-filter, on purpose.
+     .wko sets isolation:isolate (_workouts-base.css), which forms a backdrop
+     root -- so backdrop-filter here had nothing to blur. The set rows read
+     straight through the header, sharp rather than frosted, because the old
+     gradient bottomed out at 0.88 alpha. A blur that does nothing still forces
+     its own compositing layer, so it is removed rather than left as decoration.
+     --surface-0 is the same #0B0B0B the gradient was reaching for, and being a
+     semantic token it handles light mode without a second rule. */
+  background: var(--surface-0);
   border-bottom: 1px solid var(--m1-hairline);
 }
 .m1-wkhead-top {
