@@ -240,42 +240,20 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      {/* ===== Appearance (personalization) ===== */}
+      {/* ===== Lifetime stats =====
+          Above Appearance on purpose: this is the page you open to see how
+          you are doing, and the accent picker is a settings control you
+          touch once. They swapped places; nothing else moved. */}
       <div className="gx-card" data-reveal>
         <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
-          <span className="gx-eyebrow">{icon('zap', 13)} Appearance</span>
-          <h3 className="gx-title" style={{ fontSize: 'var(--text-lg)' }}>Accent color</h3>
-          <p className="gx-subtitle">Recolors the whole app instantly. Saved to this device.</p>
+          <span className="gx-eyebrow">{icon('chart', 13)} Lifetime Stats</span>
         </div>
-        {/* Theme first: it decides the canvas the accent then sits on. */}
-        <div className="m1-themepick" role="group" aria-label="Appearance mode">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`m1-themeopt ${theme === t.id ? 'is-active' : ''}`}
-              aria-pressed={theme === t.id}
-              onClick={() => { setTheme(applyTheme(t.id)); haptics.tap(); }}
-            >
-              <span className={`m1-themeswatch is-${t.id}`} aria-hidden="true" />
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="prof-accents">
-          {ACCENTS.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              className={`prof-accent ${accentId === a.id ? 'is-selected' : ''}`}
-              onClick={() => pickAccent(a.id)}
-              aria-label={a.label}
-            >
-              <span className="prof-accent-dot" style={{ background: a.hex }} />
-              <span>{a.label}</span>
-            </button>
-          ))}
+        <div className="prof-stat-list">
+          <div className="prof-stat-row"><span>Member since</span><strong>{new Date(user.joinDate).toLocaleDateString()}</strong></div>
+          <div className="prof-stat-row"><span>Total workouts</span><strong className="prof-accent-text">{progress.totalWorkouts}</strong></div>
+          <div className="prof-stat-row"><span>Current streak</span><strong>{progress.streak} days</strong></div>
+          <div className="prof-stat-row"><span>Days active</span><strong>{daysSinceJoin}</strong></div>
+          <div className="prof-stat-row"><span>Avg workouts / week</span><strong>{avgPerWeek}</strong></div>
         </div>
       </div>
 
@@ -314,16 +292,42 @@ export default function ProfilePage() {
 
       {/* ===== Stats + Goal ===== */}
       <div className="prof-grid-2">
+        {/* Appearance moved down here from the top of the page. */}
         <div className="gx-card" data-reveal>
           <div className="gx-section-head" style={{ marginBottom: 'var(--space-4)' }}>
-            <span className="gx-eyebrow">{icon('chart', 13)} Lifetime Stats</span>
+            <span className="gx-eyebrow">{icon('zap', 13)} Appearance</span>
+            <h3 className="gx-title" style={{ fontSize: 'var(--text-lg)' }}>Accent color</h3>
+            <p className="gx-subtitle">Recolors the whole app instantly. Saved to this device.</p>
           </div>
-          <div className="prof-stat-list">
-            <div className="prof-stat-row"><span>Member since</span><strong>{new Date(user.joinDate).toLocaleDateString()}</strong></div>
-            <div className="prof-stat-row"><span>Total workouts</span><strong className="prof-accent-text">{progress.totalWorkouts}</strong></div>
-            <div className="prof-stat-row"><span>Current streak</span><strong>{progress.streak} days</strong></div>
-            <div className="prof-stat-row"><span>Days active</span><strong>{daysSinceJoin}</strong></div>
-            <div className="prof-stat-row"><span>Avg workouts / week</span><strong>{avgPerWeek}</strong></div>
+          {/* Theme first: it decides the canvas the accent then sits on. */}
+          <div className="m1-themepick" role="group" aria-label="Appearance mode">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`m1-themeopt ${theme === t.id ? 'is-active' : ''}`}
+                aria-pressed={theme === t.id}
+                onClick={() => { setTheme(applyTheme(t.id)); haptics.tap(); }}
+              >
+                <span className={`m1-themeswatch is-${t.id}`} aria-hidden="true" />
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="prof-accents">
+            {ACCENTS.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                className={`prof-accent ${accentId === a.id ? 'is-selected' : ''}`}
+                onClick={() => pickAccent(a.id)}
+                aria-label={a.label}
+              >
+                <span className="prof-accent-dot" style={{ background: a.hex }} />
+                <span>{a.label}</span>
+              </button>
+            ))}
           </div>
         </div>
 
