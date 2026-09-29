@@ -9,7 +9,7 @@ import * as haptics from '../lib/haptics.js';
 
 import {
   computeLiveStats, formatTime, playBeep,
-  MUSCLE_GROUPS,
+  MUSCLE_GROUPS, matchesMuscleGroup,
 } from '../components/workouts/helpers.js';
 import IdleScreen from '../components/workouts/IdleScreen.jsx';
 import ExerciseCard from '../components/workouts/ExerciseCard.jsx';
@@ -275,7 +275,9 @@ export default function WorkoutsPage() {
     }
     if (pickerMuscle) {
       const group = MUSCLE_GROUPS.find((m) => m.id === pickerMuscle);
-      if (group && !group.match.test(e.muscles || '')) return false;
+      // Primary muscle only — see matchesMuscleGroup. Chest must not list
+      // tricep exercises just because the chest assists them.
+      if (group && !matchesMuscleGroup(e, group)) return false;
     }
     if (pickerQuery.trim()) {
       const q = pickerQuery.trim().toLowerCase();
@@ -284,7 +286,7 @@ export default function WorkoutsPage() {
     return true;
   });
   const muscleCounts = MUSCLE_GROUPS.reduce((acc, g) => {
-    acc[g.id] = allExercises.filter((e) => g.match.test(e.muscles || '')).length;
+    acc[g.id] = allExercises.filter((e) => matchesMuscleGroup(e, g)).length;
     return acc;
   }, {});
   const quickPicks = QUICK_PICK_IDS.map((id) => getExerciseById(id)).filter(Boolean);

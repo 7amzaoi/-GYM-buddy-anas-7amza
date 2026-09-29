@@ -100,6 +100,36 @@ export const MUSCLE_GROUPS = [
   { id: 'fullbody', label: 'Full Body', match: /full body/i },
 ];
 
+/**
+ * The muscle an exercise actually trains, as opposed to the ones that assist.
+ *
+ * `muscles` is a comma-separated list written PRIMARY FIRST: 'Chest, Triceps'
+ * for a bench press, 'Triceps, Chest' for a close-grip bench press.
+ */
+export function primaryMuscle(ex) {
+  return String(ex?.muscles || '').split(',')[0].trim();
+}
+
+/**
+ * Does `ex` belong under `group`'s chip?
+ *
+ * Primary muscle only. Testing the whole `muscles` string filed every pressing
+ * movement under Chest AND Triceps, so the Chest chip returned Tricep Dips and
+ * Close-Grip Bench Press — tricep exercises that merely involve the chest.
+ *
+ * The fallback is not decoration. Two exercises have a primary no chip covers:
+ * Farmer's Carry ('Forearms, Core') and Battle Ropes ('Arms, Core'). Under a
+ * strict primary-only rule they would be unreachable from every chip, so an
+ * exercise whose primary matches no group at all keeps matching on its full
+ * string — which leaves both exactly where they are today, under Core.
+ */
+export function matchesMuscleGroup(ex, group) {
+  if (!group) return true;
+  const primary = primaryMuscle(ex);
+  const groupKnowsPrimary = MUSCLE_GROUPS.some((g) => g.match.test(primary));
+  return group.match.test(groupKnowsPrimary ? primary : (ex?.muscles || ''));
+}
+
 export function formatTime(secs) {
   if (secs < 0) secs = 0;
   const h = Math.floor(secs / 3600);
